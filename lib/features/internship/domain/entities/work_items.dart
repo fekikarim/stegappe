@@ -84,6 +84,9 @@ class JournalEntry extends Equatable {
     this.description,
     required this.status,
     required this.entryDate,
+    this.validatedByName,
+    this.submittedAt,
+    this.validatedAt,
   });
 
   final String id;
@@ -91,12 +94,31 @@ class JournalEntry extends Equatable {
   final String? description;
   final JournalStatus status;
   final DateTime entryDate;
+  final String? validatedByName;
+  final DateTime? submittedAt;
+  final DateTime? validatedAt;
 
   bool get needsAttention =>
       status == JournalStatus.draft || status == JournalStatus.rejected;
 
+  /// Server-created entries are immutable (no update endpoint exists):
+  /// only DRAFT/REJECTED entries accept the submit transition.
+  bool get canSubmit =>
+      status == JournalStatus.draft || status == JournalStatus.rejected;
+
+  bool get awaitsSupervisor => status == JournalStatus.submitted;
+
   @override
-  List<Object?> get props => [id, title, description, status, entryDate];
+  List<Object?> get props => [
+        id,
+        title,
+        description,
+        status,
+        entryDate,
+        validatedByName,
+        submittedAt,
+        validatedAt,
+      ];
 }
 
 /// Deliverable status (backend-owned; versioned in D3).
@@ -172,4 +194,23 @@ class AppNotification extends Equatable {
   @override
   List<Object?> get props =>
       [id, title, message, priority, createdAt, isRead];
+}
+
+/// Supervisor/intern feedback attached to a journal entry.
+/// Participant-visible; fetched separately from the entry itself.
+class JournalComment extends Equatable {
+  const JournalComment({
+    required this.id,
+    required this.content,
+    required this.authorEmail,
+    required this.createdAt,
+  });
+
+  final String id;
+  final String content;
+  final String authorEmail;
+  final DateTime createdAt;
+
+  @override
+  List<Object?> get props => [id, content, authorEmail, createdAt];
 }

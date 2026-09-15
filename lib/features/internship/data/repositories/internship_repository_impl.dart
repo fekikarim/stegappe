@@ -89,10 +89,75 @@ class InternshipRepositoryImpl implements InternshipRepository {
       remote.updateTaskStatus(taskId, status, await _bearer());
 
   @override
+  Future<InternTask> createTask(String internshipId,
+          {required String title,
+          String? description,
+          DateTime? dueDate}) async =>
+      remote.createTask(internshipId, await _bearer(),
+          title: title, description: description, dueDate: dueDate);
+
+  @override
+  Future<InternTask> updateTask(String taskId,
+          {required String title,
+          String? description,
+          DateTime? dueDate,
+          TaskStatus? status}) async =>
+      remote.updateTask(taskId, await _bearer(),
+          title: title,
+          description: description,
+          dueDate: dueDate,
+          status: status);
+
+  @override
   Future<Paged<JournalEntry>> listJournal(String internshipId,
-          {int page = 0, int size = 20, JournalStatus? status}) async =>
-      remote.listJournal(internshipId, await _bearer(),
-          page: page, size: size, status: status);
+          {int page = 0,
+          int size = 20,
+          JournalStatus? status,
+          DateTime? day}) async =>
+      remote.listJournal(internshipId, await tokens.readAccessToken(),
+          page: page, size: size, status: status, day: day);
+
+  @override
+  Future<JournalEntry> createJournal(String internshipId,
+          {required String title,
+          required String description,
+          required DateTime entryDate}) async =>
+      remote.createJournal(internshipId, await tokens.readAccessToken(),
+          title: title, description: description, entryDate: entryDate);
+
+  @override
+  Future<JournalEntry> submitJournal(String entryId) async =>
+      remote.submitJournal(entryId, await tokens.readAccessToken());
+
+  @override
+  Future<List<JournalComment>> journalComments(String entryId) async =>
+      remote.journalComments(entryId, await tokens.readAccessToken());
+
+  @override
+  Future<JournalEntry> validateJournal(
+          String entryId, String? comment) async =>
+      remote.validateJournal(
+          entryId, await tokens.readAccessToken(), comment);
+
+  @override
+  Future<JournalEntry> rejectJournal(String entryId, String? comment) async =>
+      remote.rejectJournal(entryId, await tokens.readAccessToken(), comment);
+
+  @override
+  Future<List<String>> supervisedInternshipIds() async {
+    final conversations =
+        await remote.listConversations(await tokens.readAccessToken());
+    final ids = <String>{};
+    for (final c in conversations) {
+      final id = c.internshipId;
+      if (c.type.toUpperCase() == 'PRIVATE' &&
+          id != null &&
+          id.isNotEmpty) {
+        ids.add(id);
+      }
+    }
+    return ids.toList();
+  }
 
   @override
   Future<Paged<DeliverableSummary>> listDeliverables(String internshipId,

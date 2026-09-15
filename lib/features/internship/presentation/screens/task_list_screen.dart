@@ -11,13 +11,17 @@ import '../../../../core/widgets/steg_dialog.dart';
 import '../../../../core/widgets/steg_states.dart';
 import '../../../../core/widgets/steg_status_chip.dart';
 import '../../domain/entities/work_items.dart';
+import '../../../auth/domain/entities/app_user.dart';
+import '../../../auth/presentation/providers/auth_providers.dart';
 import '../providers/workspace_providers.dart';
 import '../widgets/dashboard_sections.dart';
 import '../widgets/status_labels.dart';
 import '../widgets/task_row.dart';
+import 'task_editor_sheet.dart';
 
 /// Task list: daily/weekly planned work with due dates, status filter,
-/// completion toggle (server-confirmed) and detail sheet.
+/// optimistic completion toggle (reversible, rolls back on server
+/// rejection), detail sheet, and intern create/edit actions.
 class TaskListScreen extends ConsumerWidget {
   const TaskListScreen({super.key});
 
@@ -27,67 +31,101 @@ class TaskListScreen extends ConsumerWidget {
     final async = ref.watch(taskListProvider);
     final isOnline = ref.watch(isOnlineProvider);
     final last = ref.watch(lastTasksProvider);
+    final auth = ref.watch(authControllerProvider);
+    // Interns own their to-dos (D2); supervisor task flows land in D4.
+    final editable = auth is AuthAuthenticated &&
+        auth.user.mobileRole == UserRole.intern;
+    final internshipId =
+        ref.watch(myInternshipIdProvider).valueOrNull;
 
-    return RefreshIndicator(
-      onRefresh: () async {
-        ref.invalidate(taskListProvider);
-        try {
-          await ref.read(taskListProvider.future);
-        } on Exception {
-          // Error UI renders via the AsyncValue.
-        }
-      },
-      child: CustomScrollView(
-        physics: const AlwaysScrollableScrollPhysics(),
-        slivers: [
-          const SliverToBoxAdapter(child: _FilterBar()),
-          SliverPadding(
-            padding: const EdgeInsets.fromLTRB(
-                StegSpacing.md, 0, StegSpacing.md, StegSpacing.md),
-            sliver: async.when(
-              loading: () => SliverFillRemaining(
-                hasScrollBody: false,
-                child: (last != null && !isOnline)
-                    ? _ListBody(
-                        page: last, isOnline: false, showStale: true)
-                    : const StegLoading(),
-              ),
-              error: (e, _) {
-                if (e is StateError && e.message == 'no-internship') {
-                  return SliverFillRemaining(
+    return Stack(
+      children: [
+        RefreshIndicator(
+          onRefresh: () async {
+            ref.invalidate(taskListProvider);
+            try {
+              await ref.read(taskListProvider.future);
+            } on Exception {
+              // Error UI renders via the AsyncValue.
+            }
+          },
+          child: CustomScrollView(
+            physics: const AlwaysScrollableScrollPhysics(),
+            slivers: [
+              const SliverToBoxAdapter(child: _FilterBar()),
+              SliverPadding(
+                padding: const EdgeInsets.fromLTRB(
+                    StegSpacing.md, 0, StegSpacing.md, StegSpacing.md),
+                sliver: async.when(
+                  loading: () => SliverFillRemaining(
                     hasScrollBody: false,
-                    child: StegEmptyView(
-                      title: l10n.noInternshipTitle,
-                      hint: l10n.noInternshipHint,
-                      icon: Icons.school_outlined,
-                    ),
-                  );
-                }
-                if (last != null && !isOnline) {
-                  return SliverToBoxAdapter(
-                    child: _ListBody(
-                        page: last, isOnline: false, showStale: true),
-                  );
-                }
-                return SliverFillRemaining(
-                  hasScrollBody: false,
-                  child: StegErrorView(
-                    message:
-                        e is ApiException ? e.message : e.toString(),
-                    onRetry: () => ref.invalidate(taskListProvider),
+                    child: (last != null && !isOnline)
+                        ? _ListBody(
+                            page: last,
+                            isOnline: false,
+                            showStale: true,
+                            editable: editable)
+                        : const StegLoading(),
                   ),
-                );
-              },
-              data: (page) => SliverToBoxAdapter(
-                child: _ListBody(
-                    page: page,
-                    isOnline: isOnline,
-                    showStale: !isOnline),
+                  error: (e, _) {
+                    if (e is StateError && e.message == 'no-internship') {
+                      return SliverFillRemaining(
+                        hasScrollBody: false,
+                        child: StegEmptyView(
+                          title: l10n.noInternshipTitle,
+                          hint: l10n.noInternshipHint,
+                          icon: Icons.school_outlined,
+                        ),
+                      );
+                    }
+                    if (last != null && !isOnline) {
+                      return SliverToBoxAdapter(
+                        child: _ListBody(
+                            page: last,
+                            isOnline: false,
+                            showStale: true,
+                            editable: editable),
+                      );
+                    }
+                    return SliverFillRemaining(
+                      hasScrollBody: false,
+                      child: StegErrorView(
+                        message: e is ApiException
+                            ? e.message
+                            : e.toString(),
+                        onRetry: () =>
+                            ref.invalidate(taskListProvider),
+                      ),
+                    );
+                  },
+                  data: (page) => SliverToBoxAdapter(
+                    child: _ListBody(
+                        page: page,
+                        isOnline: isOnline,
+                        showStale: !isOnline,
+                        editable: editable),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+        if (editable && internshipId != null)
+          PositionedDirectional(
+            end: StegSpacing.md,
+            bottom: StegSpacing.md,
+            child: Semantics(
+              button: true,
+              label: l10n.taskNew,
+              child: FloatingActionButton(
+                tooltip: l10n.taskNew,
+                onPressed: () => TaskEditorSheet.show(context,
+                    internshipId: internshipId),
+                child: const Icon(Icons.add),
               ),
             ),
           ),
-        ],
-      ),
+      ],
     );
   }
 }
@@ -139,11 +177,15 @@ class _FilterBar extends ConsumerWidget {
 
 class _ListBody extends StatelessWidget {
   const _ListBody(
-      {required this.page, required this.isOnline, required this.showStale});
+      {required this.page,
+      required this.isOnline,
+      required this.showStale,
+      required this.editable});
 
   final Paged<InternTask> page;
   final bool isOnline;
   final bool showStale;
+  final bool editable;
 
   @override
   Widget build(BuildContext context) {
@@ -166,7 +208,9 @@ class _ListBody extends StatelessWidget {
             TaskRow(
               task: t,
               now: now,
-              onOpen: () => showTaskDetailSheet(context, t),
+              editable: editable,
+              onOpen: () => showTaskDetailSheet(context, t,
+                  editable: editable),
             ),
         if (page.totalElements > page.items.length) ...[
           const SizedBox(height: StegSpacing.sm),
@@ -183,19 +227,22 @@ class _ListBody extends StatelessWidget {
 }
 
 /// Detail sheet: full description, due date, status transitions
-/// (server-confirmed, errors surfaced inline via snackbar).
-Future<void> showTaskDetailSheet(BuildContext context, InternTask task) {
+/// (server-confirmed, errors surfaced inline via snackbar) and edit
+/// entry for interns.
+Future<void> showTaskDetailSheet(BuildContext context, InternTask task,
+    {bool editable = true}) {
   return showStegSheet(
     context,
     title: task.title,
-    builder: (ctx) => _TaskDetailBody(task: task),
+    builder: (ctx) => _TaskDetailBody(task: task, editable: editable),
   );
 }
 
 class _TaskDetailBody extends ConsumerWidget {
-  const _TaskDetailBody({required this.task});
+  const _TaskDetailBody({required this.task, required this.editable});
 
   final InternTask task;
+  final bool editable;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -226,14 +273,14 @@ class _TaskDetailBody extends ConsumerWidget {
           Text(task.description!),
         ],
         const SizedBox(height: StegSpacing.md),
-        if (task.status != TaskStatus.completed)
+        if (editable && task.status != TaskStatus.completed)
           StegButton(
             label: l10n.taskMarkComplete,
             icon: Icons.check_outlined,
             onPressed: () =>
                 _setStatus(context, ref, TaskStatus.completed),
           ),
-        if (task.status == TaskStatus.todo) ...[
+        if (editable && task.status == TaskStatus.todo) ...[
           const SizedBox(height: StegSpacing.xs),
           StegButton(
             label: l10n.taskSetInProgress,
@@ -243,12 +290,29 @@ class _TaskDetailBody extends ConsumerWidget {
                 _setStatus(context, ref, TaskStatus.inProgress),
           ),
         ],
-        if (task.status == TaskStatus.completed) ...[
+        if (editable && task.status == TaskStatus.completed) ...[
           StegButton(
             label: l10n.taskReopen,
             variant: StegButtonVariant.secondary,
             icon: Icons.replay_outlined,
             onPressed: () => _setStatus(context, ref, TaskStatus.todo),
+          ),
+        ],
+        if (editable) ...[
+          const SizedBox(height: StegSpacing.sm),
+          StegButton(
+            label: l10n.taskEdit,
+            variant: StegButtonVariant.text,
+            icon: Icons.edit_outlined,
+            onPressed: () async {
+              final id = ref
+                  .read(myInternshipIdProvider)
+                  .valueOrNull;
+              if (id == null || !context.mounted) return;
+              Navigator.of(context).pop();
+              await TaskEditorSheet.show(context,
+                  internshipId: id, existing: task);
+            },
           ),
         ],
       ],

@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/l10n/settings_providers.dart';
 import '../../../../core/network/paged.dart';
 import '../../../auth/presentation/providers/auth_providers.dart';
+import '../../data/cache/composer_draft_store.dart';
 import '../../data/cache/internship_id_store.dart';
 import '../../data/datasources/internship_remote_data_source.dart';
 import '../../data/repositories/internship_repository_impl.dart';
@@ -117,13 +118,90 @@ final taskListProvider = FutureProvider<Paged<InternTask>>((ref) async {
 final lastTasksProvider =
     StateProvider<Paged<InternTask>?>((ref) => null);
 
-/// Read-only journal page (D1). Write flows land in D2.
+/// Selected journal day (defaults to today). Day navigation filters the
+/// list through the backend `startDate`/`endDate` query.
+DateTime _today() {
+  final n = DateTime.now();
+  return DateTime(n.year, n.month, n.day);
+}
+
+final selectedDayProvider = StateProvider<DateTime>((ref) => _today());
+
+final journalStatusFilterProvider =
+    StateProvider<JournalStatus?>((ref) => null);
+
+/// Journal page for the selected day + status filter.
 final journalListProvider =
     FutureProvider<Paged<JournalEntry>>((ref) async {
   final repo = ref.watch(internshipRepositoryProvider);
   final id = await ref.watch(myInternshipIdProvider.future);
   if (id == null) throw StateError('no-internship');
-  return repo.listJournal(id, size: 20);
+  return repo.listJournal(id,
+      size: 20,
+      status: ref.watch(journalStatusFilterProvider),
+      day: ref.watch(selectedDayProvider));
+});
+
+/// Feedback comments for one journal entry (supervisor notes live here).
+final journalCommentsProvider =
+    FutureProvider.family<List<JournalComment>, String>(
+        (ref, entryId) async {
+  final repo = ref.watch(internshipRepositoryProvider);
+  return repo.journalComments(entryId);
+});
+
+final composerDraftStoreProvider = Provider<ComposerDraftStore>(
+    (ref) => PrefsComposerDraftStore(ref.watch(prefsStoreProvider)));
+
+/// One submitted entry awaiting review, with its internship context.
+class PendingValidation {
+  const PendingValidation({
+    required this.internshipId,
+    required this.internshipReference,
+    required this.entry,
+  });
+
+  final String internshipId;
+  final String internshipReference;
+  final JournalEntry entry;
+}
+
+/// Supervisor queue: SUBMITTED entries across supervised internships.
+/// Fail-soft per internship (one failure never hides the other queues);
+/// throws only when every queue fails.
+final pendingValidationsProvider =
+    FutureProvider<List<PendingValidation>>((ref) async {
+  final repo = ref.watch(internshipRepositoryProvider);
+  final ids = await repo.supervisedInternshipIds();
+  final out = <PendingValidation>[];
+  Object? firstError;
+  final results = await Future.wait(
+    ids.map((id) async {
+      try {
+        final page =
+            await repo.listJournal(id, status: JournalStatus.submitted, size: 50);
+        String reference = id;
+        try {
+          reference = (await repo.getInternship(id)).reference;
+        } on Exception {
+          // Reference is decoration; the queue matters.
+        }
+        return MapEntry(reference,
+            page.items.map((e) => PendingValidation(
+                internshipId: id,
+                internshipReference: reference,
+                entry: e)));
+      } on Exception catch (e) {
+        firstError ??= e;
+        return const MapEntry('', <PendingValidation>[]);
+      }
+    }),
+  );
+  for (final r in results) {
+    out.addAll(r.value);
+  }
+  if (out.isEmpty && firstError != null) throw firstError!;
+  return out;
 });
 
 /// Refresh every workspace provider (pull-to-refresh entry point).
@@ -135,4 +213,9 @@ void refreshWorkspace(WidgetRef ref) {
     ..invalidate(journalListProvider)
     ..invalidate(assignmentsProvider)
     ..invalidate(internshipDetailProvider);
+}
+
+/// Refresh supervisor-side providers.
+void refreshValidations(WidgetRef ref) {
+  ref.invalidate(pendingValidationsProvider);
 }

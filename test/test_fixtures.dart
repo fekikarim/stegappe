@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:stegappe/core/network/paged.dart';
 import 'package:stegappe/features/internship/domain/dashboard.dart';
 import 'package:stegappe/features/internship/domain/entities/internship.dart';
@@ -97,8 +99,13 @@ class FakeInternshipRepository implements InternshipRepository {
   final DateTime now;
   TaskStatus? lastStatusFilter;
   final List<(String, TaskStatus)> statusUpdates = [];
+  final List<(String, String?, String?)> decisions = [];
+  final List<String> submitted = [];
+  final List<Map<String, dynamic>> createdTasks = [];
+  final List<Map<String, dynamic>> createdJournals = [];
   bool failWrites = false;
   bool noInternship = false;
+  Completer<void>? statusGate;
 
   DashboardData get dashboard => fixtureDashboard(now);
 
@@ -127,6 +134,8 @@ class FakeInternshipRepository implements InternshipRepository {
   @override
   Future<InternTask> updateTaskStatus(
       String taskId, TaskStatus status) async {
+    final gate = statusGate;
+    if (gate != null) await gate.future;
     if (failWrites) {
       throw Exception('offline');
     }
@@ -142,12 +151,122 @@ class FakeInternshipRepository implements InternshipRepository {
 
   @override
   Future<Paged<JournalEntry>> listJournal(String internshipId,
-      {int page = 0, int size = 20, JournalStatus? status}) async {
-    final all = fixtureJournal(now);
-    final items =
-        status == null ? all : all.where((j) => j.status == status).toList();
-    return pageOf(items, total: items.length);
+      {int page = 0,
+      int size = 20,
+      JournalStatus? status,
+      DateTime? day}) async {
+    var all = fixtureJournal(now);
+    if (status != null) {
+      all = all.where((j) => j.status == status).toList();
+    }
+    if (day != null) {
+      all = all
+          .where((j) =>
+              j.entryDate.year == day.year &&
+              j.entryDate.month == day.month &&
+              j.entryDate.day == day.day)
+          .toList();
+    }
+    return pageOf(all, total: all.length);
   }
+
+  @override
+  Future<InternTask> createTask(String internshipId,
+      {required String title,
+      String? description,
+      DateTime? dueDate}) async {
+    if (failWrites) throw Exception('offline');
+    createdTasks.add(
+        {'title': title, 'description': description, 'dueDate': dueDate});
+    return InternTask(
+        id: 't-new', title: title, status: TaskStatus.todo, dueDate: dueDate, description: description);
+  }
+
+  @override
+  Future<InternTask> updateTask(String taskId,
+      {required String title,
+      String? description,
+      DateTime? dueDate,
+      TaskStatus? status}) async {
+    if (failWrites) throw Exception('offline');
+    return InternTask(
+        id: taskId,
+        title: title,
+        status: status ?? TaskStatus.todo,
+        dueDate: dueDate,
+        description: description);
+  }
+
+  @override
+  Future<JournalEntry> createJournal(String internshipId,
+      {required String title,
+      required String description,
+      required DateTime entryDate}) async {
+    if (failWrites) throw Exception('offline');
+    createdJournals.add(
+        {'title': title, 'description': description, 'entryDate': entryDate});
+    return JournalEntry(
+        id: 'j-new',
+        title: title,
+        description: description,
+        status: JournalStatus.draft,
+        entryDate: entryDate);
+  }
+
+  @override
+  Future<JournalEntry> submitJournal(String entryId) async {
+    if (failWrites) throw Exception('offline');
+    submitted.add(entryId);
+    final j = fixtureJournal(now).firstWhere((e) => e.id == entryId,
+        orElse: () => JournalEntry(
+            id: entryId,
+            title: 'x',
+            status: JournalStatus.draft,
+            entryDate: now));
+    return JournalEntry(
+        id: j.id,
+        title: j.title,
+        description: j.description,
+        status: JournalStatus.submitted,
+        entryDate: j.entryDate);
+  }
+
+  @override
+  Future<List<JournalComment>> journalComments(String entryId) async =>
+      [
+        JournalComment(
+            id: 'c1',
+            content: 'Bien détaillé, continue.',
+            authorEmail: 'sup@steg.tn',
+            createdAt: now),
+      ];
+
+  @override
+  Future<JournalEntry> validateJournal(
+      String entryId, String? comment) async {
+    if (failWrites) throw Exception('offline');
+    decisions.add((entryId, 'VALIDATED', comment));
+    return JournalEntry(
+        id: 'j-sub',
+        title: 'Submitted entry',
+        status: JournalStatus.validated,
+        entryDate: now);
+  }
+
+  @override
+  Future<JournalEntry> rejectJournal(String entryId, String? comment) async {
+    if (failWrites) throw Exception('offline');
+    decisions.add((entryId, 'REJECTED', comment));
+    return JournalEntry(
+        id: 'j-sub',
+        title: 'Submitted entry',
+        status: JournalStatus.rejected,
+        entryDate: now);
+  }
+
+  @override
+  Future<List<String>> supervisedInternshipIds() async =>
+      const ['internship-1'];
 
   @override
   Future<Paged<DeliverableSummary>> listDeliverables(String internshipId,

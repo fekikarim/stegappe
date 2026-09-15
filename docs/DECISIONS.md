@@ -97,3 +97,17 @@ assignment) → verify + cache → else null (honest empty state). 403/404
 invalidates the cache; network errors rethrow so the UI renders stale
 cache instead of wiping. `TODO — backend phase`: a dedicated
 `GET /api/internships/mine` would replace conversation-based discovery.
+
+## 10. Daily-loop policies (D2)
+
+- Optimistic UI ONLY for reversible actions (task completion toggle,
+  with rollback + error message). Supervisor validate/reject and all
+  creates/submits are server-confirmed; offline failures are shown, never
+  implied as done.
+- Journal autosave is a pre-creation LOCAL draft (SharedPreferences,
+  per internship + day, cleared on server create). Server-created entries
+  are immutable — the backend exposes no update endpoint, so the app
+  offers no edit UI for them (submit-only transitions).
+- Task ≠ Journal is structural: separate tabs, endpoints, entities, and
+  composer microcopy; the app never derives journal content from tasks.
+

@@ -7,6 +7,8 @@ import 'package:stegappe/core/l10n/app_localizations.dart';
 import 'package:stegappe/core/network/api_exception.dart';
 import 'package:stegappe/core/theme/steg_theme.dart';
 import 'package:stegappe/features/auth/domain/entities/app_user.dart';
+import 'package:stegappe/features/auth/domain/repositories/auth_repository.dart';
+import 'package:stegappe/features/auth/presentation/providers/auth_providers.dart';
 import 'package:stegappe/features/internship/presentation/providers/workspace_providers.dart';
 import 'package:stegappe/features/internship/presentation/screens/intern_home_screen.dart';
 import 'package:stegappe/features/internship/presentation/screens/task_list_screen.dart';
@@ -17,6 +19,19 @@ import '../../test_fixtures.dart';
 
 const _intern =
     AppUser(id: 'u1', email: 'intern@u.tn', roles: ['INTERN']);
+
+class _FakeAuthRepo implements AuthRepository {
+  @override
+  Future<AppUser> login(
+          {required String email, required String password}) =>
+      throw UnimplementedError();
+  @override
+  Future<void> logout() async {}
+  @override
+  Future<bool> refreshSession() async => true;
+  @override
+  Future<AppUser?> restoreSession() async => _intern;
+}
 
 Future<void> pumpWorkspace(
   WidgetTester tester,
@@ -30,6 +45,7 @@ Future<void> pumpWorkspace(
   await tester.pumpWidget(
     ProviderScope(
       overrides: [
+        authRepositoryProvider.overrideWithValue(_FakeAuthRepo()),
         internshipRepositoryProvider.overrideWithValue(repo),
         isOnlineProvider.overrideWith((ref) => online),
         ...extra,
@@ -48,6 +64,10 @@ Future<void> pumpWorkspace(
       ),
     ),
   );
+  final ctx = tester.element(find.byType(Scaffold).first);
+  await ProviderScope.containerOf(ctx)
+      .read(authControllerProvider.notifier)
+      .bootstrap();
   await tester.pumpAndSettle();
 }
 
@@ -152,7 +172,9 @@ void main() {
         (tester) async {
       final fake = FakeInternshipRepository();
       await pumpWorkspace(tester, const TaskListScreen(), fake: fake);
-      await tester.tap(find.text('Today task'));
+      // Explicit details chevron next to 'Today task' (checkbox taps
+      // must never open the sheet as a side effect).
+      await tester.tap(find.byTooltip('Today task'));
       await tester.pumpAndSettle();
       expect(find.text('Marquer comme terminée'), findsOneWidget);
       await tester.tap(find.text('Marquer comme terminée'));

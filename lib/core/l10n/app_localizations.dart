@@ -163,6 +163,53 @@ class AppLocalizations {
     'notificationsEmpty': {'fr': 'Aucune notification.', 'en': 'No notifications.', 'ar': 'لا إشعارات.'},
     'versionLabel': {'fr': 'Version {n}', 'en': 'Version {n}', 'ar': 'النسخة {n}'},
     'scoreLabel': {'fr': 'Note : {n}', 'en': 'Score: {n}', 'ar': 'النقطة: {n}'},
+    // --- D2: daily work loop ---
+    'taskNew': {'fr': 'Nouvelle tâche', 'en': 'New task', 'ar': 'مهمة جديدة'},
+    'taskEdit': {'fr': 'Modifier la tâche', 'en': 'Edit task', 'ar': 'تعديل المهمة'},
+    'taskTitleLabel': {'fr': 'Titre', 'en': 'Title', 'ar': 'العنوان'},
+    'taskTitleRequired': {'fr': 'Veuillez saisir un titre.', 'en': 'Please enter a title.', 'ar': 'يرجى إدخال عنوان.'},
+    'taskDescLabel': {'fr': 'Description', 'en': 'Description', 'ar': 'الوصف'},
+    'taskDueLabel': {'fr': 'Échéance', 'en': 'Due date', 'ar': 'تاريخ الاستحقاق'},
+    'taskPickDate': {'fr': 'Choisir une date', 'en': 'Pick a date', 'ar': 'اختيار تاريخ'},
+    'taskClearDate': {'fr': 'Effacer', 'en': 'Clear', 'ar': 'مسح'},
+    'taskSave': {'fr': 'Enregistrer', 'en': 'Save', 'ar': 'حفظ'},
+    'taskSaved': {'fr': 'Tâche enregistrée.', 'en': 'Task saved.', 'ar': 'تم حفظ المهمة.'},
+    'journalNew': {'fr': 'Nouvelle entrée', 'en': 'New entry', 'ar': 'إدخال جديد'},
+    'journalWhatDid': {'fr': 'Décrivez ce que vous avez réellement fait aujourd’hui — pas ce qui était prévu.', 'en': 'Describe what you actually did today — not what was planned.', 'ar': 'صِف ما فعلته فعلاً اليوم — وليس ما كان مخططا.'},
+    'journalTitleLabel': {'fr': 'Titre du jour', 'en': 'Day title', 'ar': 'عنوان اليوم'},
+    'journalTitleHint': {'fr': 'Ex. Mise en place de l’environnement', 'en': 'E.g. Environment setup', 'ar': 'مثال: إعداد بيئة العمل'},
+    'journalDescLabel': {'fr': 'Travail effectué', 'en': 'Work performed', 'ar': 'العمل المنجز'},
+    'journalDescHint': {'fr': 'Activités, difficultés, apprentissages…', 'en': 'Activities, difficulties, learnings…', 'ar': 'الأنشطة والصعوبات والدروس…'},
+    'journalFieldRequired': {'fr': 'Ce champ est requis.', 'en': 'This field is required.', 'ar': 'هذا الحقل مطلوب.'},
+    'journalSaveDraft': {'fr': 'Enregistrer le brouillon', 'en': 'Save draft', 'ar': 'حفظ المسودة'},
+    'journalSubmitAction': {'fr': 'Soumettre pour validation', 'en': 'Submit for validation', 'ar': 'إرسال للمصادقة'},
+    'journalDraftSavedAt': {'fr': 'Brouillon enregistré à {t}', 'en': 'Draft saved at {t}', 'ar': 'حُفظت المسودة في {t}'},
+    'journalDraftKept': {'fr': 'Brouillon local conservé.', 'en': 'Local draft kept.', 'ar': 'تم الاحتفاظ بالمسودة المحلية.'},
+    'journalCreated': {'fr': 'Entrée enregistrée comme brouillon.', 'en': 'Entry saved as draft.', 'ar': 'تم حفظ الإدخال كمسودة.'},
+    'journalSubmittedOk': {'fr': 'Entrée soumise pour validation.', 'en': 'Entry submitted for validation.', 'ar': 'تم إرسال الإدخال للمصادقة.'},
+    'journalSubmitFailKept': {'fr': 'Envoi impossible : l’entrée reste en brouillon sur le serveur.', 'en': 'Submit failed: the entry remains a server draft.', 'ar': 'تعذر الإرسال: بقي الإدخال مسودة على الخادم.'},
+    'journalDetailTitle': {'fr': 'Détail de l’entrée', 'en': 'Entry details', 'ar': 'تفاصيل الإدخال'},
+    'journalComments': {'fr': 'Commentaires', 'en': 'Comments', 'ar': 'التعليقات'},
+    'journalNoComments': {'fr': 'Aucun commentaire pour le moment.', 'en': 'No comments yet.', 'ar': 'لا تعليقات بعد.'},
+    'journalValidatedBy': {'fr': 'Validé par {n}', 'en': 'Validated by {n}', 'ar': 'صادق عليه {n}'},
+    'backToToday': {'fr': 'Aujourd’hui', 'en': 'Today', 'ar': 'اليوم'},
+    'validationsTitle': {'fr': 'Validations en attente', 'en': 'Pending validations', 'ar': 'المصادقات المعلقة'},
+    'validationsEmpty': {'fr': 'Rien à valider pour le moment.', 'en': 'Nothing to validate right now.', 'ar': 'لا شيء للمصادقة حاليا.'},
+    'validationsHint': {'fr': 'Entrées soumises par vos stagiaires.', 'en': 'Entries submitted by your interns.', 'ar': 'إدخالات أرسلها متربصوك.'},
+    'validateAction': {'fr': 'Valider', 'en': 'Validate', 'ar': 'مصادقة'},
+    'rejectAction': {'fr': 'Demander une correction', 'en': 'Request correction', 'ar': 'طلب تصحيح'},
+    'reviewTitle': {'fr': 'Réviser l’entrée', 'en': 'Review entry', 'ar': 'مراجعة الإدخال'},
+    'commentLabel': {'fr': 'Commentaire', 'en': 'Comment', 'ar': 'تعليق'},
+    'commentHintValidate': {'fr': 'Note ou conseil (optionnel)', 'en': 'Note or advice (optional)', 'ar': 'ملاحظة أو نصيحة (اختياري)'},
+    'commentHintReject': {'fr': 'Expliquez ce qu’il faut corriger (requis)', 'en': 'Explain what to correct (required)', 'ar': 'اشرح ما يجب تصحيحه (مطلوب)'},
+    'commentRequired': {'fr': 'Veuillez expliquer la correction demandée.', 'en': 'Please explain the requested correction.', 'ar': 'يرجى شرح التصحيح المطلوب.'},
+    'validationDone': {'fr': 'Entrée validée.', 'en': 'Entry validated.', 'ar': 'تمت المصادقة على الإدخال.'},
+    'rejectionDone': {'fr': 'Correction demandée.', 'en': 'Correction requested.', 'ar': 'تم طلب التصحيح.'},
+    'validationPending': {'fr': 'Décision non confirmée par le serveur.', 'en': 'Decision not confirmed by the server.', 'ar': 'لم يؤكد الخادم القرار.'},
+    'unsavedTitle': {'fr': 'Abandonner les modifications ?', 'en': 'Discard changes?', 'ar': 'تجاهل التغييرات؟'},
+    'unsavedMessage': {'fr': 'Vos modifications non enregistrées seront perdues.', 'en': 'Your unsaved changes will be lost.', 'ar': 'ستفقد تغييراتك غير المحفوظة.'},
+    'discardAction': {'fr': 'Abandonner', 'en': 'Discard', 'ar': 'تجاهل'},
+    'keepEditingAction': {'fr': 'Continuer', 'en': 'Keep editing', 'ar': 'مواصلة التحرير'},
   };
 
   String _get(String key) {
@@ -265,6 +312,56 @@ class AppLocalizations {
       _get('versionLabel').replaceAll('{n}', '$n');
   String scoreLabel(String n) =>
       _get('scoreLabel').replaceAll('{n}', n);
+
+  // D2 daily work loop
+  String get taskNew => _get('taskNew');
+  String get taskEdit => _get('taskEdit');
+  String get taskTitleLabel => _get('taskTitleLabel');
+  String get taskTitleRequired => _get('taskTitleRequired');
+  String get taskDescLabel => _get('taskDescLabel');
+  String get taskDueLabel => _get('taskDueLabel');
+  String get taskPickDate => _get('taskPickDate');
+  String get taskClearDate => _get('taskClearDate');
+  String get taskSave => _get('taskSave');
+  String get taskSaved => _get('taskSaved');
+  String get journalNew => _get('journalNew');
+  String get journalWhatDid => _get('journalWhatDid');
+  String get journalTitleLabel => _get('journalTitleLabel');
+  String get journalTitleHint => _get('journalTitleHint');
+  String get journalDescLabel => _get('journalDescLabel');
+  String get journalDescHint => _get('journalDescHint');
+  String get journalFieldRequired => _get('journalFieldRequired');
+  String get journalSaveDraft => _get('journalSaveDraft');
+  String get journalSubmitAction => _get('journalSubmitAction');
+  String journalDraftSavedAt(String t) =>
+      _get('journalDraftSavedAt').replaceAll('{t}', t);
+  String get journalDraftKept => _get('journalDraftKept');
+  String get journalCreated => _get('journalCreated');
+  String get journalSubmittedOk => _get('journalSubmittedOk');
+  String get journalSubmitFailKept => _get('journalSubmitFailKept');
+  String get journalDetailTitle => _get('journalDetailTitle');
+  String get journalComments => _get('journalComments');
+  String get journalNoComments => _get('journalNoComments');
+  String journalValidatedBy(String n) =>
+      _get('journalValidatedBy').replaceAll('{n}', n);
+  String get backToToday => _get('backToToday');
+  String get validationsTitle => _get('validationsTitle');
+  String get validationsEmpty => _get('validationsEmpty');
+  String get validationsHint => _get('validationsHint');
+  String get validateAction => _get('validateAction');
+  String get rejectAction => _get('rejectAction');
+  String get reviewTitle => _get('reviewTitle');
+  String get commentLabel => _get('commentLabel');
+  String get commentHintValidate => _get('commentHintValidate');
+  String get commentHintReject => _get('commentHintReject');
+  String get commentRequired => _get('commentRequired');
+  String get validationDone => _get('validationDone');
+  String get rejectionDone => _get('rejectionDone');
+  String get validationPending => _get('validationPending');
+  String get unsavedTitle => _get('unsavedTitle');
+  String get unsavedMessage => _get('unsavedMessage');
+  String get discardAction => _get('discardAction');
+  String get keepEditingAction => _get('keepEditingAction');
 
   /// All keys must exist in fr/en/ar — enforced by unit test.
   static Map<String, Map<String, String>> get allValues => _values;

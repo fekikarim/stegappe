@@ -8,6 +8,7 @@ import '../../auth/domain/entities/app_user.dart';
 import '../../auth/presentation/providers/auth_providers.dart';
 import '../../internship/presentation/screens/intern_home_screen.dart';
 import '../../internship/presentation/screens/journal_list_screen.dart';
+import '../../internship/presentation/screens/supervisor_validations_screen.dart';
 import '../../internship/presentation/screens/task_list_screen.dart';
 import 'more_tab.dart';
 import 'placeholder_tab.dart';
@@ -190,9 +191,7 @@ class _SupervisorShellState extends State<SupervisorShell> {
         RoleDestination(
             label: l10n.navValidations,
             icon: Icons.fact_check_outlined,
-            page: PlaceholderTab(
-                title: l10n.navValidations,
-                icon: Icons.fact_check_outlined)),
+            page: const SupervisorValidationsScreen()),
         RoleDestination(
             label: l10n.navMessages,
             icon: Icons.chat_bubble_outline,

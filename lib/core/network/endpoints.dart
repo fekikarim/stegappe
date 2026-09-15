@@ -22,8 +22,17 @@ abstract final class Endpoints {
       '/api/internships/$id/classification';
   static String assignments(String id) =>
       '/api/internships/$id/assignments';
+  static String task(String taskId) => '/api/internships/tasks/$taskId';
   static String taskStatus(String taskId) =>
       '/api/internships/tasks/$taskId/status';
+  static String journalSubmit(String entryId) =>
+      '/api/internships/journal/entries/$entryId/submit';
+  static String journalValidate(String entryId) =>
+      '/api/internships/journal/entries/$entryId/validate';
+  static String journalReject(String entryId) =>
+      '/api/internships/journal/entries/$entryId/reject';
+  static String journalComments(String entryId) =>
+      '/api/journal/entries/$entryId/comments';
   static const String conversations = '/api/conversations';
   static const String unreadCounts = '/api/conversations/unread/counts';
   static const String notifications = '/api/notifications';

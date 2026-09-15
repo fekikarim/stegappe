@@ -12,6 +12,9 @@ DateTime _dateOrNow(dynamic v) => _date(v) ?? DateTime.now();
 String _str(dynamic v, [String fallback = '']) =>
     v is String ? v : fallback;
 
+String _ymd(DateTime d) =>
+    '${d.year.toString().padLeft(4, '0')}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}';
+
 Internship internshipFromJson(Map<String, dynamic> json) => Internship(
       id: _str(json['id']),
       reference: _str(json['reference']),
@@ -50,6 +53,9 @@ JournalEntry journalFromJson(Map<String, dynamic> json) => JournalEntry(
       description: json['description'] as String?,
       status: journalStatusFrom(json['status'] as String?),
       entryDate: _dateOrNow(json['entryDate']),
+      validatedByName: json['validatedByName'] as String?,
+      submittedAt: _date(json['submittedAt']),
+      validatedAt: _date(json['validatedAt']),
     );
 
 DeliverableSummary deliverableFromJson(Map<String, dynamic> json) =>
@@ -79,6 +85,14 @@ AppNotification notificationFromJson(Map<String, dynamic> json) =>
       isRead: json['read'] == true,
     );
 
+JournalComment journalCommentFromJson(Map<String, dynamic> json) =>
+    JournalComment(
+      id: _str(json['id']),
+      content: _str(json['content']),
+      authorEmail: _str(json['authorEmail']),
+      createdAt: _date(json['createdAt']) ?? DateTime.now(),
+    );
+
 /// Minimal PRIVATE-conversation projection for internship-id discovery.
 class ConversationLink {
   const ConversationLink({required this.type, this.internshipId});
@@ -95,3 +109,28 @@ class ConversationLink {
 
 int unreadCountFromJson(Map<String, dynamic> json) =>
     (json['unreadCount'] as num?)?.toInt() ?? 0;
+
+/// Write payloads mirror TaskRequest / JournalEntryRequest.
+Map<String, dynamic> taskWriteJson({
+  required String title,
+  String? description,
+  DateTime? dueDate,
+  TaskStatus? status,
+}) {
+  final map = <String, dynamic>{'title': title};
+  if (description != null) map['description'] = description;
+  if (dueDate != null) map['dueDate'] = _ymd(dueDate);
+  if (status != null) map['status'] = taskStatusToApi(status);
+  return map;
+}
+
+Map<String, dynamic> journalWriteJson({
+  required String title,
+  required String description,
+  required DateTime entryDate,
+}) =>
+    {
+      'title': title,
+      'description': description,
+      'entryDate': _ymd(entryDate),
+    };

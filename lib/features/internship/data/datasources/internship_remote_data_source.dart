@@ -50,15 +50,105 @@ class InternshipRemoteDataSource {
           query: {'status': taskStatusToApi(status)},
           decode: (j) => taskFromJson(_map(j)));
 
+  // --- D2 writes: tasks ---
+
+  Future<InternTask> createTask(
+    String internshipId,
+    String? bearer, {
+    required String title,
+    String? description,
+    DateTime? dueDate,
+  }) =>
+      _client.post(Endpoints.internshipTasks(internshipId),
+          bearer: bearer,
+          body: taskWriteJson(
+              title: title, description: description, dueDate: dueDate),
+          decode: (j) => taskFromJson(_map(j)));
+
+  Future<InternTask> updateTask(
+    String taskId,
+    String? bearer, {
+    required String title,
+    String? description,
+    DateTime? dueDate,
+    TaskStatus? status,
+  }) =>
+      _client.put(Endpoints.task(taskId),
+          bearer: bearer,
+          body: taskWriteJson(
+              title: title,
+              description: description,
+              dueDate: dueDate,
+              status: status),
+          decode: (j) => taskFromJson(_map(j)));
+
+  // --- D2 writes: journal (intern: create + submit) ---
+
+  Future<JournalEntry> createJournal(
+    String internshipId,
+    String? bearer, {
+    required String title,
+    required String description,
+    required DateTime entryDate,
+  }) =>
+      _client.post(Endpoints.journalEntries(internshipId),
+          bearer: bearer,
+          body: journalWriteJson(
+              title: title,
+              description: description,
+              entryDate: entryDate),
+          decode: (j) => journalFromJson(_map(j)));
+
+  Future<JournalEntry> submitJournal(String entryId, String? bearer) =>
+      _client.post(Endpoints.journalSubmit(entryId),
+          bearer: bearer, decode: (j) => journalFromJson(_map(j)));
+
+  // --- D2 writes: journal review (supervisor only, server-enforced) ---
+
+  Future<JournalEntry> validateJournal(
+          String entryId, String? bearer, String? comment) =>
+      _client.post(Endpoints.journalValidate(entryId),
+          bearer: bearer,
+          body: {'comment': comment},
+          decode: (j) => journalFromJson(_map(j)));
+
+  Future<JournalEntry> rejectJournal(
+          String entryId, String? bearer, String? comment) =>
+      _client.post(Endpoints.journalReject(entryId),
+          bearer: bearer,
+          body: {'comment': comment},
+          decode: (j) => journalFromJson(_map(j)));
+
+  Future<List<JournalComment>> journalComments(
+          String entryId, String? bearer) =>
+      _client.get(Endpoints.journalComments(entryId),
+          bearer: bearer, decode: (j) {
+        if (j is List) {
+          return [
+            for (final e in j)
+              if (e is Map<String, dynamic>)
+                journalCommentFromJson(e),
+          ];
+        }
+        return <JournalComment>[];
+      });
+
   Future<Paged<JournalEntry>> listJournal(
     String internshipId,
     String? bearer, {
     int page = 0,
     int size = 20,
     JournalStatus? status,
+    DateTime? day,
   }) {
     final q = pageQuery(page: page, size: size);
     if (status != null) q['status'] = journalStatusToApi(status);
+    if (day != null) {
+      final d =
+          '${day.year.toString().padLeft(4, '0')}-${day.month.toString().padLeft(2, '0')}-${day.day.toString().padLeft(2, '0')}';
+      q['startDate'] = d;
+      q['endDate'] = d;
+    }
     return _client.get(Endpoints.journalEntries(internshipId),
         bearer: bearer,
         query: q,
