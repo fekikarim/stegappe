@@ -33,6 +33,20 @@ abstract final class Endpoints {
       '/api/internships/journal/entries/$entryId/reject';
   static String journalComments(String entryId) =>
       '/api/journal/entries/$entryId/comments';
+  static String deliverable(String id) =>
+      '/api/internships/deliverables/$id';
+  static String deliverableVersions(String id) =>
+      '/api/internships/deliverables/$id/versions';
+  static String deliverableSubmit(String id) =>
+      '/api/internships/deliverables/$id/submit';
+  static String deliverableValidate(String id) =>
+      '/api/internships/deliverables/$id/validate';
+  static String deliverableReject(String id) =>
+      '/api/internships/deliverables/$id/reject';
+  static String deliverableDownload(String id) =>
+      '/api/internships/deliverables/$id/download';
+  static String deliverableComments(String id) =>
+      '/api/deliverables/$id/comments';
   static const String conversations = '/api/conversations';
   static const String unreadCounts = '/api/conversations/unread/counts';
   static const String notifications = '/api/notifications';

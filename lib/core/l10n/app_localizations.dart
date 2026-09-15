@@ -210,6 +210,34 @@ class AppLocalizations {
     'unsavedMessage': {'fr': 'Vos modifications non enregistrées seront perdues.', 'en': 'Your unsaved changes will be lost.', 'ar': 'ستفقد تغييراتك غير المحفوظة.'},
     'discardAction': {'fr': 'Abandonner', 'en': 'Discard', 'ar': 'تجاهل'},
     'keepEditingAction': {'fr': 'Continuer', 'en': 'Keep editing', 'ar': 'مواصلة التحرير'},
+    // --- D3: deliverables ---
+    'deliverablesSubtitle': {'fr': 'PDF uniquement · 25 Mo max · versions conservées', 'en': 'PDF only · 25 MB max · versions kept', 'ar': 'PDF فقط · 25 م.ب كحد أقصى · تُحفظ النسخ'},
+    'deliverableNew': {'fr': 'Nouveau livrable', 'en': 'New deliverable', 'ar': 'مُخرَج جديد'},
+    'deliverableTitleLabel': {'fr': 'Titre du livrable', 'en': 'Deliverable title', 'ar': 'عنوان المُخرَج'},
+    'deliverableDescLabel': {'fr': 'Description (optionnel)', 'en': 'Description (optional)', 'ar': 'الوصف (اختياري)'},
+    'deliverablePickFile': {'fr': 'Choisir un PDF', 'en': 'Choose a PDF', 'ar': 'اختيار ملف PDF'},
+    'deliverableChangeFile': {'fr': 'Changer de fichier', 'en': 'Change file', 'ar': 'تغيير الملف'},
+    'deliverableNoFile': {'fr': 'Aucun fichier sélectionné.', 'en': 'No file selected.', 'ar': 'لم يُختر أي ملف.'},
+    'deliverableWrongType': {'fr': 'Seuls les fichiers PDF sont acceptés.', 'en': 'Only PDF files are accepted.', 'ar': 'تُقبل ملفات PDF فقط.'},
+    'deliverableTooLarge': {'fr': 'Fichier trop volumineux (25 Mo max).', 'en': 'File too large (25 MB max).', 'ar': 'الملف كبير جدا (25 م.ب كحد أقصى).'},
+    'deliverableUpload': {'fr': 'Téléverser', 'en': 'Upload', 'ar': 'رفع'},
+    'deliverableUploaded': {'fr': 'Livrable enregistré comme brouillon.', 'en': 'Deliverable saved as draft.', 'ar': 'تم حفظ المُخرَج كمسودة.'},
+    'deliverableSubmitAction': {'fr': 'Soumettre pour validation', 'en': 'Submit for validation', 'ar': 'إرسال للمصادقة'},
+    'deliverableSubmittedOk': {'fr': 'Livrable soumis.', 'en': 'Deliverable submitted.', 'ar': 'تم إرسال المُخرَج.'},
+    'deliverableNewVersion': {'fr': 'Nouvelle version', 'en': 'New version', 'ar': 'نسخة جديدة'},
+    'deliverableChangeNote': {'fr': 'Que change cette version ? (optionnel)', 'en': 'What changed? (optional)', 'ar': 'ما الذي تغير؟ (اختياري)'},
+    'deliverableVersionUploaded': {'fr': 'Nouvelle version enregistrée.', 'en': 'New version saved.', 'ar': 'تم حفظ النسخة الجديدة.'},
+    'deliverableValidatedLocked': {'fr': 'Validé : plus aucune nouvelle version possible.', 'en': 'Validated: no further versions allowed.', 'ar': 'تمت المصادقة: لا يمكن إضافة نسخ أخرى.'},
+    'deliverableVersions': {'fr': 'Historique des versions', 'en': 'Version history', 'ar': 'سجل النسخ'},
+    'deliverableDownload': {'fr': 'Télécharger', 'en': 'Download', 'ar': 'تنزيل'},
+    'deliverableDownloading': {'fr': 'Téléchargement…', 'en': 'Downloading…', 'ar': 'جارٍ التنزيل…'},
+    'deliverableChecklistTodo': {'fr': 'À finaliser', 'en': 'To finalize', 'ar': 'للإتمام'},
+    'deliverableChecklistPending': {'fr': 'En attente de validation', 'en': 'Awaiting validation', 'ar': 'بانتظار المصادقة'},
+    'deliverableChecklistDone': {'fr': 'Validés', 'en': 'Validated', 'ar': 'المصادق عليها'},
+    'deliverableChecklistEmpty': {'fr': 'Aucun livrable pour le moment.', 'en': 'No deliverables yet.', 'ar': 'لا مُخرَجات بعد.'},
+    'deliverableReviewTitle': {'fr': 'Réviser le livrable', 'en': 'Review deliverable', 'ar': 'مراجعة المُخرَج'},
+    'deliverableReviewsEmpty': {'fr': 'Aucun livrable à réviser.', 'en': 'No deliverables to review.', 'ar': 'لا مُخرَجات للمراجعة.'},
+    'uploadFailedRetry': {'fr': 'Échec de l’envoi. Réessayez.', 'en': 'Upload failed. Retry.', 'ar': 'فشل الرفع. أعد المحاولة.'},
   };
 
   String _get(String key) {
@@ -362,6 +390,39 @@ class AppLocalizations {
   String get unsavedMessage => _get('unsavedMessage');
   String get discardAction => _get('discardAction');
   String get keepEditingAction => _get('keepEditingAction');
+
+  // D3 deliverables
+  String get deliverablesSubtitle => _get('deliverablesSubtitle');
+  String get deliverableNew => _get('deliverableNew');
+  String get deliverableTitleLabel => _get('deliverableTitleLabel');
+  String get deliverableDescLabel => _get('deliverableDescLabel');
+  String get deliverablePickFile => _get('deliverablePickFile');
+  String get deliverableChangeFile => _get('deliverableChangeFile');
+  String get deliverableNoFile => _get('deliverableNoFile');
+  String get deliverableWrongType => _get('deliverableWrongType');
+  String get deliverableTooLarge => _get('deliverableTooLarge');
+  String get deliverableUpload => _get('deliverableUpload');
+  String get deliverableUploaded => _get('deliverableUploaded');
+  String get deliverableSubmitAction => _get('deliverableSubmitAction');
+  String get deliverableSubmittedOk => _get('deliverableSubmittedOk');
+  String get deliverableNewVersion => _get('deliverableNewVersion');
+  String get deliverableChangeNote => _get('deliverableChangeNote');
+  String get deliverableVersionUploaded =>
+      _get('deliverableVersionUploaded');
+  String get deliverableValidatedLocked =>
+      _get('deliverableValidatedLocked');
+  String get deliverableVersions => _get('deliverableVersions');
+  String get deliverableDownload => _get('deliverableDownload');
+  String get deliverableDownloading => _get('deliverableDownloading');
+  String get deliverableChecklistTodo => _get('deliverableChecklistTodo');
+  String get deliverableChecklistPending =>
+      _get('deliverableChecklistPending');
+  String get deliverableChecklistDone => _get('deliverableChecklistDone');
+  String get deliverableChecklistEmpty =>
+      _get('deliverableChecklistEmpty');
+  String get deliverableReviewTitle => _get('deliverableReviewTitle');
+  String get deliverableReviewsEmpty => _get('deliverableReviewsEmpty');
+  String get uploadFailedRetry => _get('uploadFailedRetry');
 
   /// All keys must exist in fr/en/ar — enforced by unit test.
   static Map<String, Map<String, String>> get allValues => _values;

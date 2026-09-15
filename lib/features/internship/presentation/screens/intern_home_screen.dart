@@ -14,6 +14,7 @@ import '../providers/workspace_providers.dart';
 import '../widgets/dashboard_sections.dart';
 import '../widgets/status_labels.dart';
 import '../widgets/task_row.dart';
+import 'deliverables_screen.dart';
 import 'timeline_screen.dart';
 
 /// Intern home dashboard — answers:
@@ -286,6 +287,11 @@ class _DashboardContent extends ConsumerWidget {
         // --- Deliverables ---
         DashboardSection(
           title: l10n.deliverablesTitle,
+          actionLabel: l10n.viewAll,
+          onAction: () => Navigator.of(context).push(
+            MaterialPageRoute(
+                builder: (_) => const DeliverablesScreen()),
+          ),
           child: data.openDeliverables.isEmpty
               ? _Hint(text: l10n.journalEmpty)
               : Column(

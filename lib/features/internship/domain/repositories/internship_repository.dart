@@ -1,3 +1,5 @@
+import 'dart:typed_data';
+
 import '../../../../core/network/paged.dart';
 import '../entities/internship.dart';
 import '../entities/work_items.dart';
@@ -45,6 +47,33 @@ abstract class InternshipRepository {
   /// Internship ids visible through the supervisor's PRIVATE
   /// conversations (backend auto-creates the thread on assignment).
   Future<List<String>> supervisedInternshipIds();
+
+  // --- D3 deliverables (versioned, reviewed) ---
+
+  Future<DeliverableDetail> createDeliverable(String internshipId,
+      {required String title,
+      String? description,
+      required String fileName,
+      required Uint8List fileBytes,
+      void Function(int sent, int total)? onProgress});
+  Future<DeliverableDetail> uploadNewVersion(String deliverableId,
+      {required String fileName,
+      required Uint8List fileBytes,
+      String? changeSummary,
+      void Function(int sent, int total)? onProgress});
+  Future<DeliverableDetail> getDeliverable(String deliverableId);
+  Future<List<DeliverableVersionInfo>> deliverableVersions(
+      String deliverableId);
+  Future<DeliverableDetail> submitDeliverable(String deliverableId);
+  Future<DeliverableDetail> validateDeliverable(
+      String deliverableId, String? comment);
+  Future<DeliverableDetail> rejectDeliverable(
+      String deliverableId, String? comment);
+  Future<Uint8List> downloadDeliverable(String deliverableId,
+      {int? version});
+  Future<List<JournalComment>> deliverableComments(String deliverableId);
+  Future<List<PendingDeliverableReview>> pendingDeliverableReviews();
+
   Future<Paged<DeliverableSummary>> listDeliverables(String internshipId,
       {int page = 0, int size = 20});
   Future<Paged<EvaluationSummary>> listEvaluations(String internshipId,
@@ -55,4 +84,17 @@ abstract class InternshipRepository {
   Future<int> unreadNotificationCount();
   Future<void> markAllNotificationsRead();
   Future<int> unreadMessageCount();
+}
+
+/// One SUBMITTED deliverable awaiting supervisor review.
+class PendingDeliverableReview {
+  const PendingDeliverableReview({
+    required this.internshipId,
+    required this.internshipReference,
+    required this.deliverable,
+  });
+
+  final String internshipId;
+  final String internshipReference;
+  final DeliverableSummary deliverable;
 }

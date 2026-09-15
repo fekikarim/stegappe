@@ -66,13 +66,39 @@ DeliverableSummary deliverableFromJson(Map<String, dynamic> json) =>
       currentVersion: (json['currentVersion'] as num?)?.toInt() ?? 1,
     );
 
-EvaluationSummary evaluationFromJson(Map<String, dynamic> json) =>
-    EvaluationSummary(
+EvaluationSummary evaluationFromJson(Map<String, dynamic> json) =>    EvaluationSummary(
       id: _str(json['id']),
       type: _str(json['type']),
       evaluationDate: _dateOrNow(json['evaluationDate']),
       totalScore: (json['totalScore'] as num?)?.toDouble(),
       feedback: json['feedback'] as String?,
+    );
+
+DeliverableVersionInfo deliverableVersionFromJson(
+        Map<String, dynamic> json) =>
+    DeliverableVersionInfo(
+      id: _str(json['id']),
+      versionNumber: (json['versionNumber'] as num?)?.toInt() ?? 1,
+      fileName: _str(json['fileName']),
+      mimeType: _str(json['mimeType']),
+      size: (json['size'] as num?)?.toInt() ?? 0,
+      uploadedByEmail: _str(json['uploadedByEmail']),
+      changeSummary: json['changeSummary'] as String?,
+      uploadedAt: _dateOrNow(json['uploadedAt']),
+    );
+
+DeliverableDetail deliverableDetailFromJson(Map<String, dynamic> json,
+        [List<DeliverableVersionInfo> versions = const []]) =>
+    DeliverableDetail(
+      id: _str(json['id']),
+      title: _str(json['title']),
+      description: json['description'] as String?,
+      status: deliverableStatusFrom(json['status'] as String?),
+      currentVersion: (json['currentVersion'] as num?)?.toInt() ?? 1,
+      submittedAt: _date(json['submittedAt']),
+      validatedAt: _date(json['validatedAt']),
+      validatedByName: json['validatedByName'] as String?,
+      versions: versions,
     );
 
 AppNotification notificationFromJson(Map<String, dynamic> json) =>

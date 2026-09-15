@@ -111,3 +111,15 @@ cache instead of wiping. `TODO — backend phase`: a dedicated
 - Task ≠ Journal is structural: separate tabs, endpoints, entities, and
   composer microcopy; the app never derives journal content from tasks.
 
+## 11. Deliverable policies (D3)
+
+- Files validate as `STEG_INTERNSHIP_REPORT` (backend Tika): PDF-only,
+  25 MB. The app shows these exact limits, pre-checks client-side, and
+  never offers camera/gallery (images would be server-rejected; the demo
+  image belongs to the Finance dossier, not mobile endpoints).
+- Versions are append-only history (backend bumps `currentVersion`);
+  VALIDATED deliverables refuse new versions — surfaced explicitly.
+- No "expected deliverables" template exists in the contract, so the
+  checklist groups actuals by state instead of inventing requirements.
+- Downloads are Bearer-only endpoint bytes → temp file → share sheet;
+  share is provider-injected because path_provider pends in widget tests.

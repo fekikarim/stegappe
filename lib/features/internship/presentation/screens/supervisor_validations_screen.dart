@@ -10,6 +10,7 @@ import '../../../../core/widgets/steg_status_chip.dart';
 import '../providers/workspace_providers.dart';
 import '../widgets/dashboard_sections.dart';
 import '../widgets/status_labels.dart';
+import 'deliverable_detail_screen.dart';
 import 'journal_detail_sheet.dart';
 
 /// Supervisor queue: SUBMITTED journal entries across supervised
@@ -57,13 +58,11 @@ class SupervisorValidationsScreen extends ConsumerWidget {
               ),
               data: (items) {
                 if (items.isEmpty) {
-                  return SliverFillRemaining(
-                    hasScrollBody: false,
-                    child: StegEmptyView(
-                      title: l10n.validationsEmpty,
-                      hint: l10n.validationsHint,
-                      icon: Icons.fact_check_outlined,
-                    ),
+                  // Journal queue empty — deliverables section below
+                  // still renders (or the combined empty state).
+                  return _DeliverablesQueueSliver(
+                    isOnline: isOnline,
+                    journalEmpty: true,
                   );
                 }
                 return SliverMainAxisGroup(
@@ -120,6 +119,10 @@ class SupervisorValidationsScreen extends ConsumerWidget {
                         childCount: items.length,
                       ),
                     ),
+                    _DeliverablesQueueSliver(
+                      isOnline: isOnline,
+                      journalEmpty: false,
+                    ),
                   ],
                 );
               },
@@ -127,6 +130,111 @@ class SupervisorValidationsScreen extends ConsumerWidget {
           ),
         ],
       ),
+    );
+  }
+}
+
+/// Deliverable review queue rendered beneath the journal queue.
+/// Shows the combined empty state only when both queues are empty.
+class _DeliverablesQueueSliver extends ConsumerWidget {
+  const _DeliverablesQueueSliver({
+    required this.isOnline,
+    required this.journalEmpty,
+  });
+
+  final bool isOnline;
+  final bool journalEmpty;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context);
+    final async = ref.watch(pendingDeliverableReviewsProvider);
+    return async.when(
+      loading: () => const SliverToBoxAdapter(
+        child: Padding(
+          padding: EdgeInsets.symmetric(vertical: StegSpacing.md),
+          child: Center(
+              child: SizedBox(
+                  width: 24,
+                  height: 24,
+                  child: CircularProgressIndicator(strokeWidth: 2))),
+        ),
+      ),
+      error: (e, _) => SliverToBoxAdapter(
+        child: Padding(
+          padding: const EdgeInsets.only(top: StegSpacing.sm),
+          child: Text(
+            e is ApiException ? e.message : e.toString(),
+            style: TextStyle(
+                color: Theme.of(context).colorScheme.error),
+          ),
+        ),
+      ),
+      data: (items) {
+        if (items.isEmpty) {
+          if (!journalEmpty) {
+            return const SliverToBoxAdapter(
+                child: SizedBox.shrink());
+          }
+          return SliverFillRemaining(
+            hasScrollBody: false,
+            child: StegEmptyView(
+              title: l10n.validationsEmpty,
+              hint: l10n.validationsHint,
+              icon: Icons.fact_check_outlined,
+            ),
+          );
+        }
+        return SliverMainAxisGroup(
+          slivers: [
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: const EdgeInsets.only(
+                    top: StegSpacing.md, bottom: StegSpacing.xs),
+                child: Text(l10n.deliverablesTitle,
+                    style:
+                        Theme.of(context).textTheme.titleMedium),
+              ),
+            ),
+            SliverList(
+              delegate: SliverChildBuilderDelegate(
+                (ctx, i) {
+                  final p = items[i];
+                  return Card(
+                    child: ListTile(
+                      leading: const Icon(
+                          Icons.upload_file_outlined),
+                      title: Text(p.deliverable.title,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis),
+                      subtitle: Text(
+                        '${p.internshipReference} • ${l10n.versionLabel(p.deliverable.currentVersion)}',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      trailing: StegStatusChip(
+                        label: deliverableStatusLabel(
+                            p.deliverable.status, l10n),
+                        kind: deliverableStatusKind(
+                            p.deliverable.status),
+                      ),
+                      onTap: () => Navigator.of(ctx).push(
+                        MaterialPageRoute(
+                          builder: (_) =>
+                              DeliverableDetailScreen(
+                                  deliverableId:
+                                      p.deliverable.id),
+                        ),
+                      ),
+                    ),
+                  );
+                },
+                childCount: items.length,
+              ),
+            ),
+          ],
+        );
+      },
     );
   }
 }

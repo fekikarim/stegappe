@@ -1,3 +1,5 @@
+import 'dart:typed_data';
+
 import '../../../../core/network/api_client.dart';
 import '../../../../core/network/endpoints.dart';
 import '../../../../core/network/paged.dart';
@@ -122,6 +124,115 @@ class InternshipRemoteDataSource {
   Future<List<JournalComment>> journalComments(
           String entryId, String? bearer) =>
       _client.get(Endpoints.journalComments(entryId),
+          bearer: bearer, decode: (j) {
+        if (j is List) {
+          return [
+            for (final e in j)
+              if (e is Map<String, dynamic>)
+                journalCommentFromJson(e),
+          ];
+        }
+        return <JournalComment>[];
+      });
+
+  // --- D3: deliverables (multipart, versioned, reviewed) ---
+
+  Future<DeliverableDetail> createDeliverable(
+    String internshipId,
+    String? bearer, {
+    required String title,
+    String? description,
+    required String fileName,
+    required Uint8List fileBytes,
+    void Function(int sent, int total)? onProgress,
+  }) =>
+      _client.uploadMultipart(Endpoints.deliverables(internshipId),
+          bearer: bearer,
+          fields: {
+            'title': title,
+            if (description != null && description.isNotEmpty)
+              'description': description,
+          },
+          fileField: 'file',
+          fileName: fileName,
+          contentType: 'application/pdf',
+          bytes: fileBytes,
+          onProgress: onProgress,
+          decode: (j) => deliverableDetailFromJson(_map(j)));
+
+  Future<DeliverableDetail> uploadNewVersion(
+    String deliverableId,
+    String? bearer, {
+    required String fileName,
+    required Uint8List fileBytes,
+    String? changeSummary,
+    void Function(int sent, int total)? onProgress,
+  }) =>
+      _client.uploadMultipart(Endpoints.deliverableVersions(deliverableId),
+          bearer: bearer,
+          fields: {
+            if (changeSummary != null && changeSummary.isNotEmpty)
+              'changeSummary': changeSummary,
+          },
+          fileField: 'file',
+          fileName: fileName,
+          contentType: 'application/pdf',
+          bytes: fileBytes,
+          onProgress: onProgress,
+          decode: (j) => deliverableDetailFromJson(_map(j)));
+
+  Future<DeliverableDetail> getDeliverable(
+          String deliverableId, String? bearer) =>
+      _client.get(Endpoints.deliverable(deliverableId),
+          bearer: bearer,
+          decode: (j) => deliverableDetailFromJson(_map(j)));
+
+  Future<List<DeliverableVersionInfo>> deliverableVersions(
+          String deliverableId, String? bearer) =>
+      _client.get(Endpoints.deliverableVersions(deliverableId),
+          bearer: bearer, decode: (j) {
+        if (j is List) {
+          return [
+            for (final e in j)
+              if (e is Map<String, dynamic>)
+                deliverableVersionFromJson(e),
+          ];
+        }
+        return <DeliverableVersionInfo>[];
+      });
+
+  Future<DeliverableDetail> submitDeliverable(
+          String deliverableId, String? bearer) =>
+      _client.post(Endpoints.deliverableSubmit(deliverableId),
+          bearer: bearer,
+          decode: (j) => deliverableDetailFromJson(_map(j)));
+
+  Future<DeliverableDetail> validateDeliverable(
+          String deliverableId, String? bearer, String? comment) =>
+      _client.post(Endpoints.deliverableValidate(deliverableId),
+          bearer: bearer,
+          body: {'comment': comment},
+          decode: (j) => deliverableDetailFromJson(_map(j)));
+
+  Future<DeliverableDetail> rejectDeliverable(
+          String deliverableId, String? bearer, String? comment) =>
+      _client.post(Endpoints.deliverableReject(deliverableId),
+          bearer: bearer,
+          body: {'comment': comment},
+          decode: (j) => deliverableDetailFromJson(_map(j)));
+
+  Future<Uint8List> downloadDeliverable(
+    String deliverableId,
+    String? bearer, {
+    int? version,
+  }) =>
+      _client.downloadBytes(Endpoints.deliverableDownload(deliverableId),
+          bearer: bearer,
+          query: version == null ? null : {'version': '$version'});
+
+  Future<List<JournalComment>> deliverableComments(
+          String deliverableId, String? bearer) =>
+      _client.get(Endpoints.deliverableComments(deliverableId),
           bearer: bearer, decode: (j) {
         if (j is List) {
           return [

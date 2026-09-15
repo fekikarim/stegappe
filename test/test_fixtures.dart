@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:typed_data';
 
 import 'package:stegappe/core/network/paged.dart';
 import 'package:stegappe/features/internship/domain/dashboard.dart';
@@ -271,7 +272,23 @@ class FakeInternshipRepository implements InternshipRepository {
   @override
   Future<Paged<DeliverableSummary>> listDeliverables(String internshipId,
           {int page = 0, int size = 20}) async =>
-      pageOf(dashboard.openDeliverables);
+      pageOf(const [
+        DeliverableSummary(
+            id: 'd-draft',
+            title: 'Brouillon rapport',
+            status: DeliverableStatus.draft,
+            currentVersion: 1),
+        DeliverableSummary(
+            id: 'd-sub',
+            title: 'Rapport de stage',
+            status: DeliverableStatus.submitted,
+            currentVersion: 2),
+        DeliverableSummary(
+            id: 'd-val',
+            title: 'Présentation finale',
+            status: DeliverableStatus.validated,
+            currentVersion: 3),
+      ]);
 
   @override
   Future<Paged<EvaluationSummary>> listEvaluations(String internshipId,
@@ -296,4 +313,134 @@ class FakeInternshipRepository implements InternshipRepository {
 
   @override
   Future<int> unreadMessageCount() async => dashboard.unreadMessages;
+
+  // --- D3 deliverables ---
+
+  final List<Map<String, dynamic>> createdDeliverables = [];
+  final List<Map<String, dynamic>> newVersions = [];
+  final List<String> submittedDeliverables = [];
+  final List<(String, String?, String?)> deliverableDecisions = [];
+  final List<(String, int)> downloads = [];
+
+  DeliverableDetail fixtureDetail() => DeliverableDetail(
+        id: 'd-sub',
+        title: 'Rapport de stage',
+        description: 'Version revue',
+        status: DeliverableStatus.submitted,
+        currentVersion: 2,
+        versions: [
+          DeliverableVersionInfo(
+              id: 'v2',
+              versionNumber: 2,
+              fileName: 'rapport-v2.pdf',
+              mimeType: 'application/pdf',
+              size: 120000,
+              uploadedByEmail: 'intern@u.tn',
+              changeSummary: 'Corrections',
+              uploadedAt: now),
+          DeliverableVersionInfo(
+              id: 'v1',
+              versionNumber: 1,
+              fileName: 'rapport-v1.pdf',
+              mimeType: 'application/pdf',
+              size: 100000,
+              uploadedByEmail: 'intern@u.tn',
+              uploadedAt: now),
+        ],
+      );
+
+  @override
+  Future<DeliverableDetail> createDeliverable(String internshipId,
+      {required String title,
+      String? description,
+      required String fileName,
+      required Uint8List fileBytes,
+      void Function(int sent, int total)? onProgress}) async {
+    if (failWrites) throw Exception('offline');
+    createdDeliverables.add({'title': title, 'fileName': fileName});
+    onProgress?.call(fileBytes.length, fileBytes.length);
+    return DeliverableDetail(
+        id: 'd-new',
+        title: title,
+        description: description,
+        status: DeliverableStatus.draft,
+        currentVersion: 1);
+  }
+
+  @override
+  Future<DeliverableDetail> uploadNewVersion(String deliverableId,
+      {required String fileName,
+      required Uint8List fileBytes,
+      String? changeSummary,
+      void Function(int sent, int total)? onProgress}) async {
+    if (failWrites) throw Exception('offline');
+    newVersions.add(
+        {'id': deliverableId, 'fileName': fileName, 'note': changeSummary});
+    onProgress?.call(fileBytes.length, fileBytes.length);
+    return fixtureDetail();
+  }
+
+  @override
+  Future<DeliverableDetail> getDeliverable(String deliverableId) async =>
+      fixtureDetail();
+
+  @override
+  Future<List<DeliverableVersionInfo>> deliverableVersions(
+          String deliverableId) async =>
+      fixtureDetail().versions;
+
+  @override
+  Future<DeliverableDetail> submitDeliverable(String deliverableId) async {
+    if (failWrites) throw Exception('offline');
+    submittedDeliverables.add(deliverableId);
+    return fixtureDetail();
+  }
+
+  @override
+  Future<DeliverableDetail> validateDeliverable(
+      String deliverableId, String? comment) async {
+    if (failWrites) throw Exception('offline');
+    deliverableDecisions.add((deliverableId, 'VALIDATED', comment));
+    return fixtureDetail();
+  }
+
+  @override
+  Future<DeliverableDetail> rejectDeliverable(
+      String deliverableId, String? comment) async {
+    if (failWrites) throw Exception('offline');
+    deliverableDecisions.add((deliverableId, 'REJECTED', comment));
+    return fixtureDetail();
+  }
+
+  @override
+  Future<Uint8List> downloadDeliverable(String deliverableId,
+      {int? version}) async {
+    if (failWrites) throw Exception('offline');
+    downloads.add((deliverableId, version ?? -1));
+    return Uint8List.fromList([0x25, 0x50, 0x44, 0x46]); // %PDF
+  }
+
+  @override
+  Future<List<JournalComment>> deliverableComments(
+          String deliverableId) async =>
+      [
+        JournalComment(
+            id: 'c9',
+            content: 'Bon travail.',
+            authorEmail: 'sup@steg.tn',
+            createdAt: now),
+      ];
+
+  @override
+  Future<List<PendingDeliverableReview>> pendingDeliverableReviews() async =>
+      [
+        PendingDeliverableReview(
+            internshipId: 'internship-1',
+            internshipReference: 'STG-2026-0001',
+            deliverable: const DeliverableSummary(
+                id: 'd-sub',
+                title: 'Rapport de stage',
+                status: DeliverableStatus.submitted,
+                currentVersion: 2)),
+      ];
 }

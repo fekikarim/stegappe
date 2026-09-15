@@ -217,5 +217,49 @@ void refreshWorkspace(WidgetRef ref) {
 
 /// Refresh supervisor-side providers.
 void refreshValidations(WidgetRef ref) {
-  ref.invalidate(pendingValidationsProvider);
+  ref
+    ..invalidate(pendingValidationsProvider)
+    ..invalidate(pendingDeliverableReviewsProvider);
+}
+
+/// Intern's deliverable checklist page.
+final deliverablesListProvider =
+    FutureProvider<Paged<DeliverableSummary>>((ref) async {
+  final repo = ref.watch(internshipRepositoryProvider);
+  final id = await ref.watch(myInternshipIdProvider.future);
+  if (id == null) throw StateError('no-internship');
+  return repo.listDeliverables(id, size: 50);
+});
+
+/// Full detail incl. version history.
+final deliverableDetailProvider =
+    FutureProvider.family<DeliverableDetail, String>(
+        (ref, deliverableId) async {
+  final repo = ref.watch(internshipRepositoryProvider);
+  return repo.getDeliverable(deliverableId);
+});
+
+final deliverableCommentsProvider =
+    FutureProvider.family<List<JournalComment>, String>(
+        (ref, deliverableId) async {
+  final repo = ref.watch(internshipRepositoryProvider);
+  return repo.deliverableComments(deliverableId);
+});
+
+/// Supervisor queue: SUBMITTED deliverables across supervised internships.
+final pendingDeliverableReviewsProvider =
+    FutureProvider<List<PendingDeliverableReview>>((ref) async {
+  final repo = ref.watch(internshipRepositoryProvider);
+  return repo.pendingDeliverableReviews();
+});
+
+/// Refresh deliverable providers after any mutation.
+void refreshDeliverables(WidgetRef ref, [String? deliverableId]) {
+  ref.invalidate(deliverablesListProvider);
+  ref.invalidate(pendingDeliverableReviewsProvider);
+  ref.invalidate(dashboardProvider);
+  if (deliverableId != null) {
+    ref.invalidate(deliverableDetailProvider(deliverableId));
+    ref.invalidate(deliverableCommentsProvider(deliverableId));
+  }
 }

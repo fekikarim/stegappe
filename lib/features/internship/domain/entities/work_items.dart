@@ -146,8 +146,96 @@ class DeliverableSummary extends Equatable {
   final DeliverableStatus status;
   final int currentVersion;
 
+  bool get canSubmit =>
+      status == DeliverableStatus.draft ||
+      status == DeliverableStatus.rejected;
+  bool get awaitsSupervisor => status == DeliverableStatus.submitted;
+
+  /// Backend rejects new versions once validated (append-only history).
+  bool get canUploadNewVersion => status != DeliverableStatus.validated;
+
   @override
   List<Object?> get props => [id, title, status, currentVersion];
+}
+
+/// One immutable file version. Versions are never overwritten —
+/// re-uploading appends and bumps `currentVersion` server-side.
+class DeliverableVersionInfo extends Equatable {
+  const DeliverableVersionInfo({
+    required this.id,
+    required this.versionNumber,
+    required this.fileName,
+    required this.mimeType,
+    required this.size,
+    required this.uploadedByEmail,
+    this.changeSummary,
+    required this.uploadedAt,
+  });
+
+  final String id;
+  final int versionNumber;
+  final String fileName;
+  final String mimeType;
+  final int size;
+  final String uploadedByEmail;
+  final String? changeSummary;
+  final DateTime uploadedAt;
+
+  @override
+  List<Object?> get props => [
+        id,
+        versionNumber,
+        fileName,
+        mimeType,
+        size,
+        uploadedByEmail,
+        changeSummary,
+        uploadedAt,
+      ];
+}
+
+/// Full deliverable with its version history (latest first for display).
+class DeliverableDetail extends Equatable {
+  const DeliverableDetail({
+    required this.id,
+    required this.title,
+    this.description,
+    required this.status,
+    required this.currentVersion,
+    this.submittedAt,
+    this.validatedAt,
+    this.validatedByName,
+    this.versions = const [],
+  });
+
+  final String id;
+  final String title;
+  final String? description;
+  final DeliverableStatus status;
+  final int currentVersion;
+  final DateTime? submittedAt;
+  final DateTime? validatedAt;
+  final String? validatedByName;
+  final List<DeliverableVersionInfo> versions;
+
+  bool get canSubmit =>
+      status == DeliverableStatus.draft ||
+      status == DeliverableStatus.rejected;
+  bool get awaitsSupervisor => status == DeliverableStatus.submitted;
+  bool get canUploadNewVersion => status != DeliverableStatus.validated;
+
+  @override
+  List<Object?> get props => [
+        id,
+        title,
+        description,
+        status,
+        currentVersion,
+        submittedAt,
+        validatedAt,
+        validatedByName,
+        versions,
+      ];
 }
 
 /// Evaluation = supervisor ASSESSMENT (backend-computed totalScore).

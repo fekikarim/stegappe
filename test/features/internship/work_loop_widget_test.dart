@@ -200,7 +200,9 @@ void main() {
           const SupervisorValidationsScreen(),
           user: sup);
       expect(find.text('Submitted entry'), findsOneWidget);
-      expect(find.textContaining('STG-2026-0001'), findsOneWidget);
+      // Journal + deliverable queues share the internship reference.
+      expect(find.textContaining('STG-2026-0001'), findsWidgets);
+      expect(find.text('Rapport de stage'), findsOneWidget);
     });
 
     testWidgets('reject requires a comment; then records decision',

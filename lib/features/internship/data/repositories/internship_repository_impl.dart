@@ -1,3 +1,5 @@
+import 'dart:typed_data';
+
 import '../../../../core/network/api_exception.dart';
 import '../../../../core/storage/token_storage.dart';
 import '../../domain/entities/internship.dart';
@@ -186,6 +188,119 @@ class InternshipRepositoryImpl implements InternshipRepository {
   @override
   Future<void> markAllNotificationsRead() async =>
       remote.markAllNotificationsRead(await _bearer());
+
+  @override
+  Future<DeliverableDetail> createDeliverable(String internshipId,
+          {required String title,
+          String? description,
+          required String fileName,
+          required Uint8List fileBytes,
+          void Function(int sent, int total)? onProgress}) async =>
+      remote.createDeliverable(internshipId, await _bearer(),
+          title: title,
+          description: description,
+          fileName: fileName,
+          fileBytes: fileBytes,
+          onProgress: onProgress);
+
+  @override
+  Future<DeliverableDetail> uploadNewVersion(String deliverableId,
+          {required String fileName,
+          required Uint8List fileBytes,
+          String? changeSummary,
+          void Function(int sent, int total)? onProgress}) async =>
+      remote.uploadNewVersion(deliverableId, await _bearer(),
+          fileName: fileName,
+          fileBytes: fileBytes,
+          changeSummary: changeSummary,
+          onProgress: onProgress);
+
+  @override
+  Future<DeliverableDetail> getDeliverable(String deliverableId) async {
+    final detail = await remote.getDeliverable(
+        deliverableId, await _bearer());
+    final versions =
+        await remote.deliverableVersions(deliverableId, await _bearer());
+    final sorted = [...versions]
+      ..sort((a, b) => b.versionNumber.compareTo(a.versionNumber));
+    return DeliverableDetail(
+      id: detail.id,
+      title: detail.title,
+      description: detail.description,
+      status: detail.status,
+      currentVersion: detail.currentVersion,
+      submittedAt: detail.submittedAt,
+      validatedAt: detail.validatedAt,
+      validatedByName: detail.validatedByName,
+      versions: sorted,
+    );
+  }
+
+  @override
+  Future<List<DeliverableVersionInfo>> deliverableVersions(
+          String deliverableId) async =>
+      remote.deliverableVersions(deliverableId, await _bearer());
+
+  @override
+  Future<DeliverableDetail> submitDeliverable(
+          String deliverableId) async =>
+      remote.submitDeliverable(deliverableId, await _bearer());
+
+  @override
+  Future<DeliverableDetail> validateDeliverable(
+          String deliverableId, String? comment) async =>
+      remote.validateDeliverable(
+          deliverableId, await _bearer(), comment);
+
+  @override
+  Future<DeliverableDetail> rejectDeliverable(
+          String deliverableId, String? comment) async =>
+      remote.rejectDeliverable(deliverableId, await _bearer(), comment);
+
+  @override
+  Future<Uint8List> downloadDeliverable(String deliverableId,
+          {int? version}) async =>
+      remote.downloadDeliverable(deliverableId, await _bearer(),
+          version: version);
+
+  @override
+  Future<List<JournalComment>> deliverableComments(
+          String deliverableId) async =>
+      remote.deliverableComments(deliverableId, await _bearer());
+
+  @override
+  Future<List<PendingDeliverableReview>> pendingDeliverableReviews() async {
+    final ids = await supervisedInternshipIds();
+    final out = <PendingDeliverableReview>[];
+    Object? firstError;
+    final results = await Future.wait(ids.map((id) async {
+      try {
+        final page = await listDeliverables(id, size: 50);
+        String reference = id;
+        try {
+          reference = (await getInternship(id)).reference;
+        } on Exception {
+          // Reference is decoration; the queue matters.
+        }
+        return MapEntry(
+            reference,
+            page.items
+                .where((d) => d.awaitsSupervisor)
+                .map((d) => PendingDeliverableReview(
+                    internshipId: id,
+                    internshipReference: reference,
+                    deliverable: d)));
+      } on Exception catch (e) {
+        firstError ??= e;
+        return const MapEntry('', <PendingDeliverableReview>[]);
+      }
+    }));
+    for (final r in results) {
+      out.addAll(r.value);
+    }
+    if (out.isEmpty && firstError != null) throw firstError!;
+    return out;
+  }
 
   @override
   Future<int> unreadMessageCount() async =>

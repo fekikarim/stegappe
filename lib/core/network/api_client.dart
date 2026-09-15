@@ -1,7 +1,9 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:typed_data';
 
 import 'package:http/http.dart' as http;
+import 'package:http_parser/http_parser.dart';
 
 import '../config/app_config.dart';
 import 'api_exception.dart';
@@ -77,6 +79,112 @@ class ApiClient {
     required T Function(dynamic json) decode,
   }) =>
       _send<T>('DELETE', path, bearer: bearer, decode: decode);
+
+  /// Multipart file upload with real byte progress.
+  /// Backend validates content server-side (Tika); client pre-checks are
+  /// UX hints only and must mirror backend rules, never extend them.
+  Future<T> uploadMultipart<T>(
+    String path, {
+    String? bearer,
+    Map<String, String>? fields,
+    required String fileField,
+    required String fileName,
+    required String contentType,
+    required Uint8List bytes,
+    void Function(int sent, int total)? onProgress,
+    required T Function(dynamic json) decode,
+  }) async {
+    final uri = Uri.parse('$_baseUrl$path');
+    final request = http.MultipartRequest('POST', uri)
+      ..headers['Accept'] = 'application/json'
+      ..headers['Authorization'] =
+          bearer != null && bearer.isNotEmpty ? 'Bearer $bearer' : '';
+    if (bearer == null || bearer.isEmpty) {
+      request.headers.remove('Authorization');
+    }
+    if (fields != null) request.fields.addAll(fields);
+
+    var sent = 0;
+    final total = bytes.length;
+    Stream<List<int>> progressStream() async* {
+      const chunk = 64 * 1024;
+      for (var i = 0; i < total; i += chunk) {
+        final end = (i + chunk > total) ? total : i + chunk;
+        yield bytes.sublist(i, end);
+        sent = end;
+        onProgress?.call(sent, total);
+      }
+    }
+
+    request.files.add(http.MultipartFile(
+      fileField,
+      progressStream(),
+      total,
+      filename: fileName,
+      contentType: MediaType.parse(contentType),
+    ));
+
+    http.StreamedResponse streamed;
+    try {
+      streamed =
+          await _http.send(request).timeout(AppConfig.networkTimeout);
+    } on TimeoutException {
+      throw ApiException.network(
+          'The request timed out. Please check your connection and retry.');
+    } on Exception {
+      throw ApiException.network();
+    }
+    final response = await http.Response.fromStream(streamed);
+    if (response.statusCode >= 200 && response.statusCode < 300) {
+      try {
+        return decode(
+            response.body.isEmpty ? null : jsonDecode(response.body));
+      } on FormatException {
+        throw ApiException.unknown('The server returned an invalid response.');
+      }
+    }
+    throw ApiException.fromStatus(
+        response.statusCode, _tryErrorBody(response.body));
+  }
+
+  /// Authenticated binary download (no public URLs, Bearer enforced).
+  Future<Uint8List> downloadBytes(
+    String path, {
+    String? bearer,
+    Map<String, String>? query,
+  }) async {
+    final uri = Uri.parse('$_baseUrl$path').replace(
+      queryParameters: query == null || query.isEmpty ? null : query,
+    );
+    http.Response response;
+    try {
+      response = await _http.get(uri, headers: {
+        'Accept': '*/*',
+        if (bearer != null && bearer.isNotEmpty)
+          'Authorization': 'Bearer $bearer',
+      }).timeout(AppConfig.networkTimeout);
+    } on TimeoutException {
+      throw ApiException.network(
+          'The request timed out. Please check your connection and retry.');
+    } on Exception {
+      throw ApiException.network();
+    }
+    if (response.statusCode >= 200 && response.statusCode < 300) {
+      return response.bodyBytes;
+    }
+    throw ApiException.fromStatus(
+        response.statusCode, _tryErrorBody(response.body));
+  }
+
+  static Map<String, dynamic>? _tryErrorBody(String body) {
+    try {
+      final decoded = jsonDecode(body);
+      if (decoded is Map<String, dynamic>) return decoded;
+    } on Exception {
+      // Binary or empty error body.
+    }
+    return null;
+  }
 
   Future<T> _send<T>(
     String method,
