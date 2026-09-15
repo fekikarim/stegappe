@@ -2,6 +2,7 @@ import 'dart:typed_data';
 
 import '../../../../core/network/api_exception.dart';
 import '../../../../core/storage/token_storage.dart';
+import '../../domain/entities/evaluation.dart';
 import '../../domain/entities/internship.dart';
 import '../../domain/entities/work_items.dart';
 import '../../domain/repositories/internship_repository.dart';
@@ -305,4 +306,114 @@ class InternshipRepositoryImpl implements InternshipRepository {
   @override
   Future<int> unreadMessageCount() async =>
       remote.unreadMessageTotal(await _bearer());
+
+  @override
+  Future<List<EvaluationTemplate>> listTemplates(
+          {bool activeOnly = true}) async =>
+      remote.listTemplates(await _bearer(), activeOnly: activeOnly);
+
+  @override
+  Future<List<EvaluationCriterion>> templateCriteria(
+          String templateId) async =>
+      remote.templateCriteria(templateId, await _bearer());
+
+  @override
+  Future<EvaluationSummary> createEvaluation(String internshipId,
+          {String? templateId,
+          required EvaluationKind kind,
+          required DateTime date,
+          String? feedback}) async =>
+      remote.createEvaluation(internshipId, await _bearer(),
+          templateId: templateId,
+          kind: kind,
+          date: date,
+          feedback: feedback);
+
+  @override
+  Future<void> submitScores(String evaluationId,
+          List<Map<String, dynamic>> scores) async =>
+      remote.submitScores(evaluationId, await _bearer(), scores);
+
+  @override
+  Future<void> addTaskReview(
+          String evaluationId, Map<String, dynamic> review) async =>
+      remote.addTaskReview(evaluationId, await _bearer(), review);
+
+  @override
+  Future<EvaluationSummary> evaluationDetail(String evaluationId) async =>
+      remote.evaluationDetail(evaluationId, await _bearer());
+
+  @override
+  Future<List<EvaluationScore>> evaluationScores(
+          String evaluationId) async =>
+      remote.evaluationScores(evaluationId, await _bearer());
+
+  @override
+  Future<List<EvaluationTaskReview>> evaluationTaskReviews(
+          String evaluationId) async =>
+      remote.evaluationTaskReviews(evaluationId, await _bearer());
+
+  @override
+  Future<List<JournalComment>> evaluationComments(
+          String evaluationId) async =>
+      remote.evaluationComments(evaluationId, await _bearer());
+
+  @override
+  Future<List<SupervisedIntern>> supervisedInterns() async {
+    final ids = await supervisedInternshipIds();
+    final out = <SupervisedIntern>[];
+    final results = await Future.wait(ids.map((id) async {
+      try {
+        final internship = await getInternship(id);
+        final bearer = await _bearer();
+        final assignments =
+            await remote.getAssignments(id, bearer);
+        final tasks = await remote.listTasks(id, bearer, size: 1);
+        final done = await remote.listTasks(id, bearer,
+            size: 1, status: TaskStatus.completed);
+        final drafts = await remote.listJournal(id, bearer,
+            size: 1, status: JournalStatus.draft);
+        final rejected = await remote.listJournal(id, bearer,
+            size: 1, status: JournalStatus.rejected);
+        final submitted = await remote.listJournal(id, bearer,
+            size: 1, status: JournalStatus.submitted);
+        final deliverables =
+            await remote.listDeliverables(id, bearer, size: 50);
+        final evaluations =
+            await remote.listEvaluations(id, bearer, size: 1);
+        InternshipAssignment? active;
+        for (final a in assignments) {
+          if (a.isActive) {
+            active = a;
+            break;
+          }
+        }
+        return SupervisedIntern(
+          internshipId: id,
+          reference: internship.reference,
+          internName: internship.candidateFullName ?? '—',
+          status: internship.status,
+          type: internship.type,
+          startDate: internship.startDate,
+          endDate: internship.endDate,
+          departmentName: active?.departmentName ?? '—',
+          tasksCompleted: done.totalElements,
+          tasksTotal: tasks.totalElements,
+          pendingJournal: drafts.totalElements +
+              rejected.totalElements +
+              submitted.totalElements,
+          pendingDeliverables: deliverables.items
+              .where((d) => d.awaitsSupervisor)
+              .length,
+          evaluationsCount: evaluations.totalElements,
+        );
+      } on Exception {
+        return null; // fail-soft: one intern never hides the others
+      }
+    }));
+    for (final s in results) {
+      if (s != null) out.add(s);
+    }
+    return out;
+  }
 }

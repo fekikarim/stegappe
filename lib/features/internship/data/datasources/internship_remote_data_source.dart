@@ -3,6 +3,7 @@ import 'dart:typed_data';
 import '../../../../core/network/api_client.dart';
 import '../../../../core/network/endpoints.dart';
 import '../../../../core/network/paged.dart';
+import '../../domain/entities/evaluation.dart';
 import '../../domain/entities/internship.dart';
 import '../../domain/entities/work_items.dart';
 import '../models/internship_dtos.dart';
@@ -233,6 +234,114 @@ class InternshipRemoteDataSource {
   Future<List<JournalComment>> deliverableComments(
           String deliverableId, String? bearer) =>
       _client.get(Endpoints.deliverableComments(deliverableId),
+          bearer: bearer, decode: (j) {
+        if (j is List) {
+          return [
+            for (final e in j)
+              if (e is Map<String, dynamic>)
+                journalCommentFromJson(e),
+          ];
+        }
+        return <JournalComment>[];
+      });
+
+  // --- D4: evaluations (template-driven, supervisor-authored) ---
+
+  Future<List<EvaluationTemplate>> listTemplates(
+    String? bearer, {
+    bool activeOnly = true,
+  }) =>
+      _client.get(Endpoints.evaluationTemplates,
+          bearer: bearer,
+          query: {'activeOnly': '$activeOnly'},
+          decode: (j) => [
+                if (j is List)
+                  for (final e in j)
+                    if (e is Map<String, dynamic>)
+                      templateFromJson(e),
+              ]);
+
+  Future<List<EvaluationCriterion>> templateCriteria(
+          String templateId, String? bearer) =>
+      _client.get(Endpoints.templateCriteria(templateId),
+          bearer: bearer, decode: (j) {
+        if (j is List) {
+          return [
+            for (final e in j)
+              if (e is Map<String, dynamic>) criterionFromJson(e),
+          ];
+        }
+        return <EvaluationCriterion>[];
+      });
+
+  Future<EvaluationSummary> createEvaluation(
+    String internshipId,
+    String? bearer, {
+    String? templateId,
+    required EvaluationKind kind,
+    required DateTime date,
+    String? feedback,
+  }) =>
+      _client.post(Endpoints.internshipEvaluations(internshipId),
+          bearer: bearer,
+          body: evaluationWriteJson(
+              templateId: templateId,
+              kind: kind,
+              date: date,
+              feedback: feedback),
+          decode: (j) => evaluationFromJson(_map(j)));
+
+  Future<void> submitScores(
+    String evaluationId,
+    String? bearer,
+    List<Map<String, dynamic>> scores,
+  ) =>
+      _client.post(Endpoints.evaluationScores(evaluationId),
+          bearer: bearer, body: scores, decode: (_) {});
+
+  Future<void> addTaskReview(
+    String evaluationId,
+    String? bearer,
+    Map<String, dynamic> review,
+  ) =>
+      _client.post(Endpoints.evaluationTaskReviews(evaluationId),
+          bearer: bearer, body: review, decode: (_) {});
+
+  Future<EvaluationSummary> evaluationDetail(
+          String evaluationId, String? bearer) =>
+      _client.get(Endpoints.evaluation(evaluationId),
+          bearer: bearer,
+          decode: (j) => evaluationFromJson(_map(j)));
+
+  Future<List<EvaluationScore>> evaluationScores(
+          String evaluationId, String? bearer) =>
+      _client.get(Endpoints.evaluationScores(evaluationId),
+          bearer: bearer, decode: (j) {
+        if (j is List) {
+          return [
+            for (final e in j)
+              if (e is Map<String, dynamic>) evalScoreFromJson(e),
+          ];
+        }
+        return <EvaluationScore>[];
+      });
+
+  Future<List<EvaluationTaskReview>> evaluationTaskReviews(
+          String evaluationId, String? bearer) =>
+      _client.get(Endpoints.evaluationTaskReviews(evaluationId),
+          bearer: bearer, decode: (j) {
+        if (j is List) {
+          return [
+            for (final e in j)
+              if (e is Map<String, dynamic>) taskReviewFromJson(e),
+          ];
+        }
+        return <EvaluationTaskReview>[];
+      });
+
+  Future<List<JournalComment>> evaluationComments(
+          String evaluationId, String? bearer) =>
+      _client.get(Endpoints.evaluationComments(evaluationId),
           bearer: bearer, decode: (j) {
         if (j is List) {
           return [

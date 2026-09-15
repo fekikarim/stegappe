@@ -15,6 +15,7 @@ import '../widgets/dashboard_sections.dart';
 import '../widgets/status_labels.dart';
 import '../widgets/task_row.dart';
 import 'deliverables_screen.dart';
+import 'my_evaluations_screen.dart';
 import 'timeline_screen.dart';
 
 /// Intern home dashboard — answers:
@@ -319,6 +320,11 @@ class _DashboardContent extends ConsumerWidget {
         if (data.latestEvaluation != null) ...[
           DashboardSection(
             title: l10n.evaluationsTitle,
+            actionLabel: l10n.viewAll,
+            onAction: () => Navigator.of(context).push(
+              MaterialPageRoute(
+                  builder: (_) => const MyEvaluationsScreen()),
+            ),
             child: ListTile(
               contentPadding: EdgeInsets.zero,
               leading: const Icon(Icons.star_outline),

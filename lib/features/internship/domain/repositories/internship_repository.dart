@@ -1,6 +1,7 @@
 import 'dart:typed_data';
 
 import '../../../../core/network/paged.dart';
+import '../entities/evaluation.dart';
 import '../entities/internship.dart';
 import '../entities/work_items.dart';
 
@@ -84,6 +85,28 @@ abstract class InternshipRepository {
   Future<int> unreadNotificationCount();
   Future<void> markAllNotificationsRead();
   Future<int> unreadMessageCount();
+
+  // --- D4 evaluations (supervisor-authored, template-driven) ---
+
+  Future<List<EvaluationTemplate>> listTemplates({bool activeOnly = true});
+  Future<List<EvaluationCriterion>> templateCriteria(String templateId);
+  Future<EvaluationSummary> createEvaluation(String internshipId,
+      {String? templateId,
+      required EvaluationKind kind,
+      required DateTime date,
+      String? feedback});
+  Future<void> submitScores(String evaluationId,
+      List<Map<String, dynamic>> scores);
+  Future<void> addTaskReview(
+      String evaluationId, Map<String, dynamic> review);
+  Future<EvaluationSummary> evaluationDetail(String evaluationId);
+  Future<List<EvaluationScore>> evaluationScores(String evaluationId);
+  Future<List<EvaluationTaskReview>> evaluationTaskReviews(
+      String evaluationId);
+  Future<List<JournalComment>> evaluationComments(String evaluationId);
+
+  /// Supervised interns with backend-sourced progress.
+  Future<List<SupervisedIntern>> supervisedInterns();
 }
 
 /// One SUBMITTED deliverable awaiting supervisor review.

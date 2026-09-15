@@ -47,6 +47,19 @@ abstract final class Endpoints {
       '/api/internships/deliverables/$id/download';
   static String deliverableComments(String id) =>
       '/api/deliverables/$id/comments';
+  static const String evaluationTemplates = '/api/evaluation-templates';
+  static String templateCriteria(String templateId) =>
+      '/api/evaluation-templates/$templateId/criteria';
+  static String internshipEvaluations(String internshipId) =>
+      '/api/internships/$internshipId/evaluations';
+  static String evaluation(String evaluationId) =>
+      '/api/evaluations/$evaluationId';
+  static String evaluationScores(String evaluationId) =>
+      '/api/evaluations/$evaluationId/scores';
+  static String evaluationTaskReviews(String evaluationId) =>
+      '/api/evaluations/$evaluationId/task-reviews';
+  static String evaluationComments(String evaluationId) =>
+      '/api/evaluations/$evaluationId/comments';
   static const String conversations = '/api/conversations';
   static const String unreadCounts = '/api/conversations/unread/counts';
   static const String notifications = '/api/notifications';

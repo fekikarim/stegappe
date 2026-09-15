@@ -3,6 +3,7 @@ import 'dart:typed_data';
 
 import 'package:stegappe/core/network/paged.dart';
 import 'package:stegappe/features/internship/domain/dashboard.dart';
+import 'package:stegappe/features/internship/domain/entities/evaluation.dart';
 import 'package:stegappe/features/internship/domain/entities/internship.dart';
 import 'package:stegappe/features/internship/domain/entities/work_items.dart';
 import 'package:stegappe/features/internship/domain/repositories/internship_repository.dart';
@@ -442,5 +443,135 @@ class FakeInternshipRepository implements InternshipRepository {
                 title: 'Rapport de stage',
                 status: DeliverableStatus.submitted,
                 currentVersion: 2)),
+      ];
+
+  // --- D4 evaluations ---
+
+  final List<Map<String, dynamic>> createdEvaluations = [];
+  final List<Map<String, dynamic>> submittedScores = [];
+  final List<Map<String, dynamic>> taskReviewCalls = [];
+
+  List<EvaluationCriterion> fixtureCriteria() => const [
+        EvaluationCriterion(
+            id: 'c-tech',
+            templateId: 't1',
+            name: 'Technique',
+            weight: 60,
+            maxScore: 20),
+        EvaluationCriterion(
+            id: 'c-soft',
+            templateId: 't1',
+            name: 'Comportement',
+            weight: 40,
+            maxScore: 20),
+      ];
+
+  @override
+  Future<List<EvaluationTemplate>> listTemplates(
+          {bool activeOnly = true}) async =>
+      const [
+        EvaluationTemplate(
+            id: 't1', name: 'Standard', active: true),
+      ];
+
+  @override
+  Future<List<EvaluationCriterion>> templateCriteria(
+          String templateId) async =>
+      fixtureCriteria();
+
+  @override
+  Future<EvaluationSummary> createEvaluation(String internshipId,
+      {String? templateId,
+      required EvaluationKind kind,
+      required DateTime date,
+      String? feedback}) async {
+    if (failWrites) throw Exception('offline');
+    createdEvaluations.add({'templateId': templateId, 'feedback': feedback});
+    return EvaluationSummary(
+        id: 'e-new',
+        type: evaluationKindToApi(kind),
+        evaluationDate: date,
+        feedback: feedback);
+  }
+
+  @override
+  Future<void> submitScores(String evaluationId,
+      List<Map<String, dynamic>> scores) async {
+    if (failWrites) throw Exception('offline');
+    submittedScores.addAll(scores);
+  }
+
+  @override
+  Future<void> addTaskReview(
+      String evaluationId, Map<String, dynamic> review) async {
+    if (failWrites) throw Exception('offline');
+    taskReviewCalls.add(review);
+  }
+
+  @override
+  Future<EvaluationSummary> evaluationDetail(String evaluationId) async =>
+      EvaluationSummary(
+          id: evaluationId,
+          type: 'WEEKLY',
+          evaluationDate: now,
+          totalScore: 15.0,
+          feedback: 'Bon travail.');
+
+  @override
+  Future<List<EvaluationScore>> evaluationScores(
+          String evaluationId) async =>
+      const [
+        EvaluationScore(
+            criterionId: 'c-tech',
+            criterionName: 'Technique',
+            score: 15,
+            maxScore: 20,
+            weight: 60),
+        EvaluationScore(
+            criterionId: 'c-soft',
+            criterionName: 'Comportement',
+            score: 15,
+            maxScore: 20,
+            weight: 40),
+      ];
+
+  @override
+  Future<List<EvaluationTaskReview>> evaluationTaskReviews(
+          String evaluationId) async =>
+      const [
+        EvaluationTaskReview(
+            taskId: 't-done',
+            taskTitle: 'Done task',
+            completed: true,
+            score: 16),
+      ];
+
+  @override
+  Future<List<JournalComment>> evaluationComments(
+          String evaluationId) async =>
+      [
+        JournalComment(
+            id: 'ce1',
+            content: 'Continue ainsi.',
+            authorEmail: 'sup@steg.tn',
+            createdAt: now),
+      ];
+
+  @override
+  Future<List<SupervisedIntern>> supervisedInterns() async => [
+        SupervisedIntern(
+            internshipId: 'internship-1',
+            reference: 'STG-2026-0001',
+            internName: 'Amira Ben Salah',
+            status: InternshipStatus.active,
+            type: InternshipType.perfectionnement,
+            startDate: day(now, -10),
+            endDate: day(now, 50),
+            departmentName: 'DSI',
+            tasksCompleted: 1,
+            tasksTotal: 4,
+            pendingJournal: 1,
+            pendingDeliverables: 1,
+            evaluationsCount: 1),
       ];
 }

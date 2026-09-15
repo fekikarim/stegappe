@@ -123,3 +123,17 @@ cache instead of wiping. `TODO — backend phase`: a dedicated
   checklist groups actuals by state instead of inventing requirements.
 - Downloads are Bearer-only endpoint bytes → temp file → share sheet;
   share is provider-injected because path_provider pends in widget tests.
+
+## 12. Supervisor evaluation policies (D4)
+
+- Evaluation forms are generated from backend templates + criteria;
+  official criteria are never hard-coded (seeded placeholder is
+  server-marked TODO STEG VALIDATION REQUIRED).
+- Live estimate mirrors the backend weighted formula for UX only and is
+  labeled indicative; the displayed total always comes from the server
+  response afterwards.
+- Task reviews link evaluations to real tasks (same-internship enforced
+  server-side); feedback/advice lives on the evaluation, never mixed
+  into journal text. Interns see evaluations strictly read-only.
+- "Supervised" lists derive from assignment-created PRIVATE
+  conversations; every mutation is still server-authorized per request.

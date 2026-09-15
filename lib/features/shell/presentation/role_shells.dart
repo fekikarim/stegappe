@@ -8,6 +8,8 @@ import '../../auth/domain/entities/app_user.dart';
 import '../../auth/presentation/providers/auth_providers.dart';
 import '../../internship/presentation/screens/intern_home_screen.dart';
 import '../../internship/presentation/screens/journal_list_screen.dart';
+import '../../internship/presentation/screens/supervised_interns_screen.dart';
+import '../../internship/presentation/screens/supervisor_home_screen.dart';
 import '../../internship/presentation/screens/supervisor_validations_screen.dart';
 import '../../internship/presentation/screens/task_list_screen.dart';
 import 'more_tab.dart';
@@ -177,17 +179,16 @@ class _SupervisorShellState extends State<SupervisorShell> {
       onIndexChanged: (i) => setState(() => _index = i),
       destinations: [
         RoleDestination(
-            label: l10n.navHome,
-            icon: Icons.dashboard_outlined,
-            page: PlaceholderTab(
-                title: l10n.navHome,
-                icon: Icons.dashboard_outlined)),
+          label: l10n.navHome,
+          icon: Icons.dashboard_outlined,
+          page: SupervisorHomeScreen(
+            onOpenTab: (i) => setState(() => _index = i),
+          ),
+        ),
         RoleDestination(
             label: l10n.navInterns,
             icon: Icons.people_outline,
-            page: PlaceholderTab(
-                title: l10n.navInterns,
-                icon: Icons.people_outline)),
+            page: const SupervisedInternsScreen()),
         RoleDestination(
             label: l10n.navValidations,
             icon: Icons.fact_check_outlined,

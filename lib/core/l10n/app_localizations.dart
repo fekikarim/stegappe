@@ -238,6 +238,53 @@ class AppLocalizations {
     'deliverableReviewTitle': {'fr': 'Réviser le livrable', 'en': 'Review deliverable', 'ar': 'مراجعة المُخرَج'},
     'deliverableReviewsEmpty': {'fr': 'Aucun livrable à réviser.', 'en': 'No deliverables to review.', 'ar': 'لا مُخرَجات للمراجعة.'},
     'uploadFailedRetry': {'fr': 'Échec de l’envoi. Réessayez.', 'en': 'Upload failed. Retry.', 'ar': 'فشل الرفع. أعد المحاولة.'},
+    // --- D4: supervisor workspace & evaluations ---
+    'supHomeTitle': {'fr': 'Pilotage des stages', 'en': 'Internship supervision', 'ar': 'تأطير التربصات'},
+    'myInterns': {'fr': 'Mes stagiaires', 'en': 'My interns', 'ar': 'متربصيّ'},
+    'noSupervised': {'fr': 'Aucun stagiaire lié pour le moment.', 'en': 'No linked interns yet.', 'ar': 'لا متربصين مرتبطين بعد.'},
+    'noSupervisedHint': {'fr': 'Les stagiaires apparaissent ici dès leur affectation.', 'en': 'Interns appear here once assigned to you.', 'ar': 'يظهر المتربصون هنا بمجرد تعيينهم لك.'},
+    'needsAttention': {'fr': 'Nécessite votre attention', 'en': 'Needs your attention', 'ar': 'يحتاج إلى انتباهك'},
+    'allCaughtUp': {'fr': 'Tout est à jour.', 'en': 'All caught up.', 'ar': 'كل شيء محدث.'},
+    'internDetailTitle': {'fr': 'Dossier stagiaire', 'en': 'Intern file', 'ar': 'ملف المتربص'},
+    'evalPendingJournal': {'fr': 'Journal à valider', 'en': 'Journal awaiting validation', 'ar': 'يومية بانتظار المصادقة'},
+    'evalTasksSection': {'fr': 'Tâches prévues', 'en': 'Planned tasks', 'ar': 'المهام المخططة'},
+    'evalDeliverablesSection': {'fr': 'Livrables', 'en': 'Deliverables', 'ar': 'المُخرَجات'},
+    'evalHistorySection': {'fr': 'Évaluations', 'en': 'Evaluations', 'ar': 'التقييمات'},
+    'evalNew': {'fr': 'Nouvelle évaluation', 'en': 'New evaluation', 'ar': 'تقييم جديد'},
+    'evalTemplate': {'fr': 'Grille d’évaluation', 'en': 'Evaluation template', 'ar': 'شبكة التقييم'},
+    'evalTemplateHint': {'fr': 'Critères officiels fournis par le backend.', 'en': 'Official criteria provided by the backend.', 'ar': 'المعايير الرسمية المقدمة من الخادم.'},
+    'evalNoTemplate': {'fr': 'Aucune grille active disponible.', 'en': 'No active template available.', 'ar': 'لا توجد شبكة نشطة متاحة.'},
+    'evalType': {'fr': 'Type', 'en': 'Type', 'ar': 'النوع'},
+    'evalDate': {'fr': 'Date', 'en': 'Date', 'ar': 'التاريخ'},
+    'evalTypeDaily': {'fr': 'Quotidienne', 'en': 'Daily', 'ar': 'يومية'},
+    'evalTypeWeekly': {'fr': 'Hebdomadaire', 'en': 'Weekly', 'ar': 'أسبوعية'},
+    'evalTypeMid': {'fr': 'Mi-parcours', 'en': 'Mid-term', 'ar': 'منتصف المدة'},
+    'evalTypeFinal': {'fr': 'Finale', 'en': 'Final', 'ar': 'نهائية'},
+    'evalTypeCustom': {'fr': 'Personnalisée', 'en': 'Custom', 'ar': 'مخصصة'},
+    'evalScoreOf': {'fr': 'Note / {m}', 'en': 'Score / {m}', 'ar': 'النقطة / {m}'},
+    'evalScoreInvalid': {'fr': 'Note entre 0 et {m}.', 'en': 'Score between 0 and {m}.', 'ar': 'النقطة بين 0 و {m}.'},
+    'evalCriterionComment': {'fr': 'Commentaire (optionnel)', 'en': 'Comment (optional)', 'ar': 'تعليق (اختياري)'},
+    'evalTaskReviews': {'fr': 'Revue des tâches réelles', 'en': 'Actual task reviews', 'ar': 'مراجعة المهام الفعلية'},
+    'evalTaskReviewsHint': {'fr': 'Reliez l’évaluation aux tâches vraiment effectuées.', 'en': 'Link the evaluation to actually performed tasks.', 'ar': 'اربط التقييم بالمهام المنجزة فعلا.'},
+    'evalIncludeTask': {'fr': 'Inclure', 'en': 'Include', 'ar': 'إدراج'},
+    'evalTaskDone': {'fr': 'Terminée', 'en': 'Completed', 'ar': 'منجزة'},
+    'evalTaskNotDone': {'fr': 'Non terminée', 'en': 'Not completed', 'ar': 'غير منجزة'},
+    'evalFeedback': {'fr': 'Appréciation et conseils', 'en': 'Assessment and advice', 'ar': 'التقييم والنصائح'},
+    'evalFeedbackHint': {'fr': 'Conseils au stagiaire — distinct du journal.', 'en': 'Advice to the intern — separate from the journal.', 'ar': 'نصائح للمتربص — منفصلة عن اليومية.'},
+    'evalEstimate': {'fr': 'Estimation indicative : {n} / 20', 'en': 'Indicative estimate: {n} / 20', 'ar': 'تقدير تقريبي: {n} / 20'},
+    'evalEstimateNote': {'fr': 'Le total officiel est calculé par le serveur après envoi.', 'en': 'The official total is computed by the server after submit.', 'ar': 'يُحتسب المجموع الرسمي على الخادم بعد الإرسال.'},
+    'evalSubmit': {'fr': 'Soumettre l’évaluation', 'en': 'Submit evaluation', 'ar': 'إرسال التقييم'},
+    'evalConfirmTitle': {'fr': 'Soumettre cette évaluation ?', 'en': 'Submit this evaluation?', 'ar': 'إرسال هذا التقييم؟'},
+    'evalConfirmMessage': {'fr': 'Elle deviendra un document officiel visible par le stagiaire.', 'en': 'It will become an official record visible to the intern.', 'ar': 'سيصبح وثيقة رسمية مرئية للمتربص.'},
+    'evalSubmitted': {'fr': 'Évaluation enregistrée.', 'en': 'Evaluation saved.', 'ar': 'تم حفظ التقييم.'},
+    'evalOfficialTotal': {'fr': 'Total officiel : {n} / 20', 'en': 'Official total: {n} / 20', 'ar': 'المجموع الرسمي: {n} / 20'},
+    'evalScoresSection': {'fr': 'Notes par critère', 'en': 'Scores per criterion', 'ar': 'النقاط حسب المعيار'},
+    'evalReviewsSection': {'fr': 'Revue des tâches', 'en': 'Task reviews', 'ar': 'مراجعة المهام'},
+    'evalNoScores': {'fr': 'Au moins une note est requise.', 'en': 'At least one score is required.', 'ar': 'يلزم إدخال نقطة واحدة على الأقل.'},
+    'evalAdviceSection': {'fr': 'Appréciation', 'en': 'Assessment', 'ar': 'التقييم'},
+    'myEvaluations': {'fr': 'Mes évaluations', 'en': 'My evaluations', 'ar': 'تقييماتي'},
+    'myEvaluationsEmpty': {'fr': 'Aucune évaluation reçue pour le moment.', 'en': 'No evaluations received yet.', 'ar': 'لم تُستلم أي تقييمات بعد.'},
+    'evalOptionalScore': {'fr': 'Note (optionnel)', 'en': 'Score (optional)', 'ar': 'النقطة (اختياري)'},
   };
 
   String _get(String key) {
@@ -423,6 +470,58 @@ class AppLocalizations {
   String get deliverableReviewTitle => _get('deliverableReviewTitle');
   String get deliverableReviewsEmpty => _get('deliverableReviewsEmpty');
   String get uploadFailedRetry => _get('uploadFailedRetry');
+
+  // D4 supervisor workspace & evaluations
+  String get supHomeTitle => _get('supHomeTitle');
+  String get myInterns => _get('myInterns');
+  String get noSupervised => _get('noSupervised');
+  String get noSupervisedHint => _get('noSupervisedHint');
+  String get needsAttention => _get('needsAttention');
+  String get allCaughtUp => _get('allCaughtUp');
+  String get internDetailTitle => _get('internDetailTitle');
+  String get evalPendingJournal => _get('evalPendingJournal');
+  String get evalTasksSection => _get('evalTasksSection');
+  String get evalDeliverablesSection => _get('evalDeliverablesSection');
+  String get evalHistorySection => _get('evalHistorySection');
+  String get evalNew => _get('evalNew');
+  String get evalTemplate => _get('evalTemplate');
+  String get evalTemplateHint => _get('evalTemplateHint');
+  String get evalNoTemplate => _get('evalNoTemplate');
+  String get evalType => _get('evalType');
+  String get evalDate => _get('evalDate');
+  String get evalTypeDaily => _get('evalTypeDaily');
+  String get evalTypeWeekly => _get('evalTypeWeekly');
+  String get evalTypeMid => _get('evalTypeMid');
+  String get evalTypeFinal => _get('evalTypeFinal');
+  String get evalTypeCustom => _get('evalTypeCustom');
+  String evalScoreOf(String m) =>
+      _get('evalScoreOf').replaceAll('{m}', m);
+  String evalScoreInvalid(String m) =>
+      _get('evalScoreInvalid').replaceAll('{m}', m);
+  String get evalCriterionComment => _get('evalCriterionComment');
+  String get evalTaskReviews => _get('evalTaskReviews');
+  String get evalTaskReviewsHint => _get('evalTaskReviewsHint');
+  String get evalIncludeTask => _get('evalIncludeTask');
+  String get evalTaskDone => _get('evalTaskDone');
+  String get evalTaskNotDone => _get('evalTaskNotDone');
+  String get evalFeedback => _get('evalFeedback');
+  String get evalFeedbackHint => _get('evalFeedbackHint');
+  String evalEstimate(String n) =>
+      _get('evalEstimate').replaceAll('{n}', n);
+  String get evalEstimateNote => _get('evalEstimateNote');
+  String get evalSubmit => _get('evalSubmit');
+  String get evalConfirmTitle => _get('evalConfirmTitle');
+  String get evalConfirmMessage => _get('evalConfirmMessage');
+  String get evalSubmitted => _get('evalSubmitted');
+  String evalOfficialTotal(String n) =>
+      _get('evalOfficialTotal').replaceAll('{n}', n);
+  String get evalScoresSection => _get('evalScoresSection');
+  String get evalReviewsSection => _get('evalReviewsSection');
+  String get evalNoScores => _get('evalNoScores');
+  String get evalAdviceSection => _get('evalAdviceSection');
+  String get myEvaluations => _get('myEvaluations');
+  String get myEvaluationsEmpty => _get('myEvaluationsEmpty');
+  String get evalOptionalScore => _get('evalOptionalScore');
 
   /// All keys must exist in fr/en/ar — enforced by unit test.
   static Map<String, Map<String, String>> get allValues => _values;

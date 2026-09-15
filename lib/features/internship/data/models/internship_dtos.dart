@@ -1,3 +1,4 @@
+import '../../domain/entities/evaluation.dart';
 import '../../domain/entities/internship.dart';
 import '../../domain/entities/work_items.dart';
 
@@ -118,6 +119,94 @@ JournalComment journalCommentFromJson(Map<String, dynamic> json) =>
       authorEmail: _str(json['authorEmail']),
       createdAt: _date(json['createdAt']) ?? DateTime.now(),
     );
+
+EvaluationTemplate templateFromJson(Map<String, dynamic> json) =>
+    EvaluationTemplate(
+      id: _str(json['id']),
+      name: _str(json['name']),
+      description: json['description'] as String?,
+      active: json['active'] != false,
+    );
+
+EvaluationCriterion criterionFromJson(Map<String, dynamic> json) =>
+    EvaluationCriterion(
+      id: _str(json['id']),
+      templateId: _str(json['templateId']),
+      name: _str(json['name']),
+      description: json['description'] as String?,
+      weight: (json['weight'] as num?)?.toDouble() ?? 0,
+      maxScore: (json['maxScore'] as num?)?.toDouble() ?? 0,
+    );
+
+EvaluationScore evalScoreFromJson(Map<String, dynamic> json) =>
+    EvaluationScore(
+      criterionId: _str(json['criterionId']),
+      criterionName: _str(json['criterionName']),
+      score: (json['score'] as num?)?.toDouble() ?? 0,
+      maxScore: (json['maxScore'] as num?)?.toDouble() ?? 0,
+      weight: (json['weight'] as num?)?.toDouble() ?? 0,
+      comment: json['comment'] as String?,
+    );
+
+EvaluationTaskReview taskReviewFromJson(Map<String, dynamic> json) =>
+    EvaluationTaskReview(
+      taskId: _str(json['taskId']),
+      taskTitle: _str(json['taskTitle']),
+      completed: json['completed'] == true,
+      score: (json['score'] as num?)?.toDouble(),
+      comment: json['comment'] as String?,
+    );
+
+/// Write payloads mirror EvaluationRequest / EvaluationScoreRequest /
+/// EvaluationTaskReviewRequest.
+Map<String, dynamic> evaluationWriteJson({
+  String? templateId,
+  required EvaluationKind kind,
+  required DateTime date,
+  String? feedback,
+}) {
+  final map = <String, dynamic>{
+    'type': evaluationKindToApi(kind),
+    'evaluationDate': _ymd(date),
+  };
+  if (templateId != null) map['templateId'] = templateId;
+  if (feedback != null && feedback.isNotEmpty) {
+    map['feedback'] = feedback;
+  }
+  return map;
+}
+
+Map<String, dynamic> scoreWriteJson({
+  required String criterionId,
+  required double score,
+  String? comment,
+}) {
+  final map = <String, dynamic>{
+    'criterionId': criterionId,
+    'score': score,
+  };
+  if (comment != null && comment.isNotEmpty) {
+    map['comment'] = comment;
+  }
+  return map;
+}
+
+Map<String, dynamic> taskReviewWriteJson({
+  required String taskId,
+  required bool completed,
+  double? score,
+  String? comment,
+}) {
+  final map = <String, dynamic>{
+    'taskId': taskId,
+    'completed': completed,
+  };
+  if (score != null) map['score'] = score;
+  if (comment != null && comment.isNotEmpty) {
+    map['comment'] = comment;
+  }
+  return map;
+}
 
 /// Minimal PRIVATE-conversation projection for internship-id discovery.
 class ConversationLink {

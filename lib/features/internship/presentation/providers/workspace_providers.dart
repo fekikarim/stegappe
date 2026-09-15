@@ -8,6 +8,7 @@ import '../../data/cache/internship_id_store.dart';
 import '../../data/datasources/internship_remote_data_source.dart';
 import '../../data/repositories/internship_repository_impl.dart';
 import '../../domain/dashboard.dart';
+import '../../domain/entities/evaluation.dart';
 import '../../domain/entities/internship.dart';
 import '../../domain/entities/work_items.dart';
 import '../../domain/repositories/internship_repository.dart';
@@ -261,5 +262,152 @@ void refreshDeliverables(WidgetRef ref, [String? deliverableId]) {
   if (deliverableId != null) {
     ref.invalidate(deliverableDetailProvider(deliverableId));
     ref.invalidate(deliverableCommentsProvider(deliverableId));
+  }
+}
+
+// --- D4 supervisor workspace ---
+
+/// Supervised interns with backend-sourced progress (fail-soft per
+/// intern inside the repository: one failure never hides the others).
+final supervisedInternsProvider =
+    FutureProvider<List<SupervisedIntern>>((ref) async {
+  final repo = ref.watch(internshipRepositoryProvider);
+  return repo.supervisedInterns();
+});
+
+/// Full intern detail for supervisors: header, tasks, pending journal,
+/// deliverables, evaluations — composed from backend reads.
+class SupervisedInternDetail {
+  const SupervisedInternDetail({
+    required this.internship,
+    required this.assignments,
+    required this.activeAssignment,
+    required this.tasks,
+    required this.tasksTotal,
+    required this.tasksCompletedTotal,
+    required this.pendingJournal,
+    required this.deliverables,
+    required this.evaluations,
+  });
+
+  final Internship internship;
+  final List<InternshipAssignment> assignments;
+  final InternshipAssignment? activeAssignment;
+  final List<InternTask> tasks;
+  final int tasksTotal;
+  final int tasksCompletedTotal;
+  final List<JournalEntry> pendingJournal;
+  final List<DeliverableSummary> deliverables;
+  final List<EvaluationSummary> evaluations;
+}
+
+final supervisedInternDetailProvider = FutureProvider.family<
+    SupervisedInternDetail, String>((ref, internshipId) async {
+  final repo = ref.watch(internshipRepositoryProvider);
+  final results = await Future.wait([
+    repo.getInternship(internshipId),
+    repo.getAssignments(internshipId),
+    repo.listTasks(internshipId, size: 50),
+    repo.listTasks(internshipId,
+        size: 1, status: TaskStatus.completed),
+    repo.listJournal(internshipId,
+        status: JournalStatus.submitted, size: 50),
+    repo.listDeliverables(internshipId, size: 50),
+    repo.listEvaluations(internshipId, size: 20),
+  ]);
+  final assignments = results[1] as List<InternshipAssignment>;
+  InternshipAssignment? active;
+  for (final a in assignments) {
+    if (a.isActive) {
+      active = a;
+      break;
+    }
+  }
+  final tasks = results[2] as Paged<InternTask>;
+  return SupervisedInternDetail(
+    internship: results[0] as Internship,
+    assignments: assignments,
+    activeAssignment: active,
+    tasks: tasks.items,
+    tasksTotal: tasks.totalElements,
+    tasksCompletedTotal:
+        (results[3] as Paged<InternTask>).totalElements,
+    pendingJournal: (results[4] as Paged<JournalEntry>).items,
+    deliverables:
+        (results[5] as Paged<DeliverableSummary>).items,
+    evaluations: (results[6] as Paged<EvaluationSummary>).items,
+  );
+});
+
+/// Active evaluation templates (supervisor-visible).
+final evaluationTemplatesProvider =
+    FutureProvider<List<EvaluationTemplate>>((ref) async {
+  final repo = ref.watch(internshipRepositoryProvider);
+  return repo.listTemplates(activeOnly: true);
+});
+
+/// Criteria of the selected template — the form is generated from these.
+final templateCriteriaProvider = FutureProvider.family<
+    List<EvaluationCriterion>, String>((ref, templateId) async {
+  final repo = ref.watch(internshipRepositoryProvider);
+  return repo.templateCriteria(templateId);
+});
+
+/// Full evaluation: authoritative detail + scores + task reviews +
+/// comments (read-only for interns, authorship for supervisors).
+class EvaluationFull {
+  const EvaluationFull({
+    required this.detail,
+    required this.scores,
+    required this.taskReviews,
+    required this.comments,
+  });
+
+  final EvaluationSummary detail;
+  final List<EvaluationScore> scores;
+  final List<EvaluationTaskReview> taskReviews;
+  final List<JournalComment> comments;
+}
+
+final evaluationFullProvider =
+    FutureProvider.family<EvaluationFull, String>(
+        (ref, evaluationId) async {
+  final repo = ref.watch(internshipRepositoryProvider);
+  final results = await Future.wait([
+    repo.evaluationDetail(evaluationId),
+    repo.evaluationScores(evaluationId),
+    repo.evaluationTaskReviews(evaluationId),
+    repo.evaluationComments(evaluationId),
+  ]);
+  return EvaluationFull(
+    detail: results[0] as EvaluationSummary,
+    scores: results[1] as List<EvaluationScore>,
+    taskReviews: results[2] as List<EvaluationTaskReview>,
+    comments: results[3] as List<JournalComment>,
+  );
+});
+
+/// Intern's own evaluations (read-only).
+final myEvaluationsProvider =
+    FutureProvider<Paged<EvaluationSummary>>((ref) async {
+  final repo = ref.watch(internshipRepositoryProvider);
+  final id = await ref.watch(myInternshipIdProvider.future);
+  if (id == null) throw StateError('no-internship');
+  return repo.listEvaluations(id, size: 20);
+});
+
+/// Task page for any internship (supervisor review + task reviews).
+final internshipTasksProvider = FutureProvider.family<
+    Paged<InternTask>, String>((ref, internshipId) async {
+  final repo = ref.watch(internshipRepositoryProvider);
+  return repo.listTasks(internshipId, size: 50);
+});
+
+/// Refresh supervisor workspace providers.
+void refreshSupervisor(WidgetRef ref, [String? internshipId]) {
+  ref.invalidate(supervisedInternsProvider);
+  refreshValidations(ref);
+  if (internshipId != null) {
+    ref.invalidate(supervisedInternDetailProvider(internshipId));
   }
 }

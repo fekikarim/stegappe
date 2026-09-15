@@ -3,6 +3,7 @@ import 'package:intl/intl.dart';
 
 import '../../../../core/l10n/app_localizations.dart';
 import '../../../../core/widgets/steg_status_chip.dart';
+import '../../domain/entities/evaluation.dart';
 import '../../domain/entities/internship.dart';
 import '../../domain/entities/work_items.dart';
 
@@ -101,6 +102,15 @@ StegStatusKind priorityKind(String priority) =>
       'URGENT' => StegStatusKind.error,
       'HIGH' => StegStatusKind.warning,
       _ => StegStatusKind.neutral,
+    };
+
+String evaluationKindLabel(EvaluationKind kind, AppLocalizations l10n) =>
+    switch (kind) {
+      EvaluationKind.daily => l10n.evalTypeDaily,
+      EvaluationKind.weekly => l10n.evalTypeWeekly,
+      EvaluationKind.midTerm => l10n.evalTypeMid,
+      EvaluationKind.final_ => l10n.evalTypeFinal,
+      EvaluationKind.custom => l10n.evalTypeCustom,
     };
 
 /// Localized short date, e.g. `15 sept. 2026` / `Sep 15, 2026` /
