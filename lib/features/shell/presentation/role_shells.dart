@@ -6,46 +6,34 @@ import '../../../core/l10n/app_localizations.dart';
 import '../../../core/widgets/connectivity_banner.dart';
 import '../../auth/domain/entities/app_user.dart';
 import '../../auth/presentation/providers/auth_providers.dart';
+import '../../internship/presentation/screens/intern_home_screen.dart';
+import '../../internship/presentation/screens/journal_list_screen.dart';
+import '../../internship/presentation/screens/task_list_screen.dart';
 import 'more_tab.dart';
 import 'placeholder_tab.dart';
 
 /// Bottom-navigation scaffold shared by both roles. Uses only
 /// directional widgets (AlignmentDirectional/EdgeInsetsDirectional via
 /// Material bottom nav) so Arabic mirrors automatically.
-class RoleScaffold extends ConsumerStatefulWidget {
+class RoleScaffold extends ConsumerWidget {
   const RoleScaffold({
     super.key,
     required this.user,
     required this.destinations,
+    required this.index,
+    required this.onIndexChanged,
   });
 
   final AppUser user;
   final List<RoleDestination> destinations;
+  final int index;
+  final ValueChanged<int> onIndexChanged;
 
   @override
-  ConsumerState<RoleScaffold> createState() => _RoleScaffoldState();
-}
-
-class RoleDestination {
-  const RoleDestination({
-    required this.label,
-    required this.icon,
-    required this.page,
-  });
-
-  final String label;
-  final IconData icon;
-  final Widget page;
-}
-
-class _RoleScaffoldState extends ConsumerState<RoleScaffold> {
-  int _index = 0;
-
-  @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final isOnline = ref.watch(isOnlineProvider);
     final reducedMotion = MediaQuery.of(context).disableAnimations;
-    final current = widget.destinations[_index];
+    final current = destinations[index];
 
     return Scaffold(
       appBar: AppBar(
@@ -72,7 +60,7 @@ class _RoleScaffoldState extends ConsumerState<RoleScaffold> {
                 : AnimatedSwitcher(
                     duration: const Duration(milliseconds: 180),
                     child: KeyedSubtree(
-                      key: ValueKey(_index),
+                      key: ValueKey(index),
                       child: current.page,
                     ),
                   ),
@@ -80,14 +68,14 @@ class _RoleScaffoldState extends ConsumerState<RoleScaffold> {
         ],
       ),
       bottomNavigationBar: Semantics(
-        label: widget.user.mobileRole == UserRole.intern
+        label: user.mobileRole == UserRole.intern
             ? AppLocalizations.of(context).roleIntern
             : AppLocalizations.of(context).roleSupervisor,
         child: NavigationBar(
-          selectedIndex: _index,
-          onDestinationSelected: (i) => setState(() => _index = i),
+          selectedIndex: index,
+          onDestinationSelected: onIndexChanged,
           destinations: [
-            for (final d in widget.destinations)
+            for (final d in destinations)
               NavigationDestination(icon: Icon(d.icon), label: d.label),
           ],
         ),
@@ -96,60 +84,96 @@ class _RoleScaffoldState extends ConsumerState<RoleScaffold> {
   }
 }
 
+class RoleDestination {
+  const RoleDestination({
+    required this.label,
+    required this.icon,
+    required this.page,
+  });
+
+  final String label;
+  final IconData icon;
+  final Widget page;
+}
+
 /// INTERN shell (UI_UX.md §12.2): Home / Tasks / Journal / Messages / More.
-class InternShell extends StatelessWidget {
+/// Home, Tasks and Journal are live (D1); Messages lands in D5.
+class InternShell extends StatefulWidget {
   const InternShell({super.key, required this.user});
 
   final AppUser user;
 
   @override
+  State<InternShell> createState() => _InternShellState();
+}
+
+class _InternShellState extends State<InternShell> {
+  int _index = 0;
+
+  @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     return RoleScaffold(
-      user: user,
+      user: widget.user,
+      index: _index,
+      onIndexChanged: (i) => setState(() => _index = i),
       destinations: [
         RoleDestination(
-            label: l10n.navHome,
-            icon: Icons.home_outlined,
-            page: PlaceholderTab(
-                title: l10n.navHome, icon: Icons.home_outlined)),
+          label: l10n.navHome,
+          icon: Icons.home_outlined,
+          page: InternHomeScreen(
+            user: widget.user,
+            onOpenTab: (i) => setState(() => _index = i),
+          ),
+        ),
         RoleDestination(
-            label: l10n.navTasks,
-            icon: Icons.checklist_outlined,
-            page: PlaceholderTab(
-                title: l10n.navTasks,
-                icon: Icons.checklist_outlined)),
+          label: l10n.navTasks,
+          icon: Icons.checklist_outlined,
+          page: const TaskListScreen(),
+        ),
         RoleDestination(
-            label: l10n.navJournal,
-            icon: Icons.book_outlined,
-            page: PlaceholderTab(
-                title: l10n.navJournal, icon: Icons.book_outlined)),
+          label: l10n.navJournal,
+          icon: Icons.book_outlined,
+          page: const JournalListScreen(),
+        ),
         RoleDestination(
-            label: l10n.navMessages,
-            icon: Icons.chat_bubble_outline,
-            page: PlaceholderTab(
-                title: l10n.navMessages,
-                icon: Icons.chat_bubble_outline)),
+          label: l10n.navMessages,
+          icon: Icons.chat_bubble_outline,
+          page: PlaceholderTab(
+              title: l10n.navMessages,
+              icon: Icons.chat_bubble_outline),
+        ),
         RoleDestination(
-            label: l10n.navMore,
-            icon: Icons.more_horiz,
-            page: const MoreTab()),
+          label: l10n.navMore,
+          icon: Icons.more_horiz,
+          page: const MoreTab(),
+        ),
       ],
     );
   }
 }
 
 /// SUPERVISOR shell: Overview / Interns / Validations / Messages / More.
-class SupervisorShell extends StatelessWidget {
+/// Supervisor workspace lands in D4; placeholders keep navigation honest.
+class SupervisorShell extends StatefulWidget {
   const SupervisorShell({super.key, required this.user});
 
   final AppUser user;
 
   @override
+  State<SupervisorShell> createState() => _SupervisorShellState();
+}
+
+class _SupervisorShellState extends State<SupervisorShell> {
+  int _index = 0;
+
+  @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     return RoleScaffold(
-      user: user,
+      user: widget.user,
+      index: _index,
+      onIndexChanged: (i) => setState(() => _index = i),
       destinations: [
         RoleDestination(
             label: l10n.navHome,

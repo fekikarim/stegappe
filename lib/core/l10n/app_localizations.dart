@@ -101,6 +101,68 @@ class AppLocalizations {
     'themeSystem': {'fr': 'Système', 'en': 'System', 'ar': 'النظام'},
     'themeLight': {'fr': 'Clair', 'en': 'Light', 'ar': 'فاتح'},
     'themeDark': {'fr': 'Sombre', 'en': 'Dark', 'ar': 'داكن'},
+    // --- D1: intern daily workspace ---
+    'dashboard': {'fr': 'Tableau de bord', 'en': 'Dashboard', 'ar': 'لوحة المتابعة'},
+    'todayTitle': {'fr': 'Aujourd’hui', 'en': 'Today', 'ar': 'اليوم'},
+    'thisWeek': {'fr': 'Cette semaine', 'en': 'This week', 'ar': 'هذا الأسبوع'},
+    'overdueTitle': {'fr': 'En retard', 'en': 'Overdue', 'ar': 'متأخرة'},
+    'pendingJournalTitle': {'fr': 'Journal en attente', 'en': 'Pending journal', 'ar': 'اليومية المعلقة'},
+    'deliverablesTitle': {'fr': 'Livrables', 'en': 'Deliverables', 'ar': 'المخرجات'},
+    'evaluationsTitle': {'fr': 'Évaluations', 'en': 'Evaluations', 'ar': 'التقييمات'},
+    'notificationsTitle': {'fr': 'Notifications', 'en': 'Notifications', 'ar': 'الإشعارات'},
+    'markAllRead': {'fr': 'Tout marquer comme lu', 'en': 'Mark all as read', 'ar': 'تعليم الكل كمقروء'},
+    'timelineTitle': {'fr': 'Chronologie du stage', 'en': 'Internship timeline', 'ar': 'الخط الزمني للتربص'},
+    'myProgress': {'fr': 'Ma progression', 'en': 'My progress', 'ar': 'تقدمي'},
+    'tasksProgress': {'fr': 'Tâches accomplies', 'en': 'Tasks completed', 'ar': 'المهام المنجزة'},
+    'timelineProgress': {'fr': 'Temps écoulé', 'en': 'Time elapsed', 'ar': 'الوقت المنقضي'},
+    'viewAll': {'fr': 'Tout voir', 'en': 'View all', 'ar': 'عرض الكل'},
+    'viewTimeline': {'fr': 'Voir la chronologie', 'en': 'View timeline', 'ar': 'عرض الخط الزمني'},
+    'noInternshipTitle': {'fr': 'Aucun stage lié pour le moment', 'en': 'No linked internship yet', 'ar': 'لا يوجد تربص مرتبط بعد'},
+    'noInternshipHint': {'fr': 'Votre stage apparaîtra ici dès qu’il sera créé par l’administration.', 'en': 'Your internship will appear here once created by the administration.', 'ar': 'سيظهر تربصك هنا بمجرد إنشائه من قبل الإدارة.'},
+    'staleData': {'fr': 'Données hors ligne — peuvent être obsolètes.', 'en': 'Offline data — may be stale.', 'ar': 'بيانات غير متصلة — قد تكون قديمة.'},
+    'filterAll': {'fr': 'Toutes', 'en': 'All', 'ar': 'الكل'},
+    'filterDone': {'fr': 'Terminées', 'en': 'Done', 'ar': 'المنجزة'},
+    'taskMarkComplete': {'fr': 'Marquer comme terminée', 'en': 'Mark as done', 'ar': 'تعليم كمنجزة'},
+    'taskReopen': {'fr': 'Rouvrir', 'en': 'Reopen', 'ar': 'إعادة فتح'},
+    'taskSetInProgress': {'fr': 'Commencer', 'en': 'Start', 'ar': 'بدء التنفيذ'},
+    'noDueDate': {'fr': 'Sans échéance', 'en': 'No due date', 'ar': 'بدون أجل'},
+    'moreItems': {'fr': '+{n} autres', 'en': '+{n} more', 'ar': '+{n} أخرى'},
+    'typeObservation': {'fr': 'Observation', 'en': 'Observation', 'ar': 'تربص ملاحظة'},
+    'typePerfectionnement': {'fr': 'Perfectionnement', 'en': 'Perfectionnement', 'ar': 'تربص استكمال'},
+    'typePFE': {'fr': 'PFE', 'en': 'PFE', 'ar': 'مشروع نهاية الدراسة'},
+    'stPlanned': {'fr': 'Planifié', 'en': 'Planned', 'ar': 'مخطط'},
+    'stActive': {'fr': 'En cours', 'en': 'Active', 'ar': 'جارٍ'},
+    'stCompleted': {'fr': 'Terminé', 'en': 'Completed', 'ar': 'مكتمل'},
+    'stCancelled': {'fr': 'Annulé', 'en': 'Cancelled', 'ar': 'ملغى'},
+    'stArchived': {'fr': 'Archivé', 'en': 'Archived', 'ar': 'مؤرشف'},
+    'tsTodo': {'fr': 'À faire', 'en': 'To do', 'ar': 'للإنجاز'},
+    'tsInProgress': {'fr': 'En cours', 'en': 'In progress', 'ar': 'قيد الإنجاز'},
+    'tsCompleted': {'fr': 'Terminée', 'en': 'Done', 'ar': 'منجزة'},
+    'tsCancelled': {'fr': 'Annulée', 'en': 'Cancelled', 'ar': 'ملغاة'},
+    'jsDraft': {'fr': 'Brouillon', 'en': 'Draft', 'ar': 'مسودة'},
+    'jsSubmitted': {'fr': 'Soumise', 'en': 'Submitted', 'ar': 'مرسلة'},
+    'jsValidated': {'fr': 'Validée', 'en': 'Validated', 'ar': 'مصادق عليها'},
+    'jsRejected': {'fr': 'À corriger', 'en': 'Needs correction', 'ar': 'تتطلب تصحيحا'},
+    'prLow': {'fr': 'Basse', 'en': 'Low', 'ar': 'منخفضة'},
+    'prNormal': {'fr': 'Normale', 'en': 'Normal', 'ar': 'عادية'},
+    'prHigh': {'fr': 'Haute', 'en': 'High', 'ar': 'عالية'},
+    'prUrgent': {'fr': 'Urgente', 'en': 'Urgent', 'ar': 'عاجلة'},
+    'supervisorLabel': {'fr': 'Encadrant', 'en': 'Supervisor', 'ar': 'المؤطر'},
+    'departmentLabel': {'fr': 'Département', 'en': 'Department', 'ar': 'الإدارة'},
+    'startLabel': {'fr': 'Début', 'en': 'Start', 'ar': 'البداية'},
+    'endLabel': {'fr': 'Fin', 'en': 'End', 'ar': 'النهاية'},
+    'todayMark': {'fr': 'Aujourd’hui', 'en': 'Today', 'ar': 'اليوم'},
+    'msStart': {'fr': 'Début du stage', 'en': 'Internship start', 'ar': 'بداية التربص'},
+    'msEnd': {'fr': 'Fin du stage', 'en': 'Internship end', 'ar': 'نهاية التربص'},
+    'msEvaluation': {'fr': 'Évaluation reçue', 'en': 'Evaluation received', 'ar': 'تقييم مستلم'},
+    'phaseNotStarted': {'fr': 'Pas encore commencé', 'en': 'Not started yet', 'ar': 'لم يبدأ بعد'},
+    'phaseInProgress': {'fr': 'Stage en cours', 'en': 'Internship in progress', 'ar': 'التربص جارٍ'},
+    'phaseFinished': {'fr': 'Stage terminé', 'en': 'Internship finished', 'ar': 'انتهى التربص'},
+    'tasksEmpty': {'fr': 'Bravo, rien en attente ici.', 'en': 'Well done, nothing pending here.', 'ar': 'أحسنت، لا شيء معلق هنا.'},
+    'journalEmpty': {'fr': 'Aucune entrée pour le moment.', 'en': 'No entries yet.', 'ar': 'لا إدخالات بعد.'},
+    'notificationsEmpty': {'fr': 'Aucune notification.', 'en': 'No notifications.', 'ar': 'لا إشعارات.'},
+    'versionLabel': {'fr': 'Version {n}', 'en': 'Version {n}', 'ar': 'النسخة {n}'},
+    'scoreLabel': {'fr': 'Note : {n}', 'en': 'Score: {n}', 'ar': 'النقطة: {n}'},
   };
 
   String _get(String key) {
@@ -138,6 +200,71 @@ class AppLocalizations {
   String get themeSystem => _get('themeSystem');
   String get themeLight => _get('themeLight');
   String get themeDark => _get('themeDark');
+
+  // D1 workspace
+  String get dashboard => _get('dashboard');
+  String get todayTitle => _get('todayTitle');
+  String get thisWeek => _get('thisWeek');
+  String get overdueTitle => _get('overdueTitle');
+  String get pendingJournalTitle => _get('pendingJournalTitle');
+  String get deliverablesTitle => _get('deliverablesTitle');
+  String get evaluationsTitle => _get('evaluationsTitle');
+  String get notificationsTitle => _get('notificationsTitle');
+  String get markAllRead => _get('markAllRead');
+  String get timelineTitle => _get('timelineTitle');
+  String get myProgress => _get('myProgress');
+  String get tasksProgress => _get('tasksProgress');
+  String get timelineProgress => _get('timelineProgress');
+  String get viewAll => _get('viewAll');
+  String get viewTimeline => _get('viewTimeline');
+  String get noInternshipTitle => _get('noInternshipTitle');
+  String get noInternshipHint => _get('noInternshipHint');
+  String get staleData => _get('staleData');
+  String get filterAll => _get('filterAll');
+  String get filterDone => _get('filterDone');
+  String get taskMarkComplete => _get('taskMarkComplete');
+  String get taskReopen => _get('taskReopen');
+  String get taskSetInProgress => _get('taskSetInProgress');
+  String get noDueDate => _get('noDueDate');
+  String moreItems(int n) => _get('moreItems').replaceAll('{n}', '$n');
+  String get typeObservation => _get('typeObservation');
+  String get typePerfectionnement => _get('typePerfectionnement');
+  String get typePFE => _get('typePFE');
+  String get stPlanned => _get('stPlanned');
+  String get stActive => _get('stActive');
+  String get stCompleted => _get('stCompleted');
+  String get stCancelled => _get('stCancelled');
+  String get stArchived => _get('stArchived');
+  String get tsTodo => _get('tsTodo');
+  String get tsInProgress => _get('tsInProgress');
+  String get tsCompleted => _get('tsCompleted');
+  String get tsCancelled => _get('tsCancelled');
+  String get jsDraft => _get('jsDraft');
+  String get jsSubmitted => _get('jsSubmitted');
+  String get jsValidated => _get('jsValidated');
+  String get jsRejected => _get('jsRejected');
+  String get prLow => _get('prLow');
+  String get prNormal => _get('prNormal');
+  String get prHigh => _get('prHigh');
+  String get prUrgent => _get('prUrgent');
+  String get supervisorLabel => _get('supervisorLabel');
+  String get departmentLabel => _get('departmentLabel');
+  String get startLabel => _get('startLabel');
+  String get endLabel => _get('endLabel');
+  String get todayMark => _get('todayMark');
+  String get msStart => _get('msStart');
+  String get msEnd => _get('msEnd');
+  String get msEvaluation => _get('msEvaluation');
+  String get phaseNotStarted => _get('phaseNotStarted');
+  String get phaseInProgress => _get('phaseInProgress');
+  String get phaseFinished => _get('phaseFinished');
+  String get tasksEmpty => _get('tasksEmpty');
+  String get journalEmpty => _get('journalEmpty');
+  String get notificationsEmpty => _get('notificationsEmpty');
+  String versionLabel(int n) =>
+      _get('versionLabel').replaceAll('{n}', '$n');
+  String scoreLabel(String n) =>
+      _get('scoreLabel').replaceAll('{n}', n);
 
   /// All keys must exist in fr/en/ar — enforced by unit test.
   static Map<String, Map<String, String>> get allValues => _values;

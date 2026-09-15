@@ -61,6 +61,16 @@ class ApiClient {
   }) =>
       _send<T>('PUT', path, bearer: bearer, body: body, decode: decode);
 
+  Future<T> patch<T>(
+    String path, {
+    String? bearer,
+    Map<String, String>? query,
+    Object? body,
+    required T Function(dynamic json) decode,
+  }) =>
+      _send<T>('PATCH', path,
+          bearer: bearer, query: query, body: body, decode: decode);
+
   Future<T> delete<T>(
     String path, {
     String? bearer,
@@ -94,6 +104,7 @@ class ApiClient {
         'GET' => _http.get(uri, headers: headers),
         'POST' => _http.post(uri, headers: headers, body: encoded),
         'PUT' => _http.put(uri, headers: headers, body: encoded),
+        'PATCH' => _http.patch(uri, headers: headers, body: encoded),
         'DELETE' => _http.delete(uri, headers: headers),
         _ => throw ApiException.unknown('Unsupported method $method'),
       };

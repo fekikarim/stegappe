@@ -14,8 +14,11 @@ import 'package:stegappe/core/widgets/steg_status_chip.dart';
 import 'package:stegappe/features/auth/domain/entities/app_user.dart';
 import 'package:stegappe/features/auth/domain/repositories/auth_repository.dart';
 import 'package:stegappe/features/auth/presentation/providers/auth_providers.dart';
+import 'package:stegappe/features/internship/presentation/providers/workspace_providers.dart';
 import 'package:stegappe/features/shell/presentation/auth_gate.dart';
 import 'package:stegappe/features/shell/presentation/role_shells.dart';
+
+import 'test_fixtures.dart';
 
 class _FakeRepo implements AuthRepository {
   _FakeRepo(this.user);
@@ -47,6 +50,9 @@ Future<void> _pumpGate(
         authRepositoryProvider.overrideWithValue(_FakeRepo(user)),
         // Force online so connectivity stream (async) cannot hide content.
         isOnlineProvider.overrideWith((ref) => true),
+        // Live workspace tabs need internship data (D1 wiring).
+        internshipRepositoryProvider
+            .overrideWithValue(FakeInternshipRepository()),
       ],
       child: MaterialApp(
         locale: locale,

@@ -5,7 +5,13 @@
 enum UserRole { intern, supervisor, unsupported }
 
 UserRole userRoleFromBackend(List<String> roles) {
-  final upper = roles.map((r) => r.toUpperCase()).toSet();
+  // Live backend issues Spring-style authorities ("ROLE_SUPERVISOR").
+  // Strip the prefix before matching (verified against /api/auth/login).
+  final upper = roles
+      .map((r) => r.toUpperCase().startsWith('ROLE_')
+          ? r.toUpperCase().substring(5)
+          : r.toUpperCase())
+      .toSet();
   // SUPERVISOREmployees may carry both; supervisor shell wins for staff UX.
   if (upper.contains('SUPERVISOR')) return UserRole.supervisor;
   if (upper.contains('INTERN')) return UserRole.intern;

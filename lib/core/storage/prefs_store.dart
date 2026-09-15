@@ -18,4 +18,11 @@ class PrefsStore {
 
   String? readTheme() => _prefs.getString(kTheme);
   Future<void> saveTheme(String value) => _prefs.setString(kTheme, value);
+
+  /// Generic access for NON-SENSITIVE values only (ids, flags).
+  /// Tokens must never pass through here — see [TokenStorage].
+  String? readRaw(String key) => _prefs.getString(key);
+  Future<void> writeRaw(String key, String value) =>
+      _prefs.setString(key, value);
+  Future<void> removeRaw(String key) => _prefs.remove(key);
 }

@@ -96,13 +96,18 @@ class ApiException implements Exception {
       );
 
   static ApiErrorKind _kindOf(int status, List<FieldError> fields) {
-    if (status == 400 && fields.isNotEmpty) return ApiErrorKind.validation;
+    // Live backend returns 422 (with envelope) for auth/validation
+    // failures, e.g. wrong credentials on /api/auth/login.
+    if ((status == 400 || status == 422) && fields.isNotEmpty) {
+      return ApiErrorKind.validation;
+    }
     return switch (status) {
       400 => ApiErrorKind.badRequest,
       401 => ApiErrorKind.unauthorized,
       403 => ApiErrorKind.forbidden,
       404 => ApiErrorKind.notFound,
       409 => ApiErrorKind.conflict,
+      422 => ApiErrorKind.validation,
       >= 500 => ApiErrorKind.server,
       _ => ApiErrorKind.unknown,
     };

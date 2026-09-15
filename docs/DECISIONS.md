@@ -87,3 +87,13 @@ only displays backend-computed values (internship type, payment amounts).
 - Shells: intern (Home/Tasks/Journal/Messages/More), supervisor
   (Home/Interns/Validations/Messages/More). D0 tabs are placeholders with
   real navigation + empty states; D1+ wires backend data.
+- Live JWTs carry `ROLE_*`-prefixed authorities — stripped before matching.
+
+## 9. Internship-id resolution (D1, backend has no `/mine` endpoint)
+
+`InternshipRepository.resolveMyInternshipId`: cached id → verify via GET
+detail → else PRIVATE conversation `internshipId` (auto-created on
+assignment) → verify + cache → else null (honest empty state). 403/404
+invalidates the cache; network errors rethrow so the UI renders stale
+cache instead of wiping. `TODO — backend phase`: a dedicated
+`GET /api/internships/mine` would replace conversation-based discovery.
