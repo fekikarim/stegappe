@@ -317,6 +317,7 @@ class AppLocalizations {
     'notifUnreadOnly': {'fr': 'Non lues', 'en': 'Unread', 'ar': 'غير المقروءة'},
     'notifMarkRead': {'fr': 'Marquer comme lue', 'en': 'Mark as read', 'ar': 'تعليم كمقروءة'},
     'notifMarkAllRead': {'fr': 'Tout marquer comme lu', 'en': 'Mark all as read', 'ar': 'تعليم الكل كمقروء'},
+    'notifOpen': {'fr': 'Ouvrir', 'en': 'Open', 'ar': 'فتح'},
     // --- D6: progress overview + advisory logbook ---
     'progressTitle': {'fr': 'Progression globale', 'en': 'Overall progress', 'ar': 'التقدم العام'},
     'progressTasks': {'fr': 'Tâches accomplies', 'en': 'Tasks completed', 'ar': 'المهام المنجزة'},
@@ -611,6 +612,7 @@ class AppLocalizations {
   String get notifUnreadOnly => _get('notifUnreadOnly');
   String get notifMarkRead => _get('notifMarkRead');
   String get notifMarkAllRead => _get('notifMarkAllRead');
+  String get notifOpen => _get('notifOpen');
 
   // D6 progress + advisory logbook
   String get progressTitle => _get('progressTitle');

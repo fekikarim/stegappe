@@ -12,6 +12,8 @@ class NotificationItem extends Equatable {
     required this.priority,
     required this.createdAt,
     required this.isRead,
+    this.relatedEntityType,
+    this.relatedEntityId,
   });
 
   final String id;
@@ -21,9 +23,23 @@ class NotificationItem extends Equatable {
   final DateTime createdAt;
   final bool isRead;
 
+  /// Backend event vocabulary (NotificationEventListener): Internship,
+  /// InternshipApplication, ApplicationDocument, Task, JournalEntry,
+  /// FinanceCase, Certificate, Conversation, Message...
+  final String? relatedEntityType;
+  final String? relatedEntityId;
+
   @override
-  List<Object?> get props =>
-      [id, title, message, priority, createdAt, isRead];
+  List<Object?> get props => [
+        id,
+        title,
+        message,
+        priority,
+        createdAt,
+        isRead,
+        relatedEntityType,
+        relatedEntityId,
+      ];
 }
 
 NotificationItem notificationItemFromJson(Map<String, dynamic> json) {
@@ -41,5 +57,7 @@ NotificationItem notificationItemFromJson(Map<String, dynamic> json) {
     priority: (json['priority'] ?? 'NORMAL').toString(),
     createdAt: when,
     isRead: json['read'] == true,
+    relatedEntityType: json['relatedEntityType'] as String?,
+    relatedEntityId: json['relatedEntityId'] as String?,
   );
 }

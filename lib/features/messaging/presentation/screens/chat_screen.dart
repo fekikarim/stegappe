@@ -30,7 +30,8 @@ class ChatScreen extends ConsumerStatefulWidget {
   ConsumerState<ChatScreen> createState() => _ChatScreenState();
 }
 
-class _ChatScreenState extends ConsumerState<ChatScreen> {
+class _ChatScreenState extends ConsumerState<ChatScreen>
+    with WidgetsBindingObserver {
   final _composer = TextEditingController();
   final _scroll = ScrollController();
   bool _sending = false;
@@ -39,13 +40,26 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
   void initState() {
     super.initState();
     _scroll.addListener(_onScroll);
+    WidgetsBinding.instance.addObserver(this);
   }
 
   @override
   void dispose() {
     _scroll.dispose();
     _composer.dispose();
+    WidgetsBinding.instance.removeObserver(this);
     super.dispose();
+  }
+
+  /// Sockets die in background; resync the cursor window on resume
+  /// (plus the socket's own reconnect → resyncRequested path).
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      ref
+          .read(chatControllerProvider(widget.conversationId).notifier)
+          .resync();
+    }
   }
 
   void _onScroll() {

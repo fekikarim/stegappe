@@ -1,6 +1,6 @@
 import 'dart:typed_data';
 
-import 'package:file_picker/file_picker.dart';
+import 'package:file_selector/file_selector.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -22,17 +22,17 @@ class PickedPdf {
 }
 
 Future<PickedPdf?> pickPdf() async {
-  final result = await FilePicker.pickFiles(
-    type: FileType.custom,
-    allowedExtensions:
-        DeliverableFileRules.allowedExtensions.toList(),
-    withData: true,
+  final file = await openFile(
+    acceptedTypeGroups: [
+      XTypeGroup(
+          label: 'PDF documents',
+          extensions: DeliverableFileRules.allowedExtensions.toList(),
+          mimeTypes:
+              DeliverableFileRules.allowedMimeTypes.toList()),
+    ],
   );
-  final file = result == null || result.files.isEmpty
-      ? null
-      : result.files.first;
-  final bytes = file?.bytes;
-  if (file == null || bytes == null) return null;
+  if (file == null) return null;
+  final bytes = await file.readAsBytes();
   return PickedPdf(fileName: file.name, bytes: bytes);
 }
 

@@ -44,7 +44,10 @@ class RoleScaffold extends ConsumerWidget {
       appBar: AppBar(
         title: Text(current.label),
         actions: [
-          _NotificationBell(),
+          _NotificationBell(onOpenTab: (tab) {
+            // The center already popped itself; just switch tabs.
+            onIndexChanged(tab);
+          }),
           Semantics(
             label: AppLocalizations.of(context).logout,
             button: true,
@@ -105,7 +108,9 @@ class RoleDestination {
 /// Notification bell with unread badge → notification center.
 /// Badge reads the foreground-refreshed count (socket/resume/pull).
 class _NotificationBell extends ConsumerWidget {
-  const _NotificationBell();
+  const _NotificationBell({required this.onOpenTab});
+
+  final ValueChanged<int> onOpenTab;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -123,7 +128,8 @@ class _NotificationBell extends ConsumerWidget {
             icon: const Icon(Icons.notifications_outlined),
             onPressed: () => Navigator.of(context).push(
               MaterialPageRoute(
-                  builder: (_) => const NotificationsScreen()),
+                  builder: (_) =>
+                      NotificationsScreen(onOpenTab: onOpenTab)),
             ),
           ),
           if (unread > 0)

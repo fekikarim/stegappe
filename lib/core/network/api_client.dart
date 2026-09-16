@@ -13,6 +13,48 @@ import 'endpoints.dart';
 /// token refresh here; returns true when retrying the request is safe.
 typedef RefreshHandler = Future<bool> Function();
 
+/// Retry policy for idempotent reads. Writes NEVER auto-retry here:
+/// duplicate POST/PUT/PATCH/Multipart submissions would corrupt data.
+/// Write failures surface immediately for explicit user retry.
+class ReadRetryPolicy {
+  const ReadRetryPolicy({
+    this.maxAttempts = 3,
+    this.baseDelay = const Duration(milliseconds: 400),
+  });
+
+  final int maxAttempts;
+  final Duration baseDelay;
+
+  Duration delayFor(int attempt) =>
+      Duration(milliseconds: baseDelay.inMilliseconds * (1 << (attempt - 1)));
+}
+
+Future<T> _withReadRetry<T>(
+  ReadRetryPolicy? policy,
+  Future<T> Function() call,
+) async {
+  final p = policy;
+  if (p == null) return call();
+  Object? lastError;
+  for (var attempt = 1; attempt <= p.maxAttempts; attempt++) {
+    try {
+      return await call();
+    } on ApiException catch (e) {
+      // Retry transport failures + server errors only. Auth/validation
+      // errors are final (refresh and client bugs must not spin).
+      if (e.kind != ApiErrorKind.network &&
+          e.kind != ApiErrorKind.server) {
+        rethrow;
+      }
+      lastError = e;
+    }
+    if (attempt < p.maxAttempts) {
+      await Future<void>.delayed(p.delayFor(attempt));
+    }
+  }
+  throw lastError!;
+}
+
 /// Central typed HTTP client. ALL feature data sources must go through
 /// this client — no ad-hoc `http.get` calls in features.
 ///
@@ -38,14 +80,19 @@ class ApiClient {
   final RefreshHandler? onUnauthorized;
   final String refreshPath;
 
+  /// Idempotent read with opt-in bounded retry (exponential backoff)
+  /// for transport/server failures. Writes never retry automatically.
   Future<T> get<T>(
     String path, {
     String? bearer,
     Map<String, String>? query,
     required T Function(dynamic json) decode,
+    ReadRetryPolicy? retry,
   }) =>
-      _send<T>('GET', path,
-          bearer: bearer, query: query, decode: decode);
+      _withReadRetry(
+          retry,
+          () => _send<T>('GET', path,
+              bearer: bearer, query: query, decode: decode));
 
   Future<T> post<T>(
     String path, {

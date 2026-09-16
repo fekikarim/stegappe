@@ -164,3 +164,16 @@ cache instead of wiping. `TODO — backend phase`: a dedicated
   explicit retry; cached reads render stale-labeled snapshots.
 - QA is evidence-based: 2x-text + Arabic overflow tests caught real
   layout bugs; `docs/MOBILE_QA_REPORT.md` records the full audit.
+
+## 15. D7 release gate (engineering)
+
+- File picking uses the official `file_selector` (file_picker 11's
+  legacy Android module is incompatible with AGP 9 / Kotlin 2.4 —
+  release builds failed on it; see MOBILE_D7_REPORT).
+- Reads may opt into bounded retry/backoff (transport + 5xx only);
+  writes never auto-retry (explicit user retry everywhere).
+- Session policy: silent refresh on expiry, clean re-login on
+  revocation, logout always clears + disconnects the socket.
+- No OS deep links: notification routing is in-app and role-aware.
+- Release signing via git-ignored `android/key.properties`; app ids
+  `tn.steg.stegappe`; procedure in `docs/RELEASE.md`.

@@ -2,8 +2,7 @@ import 'dart:typed_data';
 
 import '../../../../core/network/api_client.dart';
 import '../../../../core/network/endpoints.dart';
-import '../../../../core/network/paged.dart';
-import '../../domain/entities/conversation.dart';
+import '../../../../core/network/paged.dart';import '../../domain/entities/conversation.dart';
 import '../models/messaging_dtos.dart';
 
 /// Thin HTTP wrapper for messaging + notifications.
@@ -17,6 +16,8 @@ class MessagingRemoteDataSource {
   Future<List<Conversation>> listConversations(String? bearer) =>
       _client.get(Endpoints.conversations,
           bearer: bearer,
+          // Reconnect storms hit this first; bounded retry smooths them.
+          retry: const ReadRetryPolicy(),
           decode: (j) => [
                 if (j is List)
                   for (final e in j)
@@ -45,6 +46,7 @@ class MessagingRemoteDataSource {
         Endpoints.conversationMessages(conversationId),
         bearer: bearer,
         query: q,
+        retry: const ReadRetryPolicy(),
         decode: (j) => Paged.fromJson(
             j, (m) => messageFromJson(m, selfUserId: selfUserId)));
   }

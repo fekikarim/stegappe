@@ -1,0 +1,7 @@
+# Release signing template — copy to key.properties (git-ignored) and
+# fill with the REAL values on the release machine ONLY.
+# NEVER commit key.properties or the .jks/.keystore file.
+storePassword=CHANGE_ME
+keyPassword=CHANGE_ME
+keyAlias=stegappe-release
+storeFile=/absolute/path/to/stegappe-release.keystore

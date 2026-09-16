@@ -6,6 +6,8 @@ import '../../../../core/network/api_exception.dart';
 import '../../../../core/theme/steg_spacing.dart';
 import '../../../../core/widgets/steg_states.dart';
 import '../../../../core/network/paged.dart';
+import '../../../auth/domain/entities/app_user.dart';
+import '../../../auth/presentation/providers/auth_providers.dart';
 import '../../domain/entities/notification_item.dart';
 import '../providers/messaging_providers.dart';
 import '../widgets/status_labels.dart'
@@ -14,12 +16,18 @@ import '../widgets/status_labels.dart'
 /// In-app notification center for workflow events (task/journal/
 /// evaluation/messaging + internship/finance events).
 ///
+/// Tapping a notification marks it read and — when its related entity
+/// maps to a tab for the current role — navigates there (in-app only;
+/// the app defines no OS deep-link scheme).
 /// Push delivery is unavailable: the backend push sender is a no-op
 /// stub and no provider credentials are configured
 /// (`TODO — push provider`). The center refreshes via socket payloads,
 /// app resume, and pull-to-refresh instead — always foreground-honest.
 class NotificationsScreen extends ConsumerStatefulWidget {
-  const NotificationsScreen({super.key});
+  const NotificationsScreen({super.key, this.onOpenTab});
+
+  /// Switch the underlying shell tab, then pop this screen.
+  final ValueChanged<int>? onOpenTab;
 
   @override
   ConsumerState<NotificationsScreen> createState() =>
@@ -144,6 +152,14 @@ class _NotificationsScreenState
                     itemCount: page.items.length,
                     itemBuilder: (ctx, i) {
                       final n = page.items[i];
+                      final auth = ref.watch(authControllerProvider);
+                      final role = auth is AuthAuthenticated
+                          ? auth.user.mobileRole
+                          : UserRole.unsupported;
+                      final target =
+                          _tabFor(n.relatedEntityType, role);
+                      final routable = target != null &&
+                          widget.onOpenTab != null;
                       return Card(
                         child: ListTile(
                           leading: Icon(
@@ -162,14 +178,39 @@ class _NotificationsScreenState
                             overflow: TextOverflow.ellipsis,
                           ),
                           isThreeLine: true,
-                          trailing: n.isRead
-                              ? null
-                              : TextButton(
-                                  onPressed: () => _markRead(
-                                      context, ref, n),
-                                  child: Text(
-                                      l10n.notifMarkRead),
-                                ),
+                          trailing: routable
+                              ? Semantics(
+                                  button: true,
+                                  label: l10n.notifOpen,
+                                  child: IconButton(
+                                    tooltip: l10n.notifOpen,
+                                    icon: const Icon(Icons
+                                        .arrow_forward_outlined),
+                                    onPressed: () => _open(
+                                        context,
+                                        ref,
+                                        n,
+                                        target),
+                                  ),
+                                )
+                              : (n.isRead
+                                  ? null
+                                  : TextButton(
+                                      onPressed: () =>
+                                          _markRead(
+                                              context,
+                                              ref,
+                                              n),
+                                      child: Text(l10n
+                                          .notifMarkRead),
+                                    )),
+                          onTap: routable
+                              ? () => _open(
+                                  context, ref, n, target)
+                              : (n.isRead
+                                  ? null
+                                  : () => _markRead(
+                                      context, ref, n)),
                         ),
                       );
                     },
@@ -203,6 +244,57 @@ class _NotificationsScreenState
       }
     }
   }
+
+  /// Mark read (when needed) then route into the shell tab. Unknown
+  /// entity types stay in the center — never a dead tap.
+  Future<void> _open(BuildContext context, WidgetRef ref,
+      NotificationItem n, int tab) async {
+    if (!n.isRead) {
+      try {
+        await ref
+            .read(notificationRepositoryProvider)
+            .markRead(n.id);
+        ref
+          ..invalidate(notificationsProvider)
+          ..invalidate(unreadNotificationsProvider);
+      } on Exception catch (e) {
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(e is ApiException
+                  ? e.message
+                  : e.toString()),
+            ),
+          );
+          return;
+        }
+      }
+    }
+    if (!context.mounted) return;
+    Navigator.of(context).pop();
+    widget.onOpenTab?.call(tab);
+  }
+}
+
+/// Backend event vocabulary → shell tab per role. Unknown types map to
+/// null (stay in the center) rather than a wrong destination.
+int? _tabFor(String? entity, UserRole role) {
+  final t = (entity ?? '').toUpperCase();
+  return switch (role) {
+    UserRole.intern => switch (t) {
+        'TASK' => 1,
+        'JOURNALENTRY' => 2,
+        'CONVERSATION' || 'MESSAGE' => 3,
+        _ => null,
+      },
+    UserRole.supervisor => switch (t) {
+        'TASK' || 'JOURNALENTRY' || 'DELIVERABLE' => 2,
+        'CONVERSATION' || 'MESSAGE' => 3,
+        'INTERNSHIP' => 1,
+        _ => null,
+      },
+    UserRole.unsupported => null,
+  };
 }
 
 final _filteredProvider = FutureProvider.family<

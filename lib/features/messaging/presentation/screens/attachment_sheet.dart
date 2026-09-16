@@ -1,6 +1,6 @@
 import 'dart:typed_data';
 
-import 'package:file_picker/file_picker.dart';
+import 'package:file_selector/file_selector.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -75,22 +75,28 @@ class _AttachmentSheetState
 
   Future<void> _pick() async {
     final l10n = AppLocalizations.of(context);
-    final result = await FilePicker.pickFiles(
-      type: FileType.custom,
-      allowedExtensions:
-          ChatAttachmentRules.allowedExtensions.toList(),
-      withData: true,
+    final file = await openFile(
+      acceptedTypeGroups: const [
+        XTypeGroup(
+          label: 'PDF / JPEG / PNG',
+          extensions: ['pdf', 'jpg', 'jpeg', 'png'],
+          mimeTypes: [
+            'application/pdf',
+            'image/jpeg',
+            'image/png'
+          ],
+        ),
+      ],
     );
-    final file =
-        result == null || result.files.isEmpty ? null : result.files.first;
-    final bytes = file?.bytes;
-    if (file == null || bytes == null) return;
+    if (file == null) return; // user cancelled
+    final bytes = await file.readAsBytes();
+    final name = file.name;
     final problem =
-        ChatAttachmentRules.check(file.name, bytes.length);
+        ChatAttachmentRules.check(name, bytes.length);
     setState(() {
       if (problem == null) {
         _bytes = bytes;
-        _fileName = file.name;
+        _fileName = name;
         _fileError = null;
       } else {
         _bytes = null;
@@ -331,7 +337,15 @@ class _AttachmentPreviewBodyState
             child: ClipRRect(
               borderRadius: BorderRadius.circular(
                   StegSpacing.radiusSm),
-              child: Image.memory(bytes, fit: BoxFit.contain),
+              // Downscale at decode time: chat images can be 10 MB;
+              // full-resolution decode would spike memory (D7).
+              child: Image(
+                image: ResizeImage(
+                  MemoryImage(bytes),
+                  width: 1080,
+                ),
+                fit: BoxFit.contain,
+              ),
             ),
           )
         else
