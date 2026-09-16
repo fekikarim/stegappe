@@ -10,6 +10,7 @@ import '../../data/repositories/internship_repository_impl.dart';
 import '../../domain/dashboard.dart';
 import '../../domain/entities/evaluation.dart';
 import '../../domain/entities/internship.dart';
+import '../../domain/entities/logbook.dart';
 import '../../domain/entities/work_items.dart';
 import '../../domain/repositories/internship_repository.dart';
 
@@ -66,7 +67,8 @@ final dashboardProvider = FutureProvider<DashboardData>((ref) async {
     repo.listJournal(id, size: 20),
     repo.listJournal(id, size: 1, status: JournalStatus.draft),
     repo.listJournal(id, size: 1, status: JournalStatus.rejected),
-    repo.listDeliverables(id, size: 20),
+    repo.listJournal(id, size: 1, status: JournalStatus.validated),
+    repo.listDeliverables(id, size: 50),
     repo.listEvaluations(id, size: 10),
     repo.listNotifications(size: 5),
     repo.unreadNotificationCount(),
@@ -78,9 +80,10 @@ final dashboardProvider = FutureProvider<DashboardData>((ref) async {
   final journal = results[4] as Paged<JournalEntry>;
   final drafts = results[5] as Paged<JournalEntry>;
   final rejected = results[6] as Paged<JournalEntry>;
-  final deliverables = results[7] as Paged<DeliverableSummary>;
-  final evaluations = results[8] as Paged<EvaluationSummary>;
-  final notifications = results[9] as Paged<AppNotification>;
+  final validated = results[7] as Paged<JournalEntry>;
+  final deliverables = results[8] as Paged<DeliverableSummary>;
+  final evaluations = results[9] as Paged<EvaluationSummary>;
+  final notifications = results[10] as Paged<AppNotification>;
 
   final data = buildDashboard(DashboardInput(
     internship: results[0] as Internship,
@@ -90,11 +93,13 @@ final dashboardProvider = FutureProvider<DashboardData>((ref) async {
     tasksGrandTotal: tasks.totalElements,
     journal: journal.items,
     pendingJournalTotal: drafts.totalElements + rejected.totalElements,
+    journalValidatedTotal: validated.totalElements,
     deliverables: deliverables.items,
+    deliverablesTotal: deliverables.totalElements,
     evaluations: evaluations.items,
     notifications: notifications.items,
-    unreadNotifications: results[10] as int,
-    unreadMessages: results[11] as int,
+    unreadNotifications: results[11] as int,
+    unreadMessages: results[12] as int,
     now: now,
   ));
   // Keep last-good snapshot for honest stale rendering when offline.
@@ -137,11 +142,16 @@ final journalListProvider =
   final repo = ref.watch(internshipRepositoryProvider);
   final id = await ref.watch(myInternshipIdProvider.future);
   if (id == null) throw StateError('no-internship');
-  return repo.listJournal(id,
+  final page = await repo.listJournal(id,
       size: 20,
       status: ref.watch(journalStatusFilterProvider),
       day: ref.watch(selectedDayProvider));
+  ref.read(lastJournalProvider.notifier).state = page;
+  return page;
 });
+
+final lastJournalProvider =
+    StateProvider<Paged<JournalEntry>?>((ref) => null);
 
 /// Feedback comments for one journal entry (supervisor notes live here).
 final journalCommentsProvider =
@@ -395,6 +405,21 @@ final myEvaluationsProvider =
   if (id == null) throw StateError('no-internship');
   return repo.listEvaluations(id, size: 20);
 });
+
+// --- D6 advisory logbook (review-only draft, graceful degradation) ---
+
+/// Advisory draft generation. Throws on AI outage/rate-limit: the UI
+/// catches and shows a retry card WITHOUT blocking core flows.
+final logbookDraftProvider =
+    FutureProvider<LogbookDraft>((ref) async {
+  final repo = ref.watch(internshipRepositoryProvider);
+  final id = await ref.watch(myInternshipIdProvider.future);
+  if (id == null) throw StateError('no-internship');
+  return repo.generateLogbookDraft(id);
+});
+
+/// Locally edited logbook text (review copy; never auto-submitted).
+final logbookEditProvider = StateProvider<String?>((ref) => null);
 
 /// Task page for any internship (supervisor review + task reviews).
 final internshipTasksProvider = FutureProvider.family<

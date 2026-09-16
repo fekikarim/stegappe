@@ -5,6 +5,7 @@ import 'package:stegappe/core/network/paged.dart';
 import 'package:stegappe/features/internship/domain/dashboard.dart';
 import 'package:stegappe/features/internship/domain/entities/evaluation.dart';
 import 'package:stegappe/features/internship/domain/entities/internship.dart';
+import 'package:stegappe/features/internship/domain/entities/logbook.dart';
 import 'package:stegappe/features/internship/domain/entities/work_items.dart';
 import 'package:stegappe/features/internship/domain/repositories/internship_repository.dart';
 
@@ -63,10 +64,12 @@ DashboardData fixtureDashboard(DateTime now) => buildDashboard(
         tasksGrandTotal: 4,
         journal: fixtureJournal(now),
         pendingJournalTotal: 1,
+        journalValidatedTotal: 1,
         deliverables: const [
           DeliverableSummary(
               id: 'd1', title: 'Rapport', status: DeliverableStatus.submitted, currentVersion: 2),
         ],
+        deliverablesTotal: 1,
         evaluations: [
           EvaluationSummary(
               id: 'e1', type: 'WEEKLY', evaluationDate: day(now, -7), totalScore: 15.5),
@@ -142,7 +145,10 @@ class FakeInternshipRepository implements InternshipRepository {
       throw Exception('offline');
     }
     statusUpdates.add((taskId, status));
-    final t = fixtureTasks(now).firstWhere((e) => e.id == taskId);
+    final existing = fixtureTasks(now).where((e) => e.id == taskId);
+    final t = existing.isEmpty
+        ? InternTask(id: taskId, title: taskId, status: status)
+        : existing.first;
     return InternTask(
         id: t.id,
         title: t.title,
@@ -558,8 +564,7 @@ class FakeInternshipRepository implements InternshipRepository {
       ];
 
   @override
-  Future<List<SupervisedIntern>> supervisedInterns() async => [
-        SupervisedIntern(
+  Future<List<SupervisedIntern>> supervisedInterns() async => [        SupervisedIntern(
             internshipId: 'internship-1',
             reference: 'STG-2026-0001',
             internName: 'Amira Ben Salah',
@@ -574,4 +579,23 @@ class FakeInternshipRepository implements InternshipRepository {
             pendingDeliverables: 1,
             evaluationsCount: 1),
       ];
+
+  // --- D6 logbook ---
+
+  bool failAi = false;
+
+  @override
+  Future<LogbookDraft> generateLogbookDraft(
+      String internshipId) async {
+    if (failAi) throw Exception('AI unavailable');
+    return LogbookDraft(
+      analysisId: 'ai-1',
+      analysisType: 'LOGBOOK_GENERATION',
+      modelUsed: 'test-model',
+      cinExcluded: true,
+      createdAt: now,
+      draftText: '| Période | Tâche |\n| Lundi | Setup |',
+      recommendations: const ['Vérifiez les dates.'],
+    );
+  }
 }

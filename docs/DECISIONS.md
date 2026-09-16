@@ -153,3 +153,14 @@ cache instead of wiping. `TODO — backend phase`: a dedicated
   `TODO — push provider` (FCM/APNs credentials + backend wiring).
 - `test/live/stomp_roundtrip_test.dart` proves the round trip against a
   local backend; it skips without `LIVE_BACKEND=true` so CI stays green.
+
+## 14. D6 scope guards (AI, offline, QA)
+
+- Mobile AI = logbook draft ONLY (sole participant-authorized AI
+  endpoint). Assistant Q&A is CANDIDATE-role-only (403-probed) and is
+  NOT shipped; faking it would violate the honesty rule. Backend
+  follow-up: extend Q&A to INTERN/SUPERVISOR.
+- No offline mutation queue by design: every mutation fails fast with
+  explicit retry; cached reads render stale-labeled snapshots.
+- QA is evidence-based: 2x-text + Arabic overflow tests caught real
+  layout bugs; `docs/MOBILE_QA_REPORT.md` records the full audit.

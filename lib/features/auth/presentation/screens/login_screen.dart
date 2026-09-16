@@ -132,7 +132,11 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                       onSubmitted: (_) => _submit(),
                       error: _passwordError(state),
                       suffix: IconButton(
-                        tooltip: _obscure ? 'Show' : 'Hide',
+                        tooltip: _obscure
+                            ? AppLocalizations.of(context)
+                                .showPassword
+                            : AppLocalizations.of(context)
+                                .hidePassword,
                         icon: Icon(_obscure
                             ? Icons.visibility_outlined
                             : Icons.visibility_off_outlined),

@@ -5,6 +5,7 @@ import 'package:intl/intl.dart';
 import '../../../../core/connectivity/connectivity_service.dart';
 import '../../../../core/l10n/app_localizations.dart';
 import '../../../../core/network/api_exception.dart';
+import '../../../../core/network/paged.dart';
 import '../../../../core/theme/steg_spacing.dart';
 import '../../../../core/widgets/steg_states.dart';
 import '../../../../core/widgets/steg_status_chip.dart';
@@ -28,6 +29,7 @@ class JournalListScreen extends ConsumerWidget {
     final l10n = AppLocalizations.of(context);
     final async = ref.watch(journalListProvider);
     final isOnline = ref.watch(isOnlineProvider);
+    final last = ref.watch(lastJournalProvider);
     final auth = ref.watch(authControllerProvider);
     final isIntern = auth is AuthAuthenticated &&
         auth.user.mobileRole == UserRole.intern;
@@ -54,9 +56,12 @@ class JournalListScreen extends ConsumerWidget {
                 padding: const EdgeInsets.fromLTRB(
                     StegSpacing.md, 0, StegSpacing.md, StegSpacing.md),
                 sliver: async.when(
-                  loading: () => const SliverFillRemaining(
+                  loading: () => SliverFillRemaining(
                     hasScrollBody: false,
-                    child: StegLoading(),
+                    child: (last != null && !isOnline)
+                        ? _JournalBody(
+                            page: last, showStale: true)
+                        : const StegLoading(),
                   ),
                   error: (e, _) {
                     if (e is StateError &&
@@ -68,6 +73,12 @@ class JournalListScreen extends ConsumerWidget {
                           hint: l10n.noInternshipHint,
                           icon: Icons.school_outlined,
                         ),
+                      );
+                    }
+                    if (last != null && !isOnline) {
+                      return SliverToBoxAdapter(
+                        child: _JournalBody(
+                            page: last, showStale: true),
                       );
                     }
                     return SliverFillRemaining(
@@ -92,27 +103,8 @@ class JournalListScreen extends ConsumerWidget {
                         ),
                       );
                     }
-                    return SliverMainAxisGroup(
-                      slivers: [
-                        if (!isOnline)
-                          const SliverToBoxAdapter(
-                            child: Padding(
-                              padding: EdgeInsets.only(
-                                  bottom: StegSpacing.sm),
-                              child: StaleNotice(),
-                            ),
-                          ),
-                        SliverList(
-                          delegate: SliverChildBuilderDelegate(
-                            (ctx, i) {
-                              final j = page.items[i];
-                              return _EntryCard(entry: j);
-                            },
-                            childCount: page.items.length,
-                          ),
-                        ),
-                      ],
-                    );
+                    return _JournalBody(
+                        page: page, showStale: !isOnline);
                   },
                 ),
               ),
@@ -185,8 +177,8 @@ class _DayStrip extends ConsumerWidget {
           children: [
             Row(
               children: [
-                IconButton(
-                  tooltip: '‹',
+            IconButton(
+              tooltip: l10n.prevWeek,
                   icon: Icon(
                       rtl ? Icons.chevron_right : Icons.chevron_left),
                   onPressed: () => ref
@@ -216,8 +208,8 @@ class _DayStrip extends ConsumerWidget {
                     ],
                   ),
                 ),
-                IconButton(
-                  tooltip: '›',
+            IconButton(
+              tooltip: l10n.nextWeek,
                   icon: Icon(
                       rtl ? Icons.chevron_left : Icons.chevron_right),
                   onPressed: () => ref
@@ -350,8 +342,39 @@ class _StatusFilter extends ConsumerWidget {
   }
 }
 
-class _EntryCard extends StatelessWidget {
-  const _EntryCard({required this.entry});
+/// Cached list body with explicit stale labeling (offline audit).
+class _JournalBody extends StatelessWidget {
+  const _JournalBody({required this.page, required this.showStale});
+
+  final Paged<JournalEntry> page;
+  final bool showStale;
+
+  @override
+  Widget build(BuildContext context) {
+    return SliverMainAxisGroup(
+      slivers: [
+        if (showStale)
+          const SliverToBoxAdapter(
+            child: Padding(
+              padding: EdgeInsets.only(bottom: StegSpacing.sm),
+              child: StaleNotice(),
+            ),
+          ),
+        SliverList(
+          delegate: SliverChildBuilderDelegate(
+            (ctx, i) {
+              final j = page.items[i];
+              return _EntryCard(entry: j);
+            },
+            childCount: page.items.length,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _EntryCard extends StatelessWidget {  const _EntryCard({required this.entry});
 
   final JournalEntry entry;
 

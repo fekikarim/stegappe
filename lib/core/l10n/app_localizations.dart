@@ -317,6 +317,30 @@ class AppLocalizations {
     'notifUnreadOnly': {'fr': 'Non lues', 'en': 'Unread', 'ar': 'غير المقروءة'},
     'notifMarkRead': {'fr': 'Marquer comme lue', 'en': 'Mark as read', 'ar': 'تعليم كمقروءة'},
     'notifMarkAllRead': {'fr': 'Tout marquer comme lu', 'en': 'Mark all as read', 'ar': 'تعليم الكل كمقروء'},
+    // --- D6: progress overview + advisory logbook ---
+    'progressTitle': {'fr': 'Progression globale', 'en': 'Overall progress', 'ar': 'التقدم العام'},
+    'progressTasks': {'fr': 'Tâches accomplies', 'en': 'Tasks completed', 'ar': 'المهام المنجزة'},
+    'progressJournal': {'fr': 'Journal validé', 'en': 'Journal validated', 'ar': 'اليومية المصادق عليها'},
+    'progressJournalPending': {'fr': 'dont {n} en attente', 'en': '{n} pending', 'ar': 'منها {n} معلقة'},
+    'progressDeliverables': {'fr': 'Livrables validés', 'en': 'Deliverables validated', 'ar': 'المُخرَجات المصادق عليها'},
+    'progressEvaluations': {'fr': 'Évaluations reçues', 'en': 'Evaluations received', 'ar': 'التقييمات المستلمة'},
+    'progressEvaluationsCount': {'fr': '{n} évaluation(s)', 'en': '{n} evaluation(s)', 'ar': '{n} تقييم'},
+    'progressOfTotal': {'fr': '{a} / {b}', 'en': '{a} / {b}', 'ar': '{a} / {b}'},
+    'aiBadge': {'fr': 'Assistance IA', 'en': 'AI assistance', 'ar': 'مساعدة ذكية'},
+    'aiAdvisoryNote': {'fr': 'Contenu généré par IA à titre indicatif : vérification humaine requise.', 'en': 'AI-generated content for guidance only: human review required.', 'ar': 'محتوى مولّد بالذكاء الاصطناعي للاسترشاد فقط: المراجعة البشرية مطلوبة.'},
+    'aiCinExcluded': {'fr': 'Données sensibles (CIN) exclues', 'en': 'Sensitive data (CIN) excluded', 'ar': 'البيانات الحساسة (CIN) مستبعدة'},
+    'logbookTitle': {'fr': 'Carnet de stage (brouillon IA)', 'en': 'Logbook (AI draft)', 'ar': 'دفتر التربص (مسودة ذكية)'},
+    'logbookExplain': {'fr': 'Brouillon généré à partir de vos tâches, journal et livrables réels. Relisez et modifiez avant toute utilisation.', 'en': 'Draft generated from your actual tasks, journal and deliverables. Review and edit before any use.', 'ar': 'مسودة مولّدة من مهامك ويوميتك ومُخرَجاتك الفعلية. راجع وعدّل قبل أي استخدام.'},
+    'logbookGenerate': {'fr': 'Générer le brouillon', 'en': 'Generate draft', 'ar': 'توليد المسودة'},
+    'logbookRegenerate': {'fr': 'Régénérer', 'en': 'Regenerate', 'ar': 'إعادة التوليد'},
+    'logbookEditHint': {'fr': 'Modifiez le brouillon ici avant utilisation.', 'en': 'Edit the draft here before use.', 'ar': 'عدّل المسودة هنا قبل الاستخدام.'},
+    'logbookUnavailable': {'fr': 'Service IA indisponible pour le moment. Vos données et actions restent intactes.', 'en': 'AI service unavailable right now. Your data and actions are unaffected.', 'ar': 'خدمة الذكاء الاصطناعي غير متاحة حاليا. بياناتك وإجراءاتك سليمة.'},
+    'logbookSuggestions': {'fr': 'Suggestions (indicatives)', 'en': 'Suggestions (advisory)', 'ar': 'اقتراحات (استرشادية)'},
+    'logbookModel': {'fr': 'Modèle : {n}', 'en': 'Model: {n}', 'ar': 'النموذج: {n}'},
+    'showPassword': {'fr': 'Afficher', 'en': 'Show', 'ar': 'إظهار'},
+    'hidePassword': {'fr': 'Masquer', 'en': 'Hide', 'ar': 'إخفاء'},
+    'prevWeek': {'fr': 'Semaine précédente', 'en': 'Previous week', 'ar': 'الأسبوع السابق'},
+    'nextWeek': {'fr': 'Semaine suivante', 'en': 'Next week', 'ar': 'الأسبوع التالي'},
   };
 
   String _get(String key) {
@@ -587,6 +611,36 @@ class AppLocalizations {
   String get notifUnreadOnly => _get('notifUnreadOnly');
   String get notifMarkRead => _get('notifMarkRead');
   String get notifMarkAllRead => _get('notifMarkAllRead');
+
+  // D6 progress + advisory logbook
+  String get progressTitle => _get('progressTitle');
+  String get progressTasks => _get('progressTasks');
+  String get progressJournal => _get('progressJournal');
+  String progressJournalPending(int n) =>
+      _get('progressJournalPending').replaceAll('{n}', '$n');
+  String get progressDeliverables => _get('progressDeliverables');
+  String get progressEvaluations => _get('progressEvaluations');
+  String progressEvaluationsCount(int n) =>
+      _get('progressEvaluationsCount').replaceAll('{n}', '$n');
+  String progressOf(int a, int b) => _get('progressOfTotal')
+      .replaceAll('{a}', '$a')
+      .replaceAll('{b}', '$b');
+  String get aiBadge => _get('aiBadge');
+  String get aiAdvisoryNote => _get('aiAdvisoryNote');
+  String get aiCinExcluded => _get('aiCinExcluded');
+  String get logbookTitle => _get('logbookTitle');
+  String get logbookExplain => _get('logbookExplain');
+  String get logbookGenerate => _get('logbookGenerate');
+  String get logbookRegenerate => _get('logbookRegenerate');
+  String get logbookEditHint => _get('logbookEditHint');
+  String get logbookUnavailable => _get('logbookUnavailable');
+  String get logbookSuggestions => _get('logbookSuggestions');
+  String logbookModel(String n) =>
+      _get('logbookModel').replaceAll('{n}', n);
+  String get showPassword => _get('showPassword');
+  String get hidePassword => _get('hidePassword');
+  String get prevWeek => _get('prevWeek');
+  String get nextWeek => _get('nextWeek');
 
   /// All keys must exist in fr/en/ar — enforced by unit test.
   static Map<String, Map<String, String>> get allValues => _values;

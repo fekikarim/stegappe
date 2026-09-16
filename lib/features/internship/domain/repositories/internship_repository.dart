@@ -3,6 +3,7 @@ import 'dart:typed_data';
 import '../../../../core/network/paged.dart';
 import '../entities/evaluation.dart';
 import '../entities/internship.dart';
+import '../entities/logbook.dart';
 import '../entities/work_items.dart';
 
 /// Read + limited-write contract for the intern daily workspace.
@@ -107,6 +108,13 @@ abstract class InternshipRepository {
 
   /// Supervised interns with backend-sourced progress.
   Future<List<SupervisedIntern>> supervisedInterns();
+
+  // --- D6 advisory AI (logbook draft only; never authoritative) ---
+
+  /// Generate a review-only logbook draft from recorded data.
+  /// Throws on AI outage/rate-limit — callers degrade gracefully and
+  /// never block core flows on this.
+  Future<LogbookDraft> generateLogbookDraft(String internshipId);
 }
 
 /// One SUBMITTED deliverable awaiting supervisor review.

@@ -17,7 +17,12 @@ class DashboardData {
     required this.extraTasks,
     required this.pendingJournal,
     required this.pendingJournalTotal,
+    required this.journalValidatedTotal,
     required this.openDeliverables,
+    required this.deliverablesTotal,
+    required this.deliverablesValidated,
+    required this.deliverablesComplete,
+    required this.evaluationsCount,
     required this.latestEvaluation,
     required this.recentNotifications,
     required this.unreadNotifications,
@@ -39,7 +44,16 @@ class DashboardData {
 
   final List<JournalEntry> pendingJournal;
   final int pendingJournalTotal;
+  final int journalValidatedTotal;
   final List<DeliverableSummary> openDeliverables;
+  final int deliverablesTotal;
+
+  /// Validated count is exact only when the fetched page covers the
+  /// whole collection ([deliverablesComplete]); otherwise the UI shows
+  /// the total without inventing a validated share.
+  final int deliverablesValidated;
+  final bool deliverablesComplete;
+  final int evaluationsCount;
   final EvaluationSummary? latestEvaluation;
   final List<AppNotification> recentNotifications;
   final int unreadNotifications;
@@ -68,7 +82,9 @@ class DashboardInput {
     required this.tasksGrandTotal,
     required this.journal,
     required this.pendingJournalTotal,
+    required this.journalValidatedTotal,
     required this.deliverables,
+    required this.deliverablesTotal,
     required this.evaluations,
     required this.notifications,
     required this.unreadNotifications,
@@ -83,7 +99,9 @@ class DashboardInput {
   final int tasksGrandTotal;
   final List<JournalEntry> journal;
   final int pendingJournalTotal;
+  final int journalValidatedTotal;
   final List<DeliverableSummary> deliverables;
+  final int deliverablesTotal;
   final List<EvaluationSummary> evaluations;
   final List<AppNotification> notifications;
   final int unreadNotifications;
@@ -134,6 +152,12 @@ DashboardData buildDashboard(DashboardInput input) {
   final extra = (input.tasksGrandTotal - input.tasks.length)
       .clamp(0, 1 << 30);
 
+  final validatedDelivs = input.deliverables
+      .where((d) => d.status == DeliverableStatus.validated)
+      .length;
+  final delivsComplete =
+      input.deliverablesTotal <= input.deliverables.length;
+
   return DashboardData(
     internship: input.internship,
     assignments: input.assignments,
@@ -146,7 +170,12 @@ DashboardData buildDashboard(DashboardInput input) {
     extraTasks: extra,
     pendingJournal: pending,
     pendingJournalTotal: input.pendingJournalTotal,
+    journalValidatedTotal: input.journalValidatedTotal,
     openDeliverables: openDelivs,
+    deliverablesTotal: input.deliverablesTotal,
+    deliverablesValidated: validatedDelivs,
+    deliverablesComplete: delivsComplete,
+    evaluationsCount: input.evaluations.length,
     latestEvaluation:
         input.evaluations.isEmpty ? null : input.evaluations.first,
     recentNotifications: input.notifications.take(5).toList(),

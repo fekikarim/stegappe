@@ -168,7 +168,7 @@ void main() {
       expect(find.text('Submitted entry'), findsNothing);
 
       // Jump a week back: no fixture entries there.
-      await tester.tap(find.byTooltip('‹'));
+      await tester.tap(find.byTooltip('Semaine précédente'));
       await tester.pumpAndSettle();
       expect(find.text('Aucune entrée pour le moment.'), findsOneWidget);
     });

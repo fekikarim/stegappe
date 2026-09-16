@@ -4,6 +4,7 @@ import '../../../../core/network/api_exception.dart';
 import '../../../../core/storage/token_storage.dart';
 import '../../domain/entities/evaluation.dart';
 import '../../domain/entities/internship.dart';
+import '../../domain/entities/logbook.dart';
 import '../../domain/entities/work_items.dart';
 import '../../domain/repositories/internship_repository.dart';
 import '../../../../core/network/paged.dart';
@@ -416,4 +417,10 @@ class InternshipRepositoryImpl implements InternshipRepository {
     }
     return out;
   }
+
+  @override
+  Future<LogbookDraft> generateLogbookDraft(
+          String internshipId) async =>
+      remote.generateLogbookDraft(
+          internshipId, await _bearer());
 }

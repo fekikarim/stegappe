@@ -98,12 +98,12 @@ class LabeledProgress extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Row(
+          Wrap(
+            alignment: WrapAlignment.spaceBetween,
+            crossAxisAlignment: WrapCrossAlignment.center,
             children: [
-              Expanded(
-                child: Text(label,
-                    style: Theme.of(context).textTheme.bodyMedium),
-              ),
+              Text(label,
+                  style: Theme.of(context).textTheme.bodyMedium),
               // Counter is a technical value: keep LTR in RTL layouts.
               Directionality(
                 textDirection: TextDirection.ltr,

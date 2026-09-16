@@ -5,6 +5,7 @@ import '../../../../core/network/endpoints.dart';
 import '../../../../core/network/paged.dart';
 import '../../domain/entities/evaluation.dart';
 import '../../domain/entities/internship.dart';
+import '../../domain/entities/logbook.dart';
 import '../../domain/entities/work_items.dart';
 import '../models/internship_dtos.dart';
 
@@ -260,7 +261,6 @@ class InternshipRemoteDataSource {
                     if (e is Map<String, dynamic>)
                       templateFromJson(e),
               ]);
-
   Future<List<EvaluationCriterion>> templateCriteria(
           String templateId, String? bearer) =>
       _client.get(Endpoints.templateCriteria(templateId),
@@ -436,6 +436,14 @@ class InternshipRemoteDataSource {
         }
         return total;
       });
+
+  // --- D6: advisory logbook draft (participant-authorized) ---
+
+  Future<LogbookDraft> generateLogbookDraft(
+          String internshipId, String? bearer) =>
+      _client.post(Endpoints.aiLogbook(internshipId),
+          bearer: bearer,
+          decode: (j) => logbookDraftFromJson(_map(j)));
 
   static Map<String, dynamic> _map(dynamic j) =>
       j is Map<String, dynamic> ? j : <String, dynamic>{};

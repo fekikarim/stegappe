@@ -137,11 +137,13 @@ class _TaskRowState extends ConsumerState<TaskRow> {
                 ],
               ),
             ),
-            const SizedBox(width: StegSpacing.xs),
-            StegStatusChip(
-              label: taskStatusLabel(_shown, l10n),
-              kind: taskStatusKind(_shown, overdue: overdue),
-            ),
+              const SizedBox(width: StegSpacing.xs),
+              Flexible(
+                child: StegStatusChip(
+                  label: taskStatusLabel(_shown, l10n),
+                  kind: taskStatusKind(_shown, overdue: overdue),
+                ),
+              ),
             if (widget.onOpen != null)
               Semantics(
                 button: true,

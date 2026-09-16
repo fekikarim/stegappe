@@ -80,4 +80,7 @@ abstract final class Endpoints {
       '/api/notifications/unread-count';
   static String notificationRead(String id) =>
       '/api/notifications/$id/read';
+  // --- D6 AI (advisory only; logbook is the participant endpoint) ---
+  static String aiLogbook(String internshipId) =>
+      '/api/ai/internships/$internshipId/logbook/generate';
 }

@@ -79,6 +79,10 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
 
   void _jumpToBottom() {
     if (!_scroll.hasClients) return;
+    if (MediaQuery.of(context).disableAnimations) {
+      _scroll.jumpTo(_scroll.position.minScrollExtent);
+      return;
+    }
     _scroll.animateTo(
       _scroll.position.minScrollExtent,
       duration: const Duration(milliseconds: 200),

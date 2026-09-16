@@ -1,5 +1,6 @@
 import '../../domain/entities/evaluation.dart';
 import '../../domain/entities/internship.dart';
+import '../../domain/entities/logbook.dart';
 import '../../domain/entities/work_items.dart';
 
 DateTime? _date(dynamic v) {
@@ -119,6 +120,32 @@ JournalComment journalCommentFromJson(Map<String, dynamic> json) =>
       authorEmail: _str(json['authorEmail']),
       createdAt: _date(json['createdAt']) ?? DateTime.now(),
     );
+
+/// Parses AiAnalysisResultResponse (LOGBOOK_GENERATION).
+LogbookDraft logbookDraftFromJson(Map<String, dynamic> json) {
+  final analysis =
+      (json['analysis'] as Map?)?.cast<String, dynamic>() ??
+          const <String, dynamic>{};
+  final recs = <String>[];
+  final rawRecs = json['recommendations'];
+  if (rawRecs is List) {
+    for (final e in rawRecs) {
+      if (e is Map<String, dynamic>) {
+        final text = (e['recommendationText'] ?? '').toString();
+        if (text.isNotEmpty) recs.add(text);
+      }
+    }
+  }
+  return LogbookDraft(
+    analysisId: _str(analysis['id']),
+    analysisType: _str(analysis['type'], 'LOGBOOK_GENERATION'),
+    modelUsed: _str(analysis['modelUsed']),
+    cinExcluded: analysis['cinExcluded'] != false,
+    createdAt: _dateOrNow(analysis['createdAt']),
+    draftText: (json['responseText'] ?? '').toString(),
+    recommendations: recs,
+  );
+}
 
 EvaluationTemplate templateFromJson(Map<String, dynamic> json) =>
     EvaluationTemplate(

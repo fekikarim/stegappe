@@ -16,7 +16,7 @@ import '../widgets/status_labels.dart';
 import '../widgets/task_row.dart';
 import 'deliverables_screen.dart';
 import 'my_evaluations_screen.dart';
-import 'timeline_screen.dart';
+import 'progress_screen.dart';
 
 /// Intern home dashboard — answers:
 /// "what should I do?" (today/overdue/week) /
@@ -205,9 +205,10 @@ class _DashboardContent extends ConsumerWidget {
         // --- Progress ---
         DashboardSection(
           title: l10n.myProgress,
-          actionLabel: l10n.viewTimeline,
+          actionLabel: l10n.viewAll,
           onAction: () => Navigator.of(context).push(
-            MaterialPageRoute(builder: (_) => const TimelineScreen()),
+            MaterialPageRoute(
+                builder: (_) => const ProgressScreen()),
           ),
           child: Column(
             children: [
