@@ -12,8 +12,10 @@ import '../../internship/presentation/screens/supervised_interns_screen.dart';
 import '../../internship/presentation/screens/supervisor_home_screen.dart';
 import '../../internship/presentation/screens/supervisor_validations_screen.dart';
 import '../../internship/presentation/screens/task_list_screen.dart';
+import '../../messaging/presentation/providers/messaging_providers.dart';
+import '../../messaging/presentation/screens/conversations_screen.dart';
+import '../../messaging/presentation/screens/notifications_screen.dart';
 import 'more_tab.dart';
-import 'placeholder_tab.dart';
 
 /// Bottom-navigation scaffold shared by both roles. Uses only
 /// directional widgets (AlignmentDirectional/EdgeInsetsDirectional via
@@ -42,6 +44,7 @@ class RoleScaffold extends ConsumerWidget {
       appBar: AppBar(
         title: Text(current.label),
         actions: [
+          _NotificationBell(),
           Semantics(
             label: AppLocalizations.of(context).logout,
             button: true,
@@ -99,8 +102,60 @@ class RoleDestination {
   final Widget page;
 }
 
+/// Notification bell with unread badge → notification center.
+/// Badge reads the foreground-refreshed count (socket/resume/pull).
+class _NotificationBell extends ConsumerWidget {
+  const _NotificationBell();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context);
+    final unreadAsync = ref.watch(unreadNotificationsProvider);
+    final unread = unreadAsync.valueOrNull ?? 0;
+    return Semantics(
+      button: true,
+      label: '${l10n.notifTitle}, $unread',
+      child: Stack(
+        alignment: AlignmentDirectional.center,
+        children: [
+          IconButton(
+            tooltip: l10n.notifTitle,
+            icon: const Icon(Icons.notifications_outlined),
+            onPressed: () => Navigator.of(context).push(
+              MaterialPageRoute(
+                  builder: (_) => const NotificationsScreen()),
+            ),
+          ),
+          if (unread > 0)
+            PositionedDirectional(
+              top: 8,
+              end: 8,
+              child: Container(
+                padding: const EdgeInsets.symmetric(
+                    horizontal: 5, vertical: 1),
+                decoration: BoxDecoration(
+                  color: Theme.of(context).colorScheme.error,
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Text(
+                  unread > 99 ? '99+' : '$unread',
+                  style: TextStyle(
+                    color: Theme.of(context)
+                        .colorScheme
+                        .onError,
+                    fontSize: 11,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
 /// INTERN shell (UI_UX.md §12.2): Home / Tasks / Journal / Messages / More.
-/// Home, Tasks and Journal are live (D1); Messages lands in D5.
 class InternShell extends StatefulWidget {
   const InternShell({super.key, required this.user});
 
@@ -142,9 +197,7 @@ class _InternShellState extends State<InternShell> {
         RoleDestination(
           label: l10n.navMessages,
           icon: Icons.chat_bubble_outline,
-          page: PlaceholderTab(
-              title: l10n.navMessages,
-              icon: Icons.chat_bubble_outline),
+          page: const ConversationsScreen(),
         ),
         RoleDestination(
           label: l10n.navMore,
@@ -196,9 +249,7 @@ class _SupervisorShellState extends State<SupervisorShell> {
         RoleDestination(
             label: l10n.navMessages,
             icon: Icons.chat_bubble_outline,
-            page: PlaceholderTab(
-                title: l10n.navMessages,
-                icon: Icons.chat_bubble_outline)),
+            page: const ConversationsScreen()),
         RoleDestination(
             label: l10n.navMore,
             icon: Icons.more_horiz,

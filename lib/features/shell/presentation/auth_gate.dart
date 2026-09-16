@@ -7,6 +7,7 @@ import '../../auth/domain/entities/app_user.dart';
 import '../../auth/presentation/providers/auth_providers.dart';
 import '../../auth/presentation/screens/login_screen.dart';
 import '../../auth/presentation/screens/splash_screen.dart';
+import '../../messaging/presentation/providers/messaging_providers.dart';
 import 'role_shells.dart';
 
 /// Role-aware entry point. Routes by backend-issued role claims;
@@ -30,6 +31,19 @@ class _AuthGateState extends ConsumerState<AuthGate> {
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(authControllerProvider);
+    ref.listen(authControllerProvider, (prev, next) {
+      if (next is AuthUnauthenticated) {
+        // Tear down the socket on logout; a fresh service (and fresh
+        // subscriptions) is created on next login.
+        ref.read(stompChatServiceProvider).disconnect().catchError((_) {});
+        ref.invalidate(stompChatServiceProvider);
+      }
+    });
+    if (state is AuthAuthenticated) {
+      // Foreground socket sync for the whole session (notifications +
+      // unread badges). Idempotent: provider boots subscriptions once.
+      ref.watch(foregroundSyncProvider);
+    }
     return switch (state) {
       AuthInitial() || AuthLoading() => const SplashScreen(),
       AuthUnauthenticated() => const LoginScreen(),

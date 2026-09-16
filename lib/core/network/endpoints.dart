@@ -60,8 +60,24 @@ abstract final class Endpoints {
       '/api/evaluations/$evaluationId/task-reviews';
   static String evaluationComments(String evaluationId) =>
       '/api/evaluations/$evaluationId/comments';
+  // --- D5 messaging & notifications ---
   static const String conversations = '/api/conversations';
   static const String unreadCounts = '/api/conversations/unread/counts';
+  static String conversation(String id) => '/api/conversations/$id';
+  static String conversationMessages(String id) =>
+      '/api/conversations/$id/messages';
+  static String conversationMessagesWithAttachment(String id) =>
+      '/api/conversations/$id/messages/with-attachment';
+  static String conversationRead(String id) =>
+      '/api/conversations/$id/read';
+  static String conversationDelivered(String id) =>
+      '/api/conversations/$id/delivered';
+  static String attachmentDownload(String attachmentId) =>
+      '/api/conversations/attachments/$attachmentId/download';
   static const String notifications = '/api/notifications';
   static const String notificationsReadAll = '/api/notifications/read-all';
+  static const String notificationsUnreadCount =
+      '/api/notifications/unread-count';
+  static String notificationRead(String id) =>
+      '/api/notifications/$id/read';
 }

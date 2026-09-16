@@ -137,3 +137,19 @@ cache instead of wiping. `TODO — backend phase`: a dedicated
   into journal text. Interns see evaluations strictly read-only.
 - "Supervised" lists derive from assignment-created PRIVATE
   conversations; every mutation is still server-authorized per request.
+
+## 13. Messaging & notifications (D5)
+
+- STOMP destinations mirror Phase A9 exactly (verified in
+  `WebSocketConfig` + `MessagingStompController`); JWT re-read before
+  every dial; reconnect → resubscribe → REST cursor resync.
+- Ordering is ALWAYS backend `sequenceNumber` (history is newest-first;
+  cursor is inclusive, dedupe by id). Sends prefer STOMP with REST
+  fallback and honest failure; acks are best-effort.
+- Attachments follow the contract (PDF/JPEG/PNG, 10 MB, caption
+  required); downloads are member-only endpoint bytes.
+- No push provider is configured and the backend push sender is a
+  no-op stub: foreground socket/resume/pull refresh instead.
+  `TODO — push provider` (FCM/APNs credentials + backend wiring).
+- `test/live/stomp_roundtrip_test.dart` proves the round trip against a
+  local backend; it skips without `LIVE_BACKEND=true` so CI stays green.

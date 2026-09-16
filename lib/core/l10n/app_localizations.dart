@@ -285,6 +285,38 @@ class AppLocalizations {
     'myEvaluations': {'fr': 'Mes évaluations', 'en': 'My evaluations', 'ar': 'تقييماتي'},
     'myEvaluationsEmpty': {'fr': 'Aucune évaluation reçue pour le moment.', 'en': 'No evaluations received yet.', 'ar': 'لم تُستلم أي تقييمات بعد.'},
     'evalOptionalScore': {'fr': 'Note (optionnel)', 'en': 'Score (optional)', 'ar': 'النقطة (اختياري)'},
+    // --- D5: messaging & notifications ---
+    'convTitle': {'fr': 'Messages', 'en': 'Messages', 'ar': 'الرسائل'},
+    'convEmpty': {'fr': 'Aucune conversation.', 'en': 'No conversations.', 'ar': 'لا محادثات.'},
+    'convEmptyHint': {'fr': 'Vos échanges avec votre encadrant et les stagiaires apparaîtront ici.', 'en': 'Your exchanges with your supervisor and fellow interns will appear here.', 'ar': 'ستظهر هنا محادثاتك مع مؤطرك وزملائك المتربصين.'},
+    'convPrivate': {'fr': 'Échange privé', 'en': 'Private chat', 'ar': 'محادثة خاصة'},
+    'convGroup': {'fr': 'Groupe des stagiaires', 'en': 'Interns group', 'ar': 'مجموعة المتربصين'},
+    'msgHint': {'fr': 'Écrivez votre message…', 'en': 'Write your message…', 'ar': 'اكتب رسالتك…'},
+    'msgSend': {'fr': 'Envoyer', 'en': 'Send', 'ar': 'إرسال'},
+    'msgFailed': {'fr': 'Non envoyé. Touchez pour réessayer.', 'en': 'Not sent. Tap to retry.', 'ar': 'لم تُرسل. انقر لإعادة المحاولة.'},
+    'msgRetry': {'fr': 'Réessayer', 'en': 'Retry', 'ar': 'إعادة المحاولة'},
+    'msgDiscard': {'fr': 'Supprimer', 'en': 'Delete', 'ar': 'حذف'},
+    'msgDeleted': {'fr': 'Message supprimé', 'en': 'Message deleted', 'ar': 'رسالة محذوفة'},
+    'msgEdited': {'fr': 'modifié', 'en': 'edited', 'ar': 'معدلة'},
+    'msgDelivered': {'fr': 'Reçu', 'en': 'Delivered', 'ar': 'تم الاستلام'},
+    'msgRead': {'fr': 'Lu', 'en': 'Read', 'ar': 'مقروءة'},
+    'msgSent': {'fr': 'Envoyé', 'en': 'Sent', 'ar': 'مُرسلة'},
+    'msgAttach': {'fr': 'Joindre un fichier', 'en': 'Attach a file', 'ar': 'إرفاق ملف'},
+    'msgAttachCaption': {'fr': 'Légende (requise)', 'en': 'Caption (required)', 'ar': 'التسمية (مطلوبة)'},
+    'msgAttachTypes': {'fr': 'PDF, JPEG ou PNG · 10 Mo max', 'en': 'PDF, JPEG or PNG · 10 MB max', 'ar': 'PDF أو JPEG أو PNG · 10 م.ب كحد أقصى'},
+    'msgAttachTooLarge': {'fr': 'Fichier trop volumineux (10 Mo max).', 'en': 'File too large (10 MB max).', 'ar': 'الملف كبير جدا (10 م.ب كحد أقصى).'},
+    'msgAttachWrongType': {'fr': 'Seuls PDF, JPEG et PNG sont acceptés.', 'en': 'Only PDF, JPEG and PNG are accepted.', 'ar': 'تُقبل ملفات PDF و JPEG و PNG فقط.'},
+    'msgDownload': {'fr': 'Télécharger', 'en': 'Download', 'ar': 'تنزيل'},
+    'msgNoHistory': {'fr': 'Aucun message. Dites bonjour !', 'en': 'No messages yet. Say hello!', 'ar': 'لا رسائل بعد. قل مرحبا!'},
+    'msgSayHi': {'fr': 'Commencez la conversation.', 'en': 'Start the conversation.', 'ar': 'ابدأ المحادثة.'},
+    'sockConnecting': {'fr': 'Connexion en cours…', 'en': 'Connecting…', 'ar': 'جارٍ الاتصال…'},
+    'sockOffline': {'fr': 'Temps réel indisponible — les messages s’envoient par relais.', 'en': 'Real-time unavailable — messages use fallback.', 'ar': 'الوقت الحقيقي غير متاح — تُرسل الرسائل بالطريقة البديلة.'},
+    'sockLive': {'fr': 'Temps réel actif', 'en': 'Real-time live', 'ar': 'الوقت الحقيقي نشط'},
+    'notifTitle': {'fr': 'Notifications', 'en': 'Notifications', 'ar': 'الإشعارات'},
+    'notifEmpty': {'fr': 'Aucune notification.', 'en': 'No notifications.', 'ar': 'لا إشعارات.'},
+    'notifUnreadOnly': {'fr': 'Non lues', 'en': 'Unread', 'ar': 'غير المقروءة'},
+    'notifMarkRead': {'fr': 'Marquer comme lue', 'en': 'Mark as read', 'ar': 'تعليم كمقروءة'},
+    'notifMarkAllRead': {'fr': 'Tout marquer comme lu', 'en': 'Mark all as read', 'ar': 'تعليم الكل كمقروء'},
   };
 
   String _get(String key) {
@@ -522,6 +554,39 @@ class AppLocalizations {
   String get myEvaluations => _get('myEvaluations');
   String get myEvaluationsEmpty => _get('myEvaluationsEmpty');
   String get evalOptionalScore => _get('evalOptionalScore');
+
+  // D5 messaging & notifications
+  String get convTitle => _get('convTitle');
+  String get convEmpty => _get('convEmpty');
+  String get convEmptyHint => _get('convEmptyHint');
+  String get convPrivate => _get('convPrivate');
+  String get convGroup => _get('convGroup');
+  String get msgHint => _get('msgHint');
+  String get msgSend => _get('msgSend');
+  String get msgFailed => _get('msgFailed');
+  String get msgRetry => _get('msgRetry');
+  String get msgDiscard => _get('msgDiscard');
+  String get msgDeleted => _get('msgDeleted');
+  String get msgEdited => _get('msgEdited');
+  String get msgDelivered => _get('msgDelivered');
+  String get msgRead => _get('msgRead');
+  String get msgSent => _get('msgSent');
+  String get msgAttach => _get('msgAttach');
+  String get msgAttachCaption => _get('msgAttachCaption');
+  String get msgAttachTypes => _get('msgAttachTypes');
+  String get msgAttachTooLarge => _get('msgAttachTooLarge');
+  String get msgAttachWrongType => _get('msgAttachWrongType');
+  String get msgDownload => _get('msgDownload');
+  String get msgNoHistory => _get('msgNoHistory');
+  String get msgSayHi => _get('msgSayHi');
+  String get sockConnecting => _get('sockConnecting');
+  String get sockOffline => _get('sockOffline');
+  String get sockLive => _get('sockLive');
+  String get notifTitle => _get('notifTitle');
+  String get notifEmpty => _get('notifEmpty');
+  String get notifUnreadOnly => _get('notifUnreadOnly');
+  String get notifMarkRead => _get('notifMarkRead');
+  String get notifMarkAllRead => _get('notifMarkAllRead');
 
   /// All keys must exist in fr/en/ar — enforced by unit test.
   static Map<String, Map<String, String>> get allValues => _values;
