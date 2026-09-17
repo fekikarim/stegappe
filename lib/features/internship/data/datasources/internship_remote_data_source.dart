@@ -445,6 +445,56 @@ class InternshipRemoteDataSource {
           bearer: bearer,
           decode: (j) => logbookDraftFromJson(_map(j)));
 
+  /// Submit reviewed logbook text for supervisor validation.
+  Future<void> submitLogbook(
+          String internshipId, String finalText, String? bearer) =>
+      _client.post(Endpoints.logbookSubmit(internshipId),
+          bearer: bearer,
+          body: {'finalText': finalText},
+          decode: (_) {});
+
+  /// Read the server-authoritative logbook for an internship. Throws on 404
+  /// when no logbook exists yet (caller decides how to surface that).
+  Future<LogbookState> getLogbook(String internshipId, String? bearer) =>
+      _client.get(Endpoints.logbook(internshipId),
+          bearer: bearer, decode: (j) => logbookFromJson(_map(j)));
+
+  /// Supervisor/HAL: approve a SUBMITTED logbook (server-enforced; reason
+  /// comment is optional, no local business rule).
+  Future<LogbookState> validateLogbook(
+          String internshipId, String logbookId, String? bearer) =>
+      _client.post(Endpoints.logbookValidate(internshipId, logbookId),
+          bearer: bearer, decode: (j) => logbookFromJson(_map(j)));
+
+  /// Supervisor/HAL: reject a SUBMITTED logbook with a required reason
+  /// (server-enforced; the backend rejects empty reasons).
+  Future<LogbookState> rejectLogbook(
+          String internshipId, String logbookId, String? bearer,
+          {required String reason}) =>
+      _client.post(Endpoints.logbookReject(internshipId, logbookId),
+          bearer: bearer,
+          body: {'reason': reason},
+          decode: (j) => logbookFromJson(_map(j)));
+
+  /// HR/ADMIN: finalize a VALIDATED logbook as OFFICIAL (server-enforced).
+  Future<LogbookState> promoteLogbookOfficial(
+          String internshipId, String logbookId, String? bearer) =>
+      _client.post(Endpoints.logbookOfficial(internshipId, logbookId),
+          bearer: bearer, decode: (j) => logbookFromJson(_map(j)));
+
+  /// Intern assistant answer (role-scoped RAG; key stays on the backend).
+  /// Returns the advisory display text; throws ApiException on outage/rate-limit.
+  Future<String> askAssistant(String question, String? bearer) =>
+      _client.post(Endpoints.aiAssistant,
+          bearer: bearer,
+          body: {'question': question},
+          decode: (j) {
+            final m = _map(j);
+            final text = m['displayText'];
+            if (text is String && text.trim().isNotEmpty) return text;
+            throw const FormatException('empty assistant answer');
+          });
+
   static Map<String, dynamic> _map(dynamic j) =>
       j is Map<String, dynamic> ? j : <String, dynamic>{};
 }

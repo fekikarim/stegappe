@@ -583,6 +583,7 @@ class FakeInternshipRepository implements InternshipRepository {
   // --- D6 logbook ---
 
   bool failAi = false;
+  final List<LogbookSubmission> submittedLogbooks = [];
 
   @override
   Future<LogbookDraft> generateLogbookDraft(
@@ -598,4 +599,164 @@ class FakeInternshipRepository implements InternshipRepository {
       recommendations: const ['Vérifiez les dates.'],
     );
   }
+
+  @override
+  Future<void> submitLogbook(
+      String internshipId, String finalText) async {
+    if (failAi) throw Exception('AI unavailable');
+    submittedLogbooks
+        .add(LogbookSubmission(internshipId: internshipId, text: finalText));
+    logbooks[internshipId] = _withStatus(
+      _withText(internshipId, finalText),
+      LogbookStatus.submitted,
+      internshipId: internshipId,
+    );
+  }
+
+  /// Convenience seeding for supervisor scenarios: a SUBMITTED logbook.
+  void seedSubmittedLogbook({
+    String internshipId = 'internship-1',
+    String text = 'Rapport final du carnet de stage.',
+  }) {
+    logbooks[internshipId] = LogbookState(
+      id: 'logbook-1',
+      internshipId: internshipId,
+      status: LogbookStatus.submitted,
+      finalText: text,
+      submittedAt: now,
+      createdAt: now,
+    );
+  }
+
+  /// Server-authoritative logbooks keyed by internship id (test control).
+  final Map<String, LogbookState> logbooks = {};
+  bool failLogbookRead = false;
+
+  @override
+  Future<LogbookState?> getLogbook(String internshipId) async {
+    if (failLogbookRead) throw Exception('logbook read failed');
+    return logbooks[internshipId];
+  }
+
+  @override
+  Future<LogbookState> validateLogbook(
+      String internshipId, String logbookId) async {
+    final current =
+        logbooks[internshipId] ?? (throw Exception('no logbook'));
+    final updated = _withStatus(
+      current,
+      LogbookStatus.validated,
+      internshipId: internshipId,
+      validatedAt: DateTime.now(),
+    );
+    logbooks[internshipId] = updated;
+    return updated;
+  }
+
+  @override
+  Future<LogbookState> rejectLogbook(
+      String internshipId, String logbookId, String reason) async {
+    final current =
+        logbooks[internshipId] ?? (throw Exception('no logbook'));
+    final updated = LogbookState(
+      id: current.id,
+      internshipId: internshipId,
+      status: LogbookStatus.rejected,
+      draftText: current.draftText,
+      finalText: current.finalText,
+      submittedById: current.submittedById,
+      submittedAt: current.submittedAt,
+      validatedById: current.validatedById,
+      validatedAt: current.validatedAt,
+      rejectionReason: reason,
+      createdAt: current.createdAt,
+      updatedAt: DateTime.now(),
+    );
+    logbooks[internshipId] = updated;
+    return updated;
+  }
+
+  @override
+  Future<LogbookState> promoteLogbookOfficial(
+      String internshipId, String logbookId) async {
+    final current =
+        logbooks[internshipId] ?? (throw Exception('no logbook'));
+    final updated = _withStatus(
+      current,
+      LogbookStatus.official,
+      internshipId: internshipId,
+      updatedAt: DateTime.now(),
+    );
+    logbooks[internshipId] = updated;
+    return updated;
+  }
+
+  @override
+  Future<List<PendingLogbookReview>> pendingLogbookReviews() async {
+    final out = <PendingLogbookReview>[];
+    for (final e in logbooks.entries) {
+      final lb = e.value;
+      if (lb.status == LogbookStatus.submitted) {
+        out.add(PendingLogbookReview(
+          internshipId: e.key,
+          internshipReference: 'STG-2026-0001',
+          logbook: lb,
+        ));
+      }
+    }
+    return out;
+  }
+
+  LogbookState _withText(
+          String internshipId, String finalText) =>
+      _withStatus(
+        LogbookState(
+          id: 'logbook-1',
+          internshipId: internshipId,
+          status: LogbookStatus.draft,
+          finalText: null,
+          submittedAt: null,
+          createdAt: now,
+        ),
+        LogbookStatus.draft,
+        internshipId: internshipId,
+        finalText: finalText,
+      );
+
+  LogbookState _withStatus(
+    LogbookState current,
+    LogbookStatus status, {
+    required String internshipId,
+    String? finalText,
+    String? rejectionReason,
+    DateTime? validatedAt,
+    DateTime? updatedAt,
+  }) =>
+      LogbookState(
+        id: current.id,
+        internshipId: internshipId,
+        status: status,
+        draftText: current.draftText,
+        finalText: finalText ?? current.finalText,
+        submittedById: current.submittedById,
+        submittedAt: current.submittedAt ?? DateTime.now(),
+        validatedById: current.validatedById,
+        validatedAt: validatedAt ?? current.validatedAt,
+        rejectionReason: rejectionReason ?? current.rejectionReason,
+        createdAt: current.createdAt ?? now,
+        updatedAt: updatedAt ?? current.updatedAt,
+      );
+
+  @override
+  Future<String> askAssistant(String question) async {
+    if (failAi) throw Exception('AI unavailable');
+    return 'Réponse de test (indicative) : $question';
+  }
+}
+
+/// Recorded logbook submission captured by the fake repository.
+class LogbookSubmission {
+  const LogbookSubmission({required this.internshipId, required this.text});
+  final String internshipId;
+  final String text;
 }

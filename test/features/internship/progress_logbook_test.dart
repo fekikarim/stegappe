@@ -116,6 +116,26 @@ void main() {
       expect(find.text('Ma version relue.'), findsOneWidget);
     });
 
+    testWidgets('reviewed text is submitted for validation explicitly',
+        (tester) async {
+      final fake = await pumpD6(tester, const LogbookScreen());
+
+      await tester.enterText(
+          find.byType(TextField), 'Version finale relue.');
+      await tester.dragUntilVisible(
+          find.text('Soumettre pour validation'),
+          find.byType(ListView),
+          const Offset(0, -300));
+      await tester.tap(find.text('Soumettre pour validation'));
+      await tester.pumpAndSettle();
+
+      expect(fake.submittedLogbooks, hasLength(1));
+      expect(fake.submittedLogbooks.single.internshipId, 'internship-1');
+      expect(fake.submittedLogbooks.single.text, 'Version finale relue.');
+      expect(find.text('Carnet soumis pour validation.'),
+          findsOneWidget);
+    });
+
     testWidgets('AI outage degrades to retry card, core intact',
         (tester) async {
       final fake = FakeInternshipRepository()..failAi = true;

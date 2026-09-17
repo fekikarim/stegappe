@@ -115,6 +115,32 @@ abstract class InternshipRepository {
   /// Throws on AI outage/rate-limit — callers degrade gracefully and
   /// never block core flows on this.
   Future<LogbookDraft> generateLogbookDraft(String internshipId);
+
+  /// Submit the reviewed logbook text for supervisor validation.
+  /// The draft remains advisory; this is the explicit human-reviewed send.
+  Future<void> submitLogbook(String internshipId, String finalText);
+
+  /// Read the server-authoritative logbook; null when none exists yet.
+  Future<LogbookState?> getLogbook(String internshipId);
+
+  /// Supervisor/HR: approve a SUBMITTED logbook. Backend-enforced.
+  Future<LogbookState> validateLogbook(
+      String internshipId, String logbookId);
+  /// Supervisor/HR: reject a SUBMITTED logbook with a required reason.
+  /// Backend-enforced (empty reasons are rejected by the backend).
+  Future<LogbookState> rejectLogbook(
+      String internshipId, String logbookId, String reason);
+  /// HR/ADMIN: finalize a VALIDATED logbook as OFFICIAL. Backend-enforced.
+  Future<LogbookState> promoteLogbookOfficial(
+      String internshipId, String logbookId);
+
+  /// SUBMITTED logbooks across the supervisor's internships (fetch + filter
+  /// client-side from the read endpoint; the backend stays authoritative).
+  Future<List<PendingLogbookReview>> pendingLogbookReviews();
+
+  /// Ask the role-scoped intern assistant (RAG over the controlled STEG base).
+  /// Returns advisory text; throws on AI outage/rate-limit (degraded UI, no block).
+  Future<String> askAssistant(String question);
 }
 
 /// One SUBMITTED deliverable awaiting supervisor review.
@@ -128,4 +154,17 @@ class PendingDeliverableReview {
   final String internshipId;
   final String internshipReference;
   final DeliverableSummary deliverable;
+}
+
+/// One SUBMITTED logbook awaiting supervisor/HR review.
+class PendingLogbookReview {
+  const PendingLogbookReview({
+    required this.internshipId,
+    required this.internshipReference,
+    required this.logbook,
+  });
+
+  final String internshipId;
+  final String internshipReference;
+  final LogbookState logbook;
 }

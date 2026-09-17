@@ -5,6 +5,7 @@ import '../../../../core/l10n/app_localizations.dart';
 import '../../../../core/widgets/steg_status_chip.dart';
 import '../../domain/entities/evaluation.dart';
 import '../../domain/entities/internship.dart';
+import '../../domain/entities/logbook.dart';
 import '../../domain/entities/work_items.dart';
 
 /// Localized labels for backend-owned enums. Centralized so no screen
@@ -87,6 +88,26 @@ StegStatusKind deliverableStatusKind(DeliverableStatus status) =>
       DeliverableStatus.submitted => StegStatusKind.info,
       DeliverableStatus.validated => StegStatusKind.success,
       DeliverableStatus.rejected => StegStatusKind.warning,
+    };
+
+String logbookStatusLabel(LogbookStatus status, AppLocalizations l10n) =>
+    switch (status) {
+      LogbookStatus.draft => l10n.jsDraft,
+      LogbookStatus.submitted => l10n.logbookStatusSubmitted,
+      LogbookStatus.validated => l10n.logbookStatusValidated,
+      LogbookStatus.rejected => l10n.logbookStatusRejected,
+      LogbookStatus.official => l10n.logbookStatusOfficial,
+      LogbookStatus.unknown => l10n.jsDraft,
+    };
+
+StegStatusKind logbookStatusKind(LogbookStatus status) =>
+    switch (status) {
+      LogbookStatus.draft => StegStatusKind.neutral,
+      LogbookStatus.submitted => StegStatusKind.info,
+      LogbookStatus.validated => StegStatusKind.success,
+      LogbookStatus.rejected => StegStatusKind.warning,
+      LogbookStatus.official => StegStatusKind.success,
+      LogbookStatus.unknown => StegStatusKind.neutral,
     };
 
 String priorityLabel(String priority, AppLocalizations l10n) =>

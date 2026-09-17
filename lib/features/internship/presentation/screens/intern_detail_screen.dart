@@ -15,6 +15,7 @@ import 'deliverable_detail_screen.dart';
 import 'evaluation_detail_screen.dart';
 import 'evaluation_form_screen.dart';
 import 'journal_detail_sheet.dart';
+import 'logbook_detail_screen.dart';
 
 /// Supervisor's intern file: timeline, planned tasks, journals awaiting
 /// validation, deliverables, evaluations + recent feedback — each kind
@@ -30,6 +31,7 @@ class InternDetailScreen extends ConsumerWidget {
     final locale = Localizations.localeOf(context);
     final async =
         ref.watch(supervisedInternDetailProvider(internshipId));
+    final logbookAsync = ref.watch(logbookProvider(internshipId));
     final now = DateTime.now();
 
     return Scaffold(
@@ -228,6 +230,51 @@ class InternDetailScreen extends ConsumerWidget {
                             ),
                         ],
                       ),
+              ),
+              const SizedBox(height: StegSpacing.md),
+
+              // --- Logbook (server-authoritative status) ---
+              DashboardSection(
+                title: l10n.logbookReviewTitle,
+                child: logbookAsync.when(
+                  loading: () => const Center(
+                      child: SizedBox(
+                          width: 24,
+                          height: 24,
+                          child: CircularProgressIndicator(
+                              strokeWidth: 2))),
+                  error: (e, _) => Text(
+                      e is ApiException ? e.message : e.toString(),
+                      style: TextStyle(
+                          color:
+                              Theme.of(context).colorScheme.error)),
+                  data: (lb) => ListTile(
+                    contentPadding: EdgeInsets.zero,
+                    leading: const Icon(Icons.menu_book_outlined),
+                    title: Text(
+                      lb == null
+                          ? l10n.logbookNotSubmitted
+                          : logbookStatusLabel(lb.status, l10n),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    subtitle: lb?.submittedAt == null
+                        ? null
+                        : Text(
+                            formatDay(lb!.submittedAt!, locale)),
+                    trailing: const Icon(Icons.chevron_right),
+                    onTap: () =>
+                        Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (_) => LogbookDetailScreen(
+                          internshipId: internshipId,
+                          internshipReference:
+                              d.internship.reference,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
               ),
               const SizedBox(height: StegSpacing.md),
 

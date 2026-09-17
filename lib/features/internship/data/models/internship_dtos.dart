@@ -121,6 +121,22 @@ JournalComment journalCommentFromJson(Map<String, dynamic> json) =>
       createdAt: _date(json['createdAt']) ?? DateTime.now(),
     );
 
+/// Parses the server-authoritative LogbookResponse.
+LogbookState logbookFromJson(Map<String, dynamic> json) => LogbookState(
+      id: _str(json['id']),
+      internshipId: _str(json['internshipId']),
+      status: LogbookStatus.fromApi(json['status'] as String?),
+      draftText: json['draftText'] as String?,
+      finalText: json['finalText'] as String?,
+      submittedById: json['submittedById'] as String?,
+      submittedAt: _date(json['submittedAt']),
+      validatedById: json['validatedById'] as String?,
+      validatedAt: _date(json['validatedAt']),
+      rejectionReason: json['rejectionReason'] as String?,
+      createdAt: _date(json['createdAt']),
+      updatedAt: _date(json['updatedAt']),
+    );
+
 /// Parses AiAnalysisResultResponse (LOGBOOK_GENERATION).
 LogbookDraft logbookDraftFromJson(Map<String, dynamic> json) {
   final analysis =

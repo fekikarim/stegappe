@@ -83,4 +83,16 @@ abstract final class Endpoints {
   // --- D6 AI (advisory only; logbook is the participant endpoint) ---
   static String aiLogbook(String internshipId) =>
       '/api/ai/internships/$internshipId/logbook/generate';
+  static String logbookSubmit(String internshipId) =>
+      '/api/internships/$internshipId/logbook/submit';
+  static String logbook(String internshipId) =>
+      '/api/internships/$internshipId/logbook';
+  static String logbookValidate(String internshipId, String logbookId) =>
+      '/api/internships/$internshipId/logbook/$logbookId/validate';
+  static String logbookReject(String internshipId, String logbookId) =>
+      '/api/internships/$internshipId/logbook/$logbookId/reject';
+  static String logbookOfficial(String internshipId, String logbookId) =>
+      '/api/internships/$internshipId/logbook/$logbookId/official';
+  // --- Intern assistant (role-scoped RAG via backend; Gemini key never on-device) ---
+  static const String aiAssistant = '/api/ai/assistant/query';
 }

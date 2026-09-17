@@ -230,7 +230,8 @@ void refreshWorkspace(WidgetRef ref) {
 void refreshValidations(WidgetRef ref) {
   ref
     ..invalidate(pendingValidationsProvider)
-    ..invalidate(pendingDeliverableReviewsProvider);
+    ..invalidate(pendingDeliverableReviewsProvider)
+    ..invalidate(pendingLogbookReviewsProvider);
 }
 
 /// Intern's deliverable checklist page.
@@ -418,8 +419,35 @@ final logbookDraftProvider =
   return repo.generateLogbookDraft(id);
 });
 
+/// Submission in-flight flag for the logbook review flow.
+final logbookSubmitProvider = StateProvider<bool>((ref) => false);
+
 /// Locally edited logbook text (review copy; never auto-submitted).
 final logbookEditProvider = StateProvider<String?>((ref) => null);
+
+/// Server-authoritative logbook for an internship (null before first submit).
+/// The backend decides every state transition; this is pure read-through.
+final logbookProvider = FutureProvider.family<LogbookState?, String>(
+    (ref, internshipId) async {
+  final repo = ref.watch(internshipRepositoryProvider);
+  final logbook = await repo.getLogbook(internshipId);
+  return logbook;
+});
+
+/// Supervisor queue: SUBMITTED logbooks across supervised internships.
+final pendingLogbookReviewsProvider =
+    FutureProvider<List<PendingLogbookReview>>((ref) async {
+  final repo = ref.watch(internshipRepositoryProvider);
+  return repo.pendingLogbookReviews();
+});
+
+/// Refresh logbook providers after a mutation (decision or resubmit).
+void refreshLogbooks(WidgetRef ref, [String? internshipId]) {
+  ref.invalidate(pendingLogbookReviewsProvider);
+  if (internshipId != null) {
+    ref.invalidate(logbookProvider(internshipId));
+  }
+}
 
 /// Task page for any internship (supervisor review + task reviews).
 final internshipTasksProvider = FutureProvider.family<

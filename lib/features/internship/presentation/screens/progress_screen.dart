@@ -10,6 +10,7 @@ import '../../domain/dashboard.dart';
 import '../providers/workspace_providers.dart';
 import '../widgets/dashboard_sections.dart';
 import 'logbook_screen.dart';
+import 'assistant_screen.dart';
 import 'timeline_screen.dart';
 
 /// Combined progress overview: tasks, journal validation, deliverables,
@@ -193,6 +194,19 @@ class _AiEntryCard extends StatelessWidget {
                 onPressed: () => Navigator.of(context).push(
                   MaterialPageRoute(
                       builder: (_) => const LogbookScreen()),
+                ),
+              ),
+            ),
+            const SizedBox(height: StegSpacing.xs),
+            Semantics(
+              button: true,
+              label: l10n.assistantTitle,
+              child: FilledButton.tonalIcon(
+                icon: const Icon(Icons.smart_toy_outlined),
+                label: Text(l10n.assistantTitle),
+                onPressed: () => Navigator.of(context).push(
+                  MaterialPageRoute(
+                      builder: (_) => const AssistantScreen()),
                 ),
               ),
             ),

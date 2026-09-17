@@ -338,6 +338,36 @@ class AppLocalizations {
     'logbookUnavailable': {'fr': 'Service IA indisponible pour le moment. Vos données et actions restent intactes.', 'en': 'AI service unavailable right now. Your data and actions are unaffected.', 'ar': 'خدمة الذكاء الاصطناعي غير متاحة حاليا. بياناتك وإجراءاتك سليمة.'},
     'logbookSuggestions': {'fr': 'Suggestions (indicatives)', 'en': 'Suggestions (advisory)', 'ar': 'اقتراحات (استرشادية)'},
     'logbookModel': {'fr': 'Modèle : {n}', 'en': 'Model: {n}', 'ar': 'النموذج: {n}'},
+    'logbookSubmit': {'fr': 'Soumettre pour validation', 'en': 'Submit for validation', 'ar': 'إرسال للمصادقة'},
+    'logbookSubmitSending': {'fr': 'Envoi en cours…', 'en': 'Submitting…', 'ar': 'جارٍ الإرسال…'},
+    'logbookSubmittedOk': {'fr': 'Carnet soumis pour validation.', 'en': 'Logbook submitted for validation.', 'ar': 'تم إرسال الدفتر للمصادقة.'},
+    'logbookSubmitEmpty': {'fr': 'Le carnet est vide : rien à soumettre.', 'en': 'The logbook is empty: nothing to submit.', 'ar': 'الدفتر فارغ: لا شيء لإرساله.'},
+    'logbookSubmitFailed': {'fr': 'Échec de l’envoi : {e}', 'en': 'Failed to submit: {e}', 'ar': 'فشل الإرسال: {e}'},
+    'logbookStatusSubmitted': {'fr': 'Soumis pour validation', 'en': 'Submitted for validation', 'ar': 'مُرسل للمصادقة'},
+    'logbookStatusValidated': {'fr': 'Validé', 'en': 'Validated', 'ar': 'مُصادق عليه'},
+    'logbookStatusRejected': {'fr': 'Renvoyé pour correction', 'en': 'Returned for correction', 'ar': 'أُعيد للتصحيح'},
+    'logbookStatusOfficial': {'fr': 'Officiel', 'en': 'Official', 'ar': 'رسمي'},
+    'logbookQueueTitle': {'fr': 'Carnets en attente', 'en': 'Logbooks awaiting review', 'ar': 'دفاتر في انتظار المراجعة'},
+    'logbookNotSubmitted': {'fr': 'Aucun carnet soumis pour cet internat.', 'en': 'No logbook submitted for this internship.', 'ar': 'لم يُرسل أي دفتر لهذا التربص.'},
+    'logbookReviewTitle': {'fr': 'Carnet de stage', 'en': 'Internship logbook', 'ar': 'دفتر التربص'},
+    'logbookContentLabel': {'fr': 'Contenu soumis', 'en': 'Submitted content', 'ar': 'المحتوى المُرسل'},
+    'logbookRejectReasonLabel': {'fr': 'Motif du renvoi', 'en': 'Reason for rejection', 'ar': 'سبب الإعادة'},
+    'logbookRejectReasonHint': {'fr': 'Expliquez ce qu’il faut corriger (requis)', 'en': 'Explain what to correct (required)', 'ar': 'اشرح ما يجب تصحيحه (مطلوب)'},
+    'logbookRejectReasonRequired': {'fr': 'Veuillez indiquer un motif.', 'en': 'Please provide a reason.', 'ar': 'يرجى تقديم سبب.'},
+    'logbookValidatedOk': {'fr': 'Carnet validé.', 'en': 'Logbook validated.', 'ar': 'تمت المصادقة على الدفتر.'},
+    'logbookRejectedOk': {'fr': 'Carnet renvoyé pour correction.', 'en': 'Logbook returned for correction.', 'ar': 'أُعيد الدفتر للتصحيح.'},
+    'logbookSubmittedBanner': {'fr': 'Votre carnet a été soumis pour validation et est désormais en lecture seule.', 'en': 'Your logbook has been submitted for validation and is now read-only.', 'ar': 'أُرسل دفترك للمصادقة وأصبح للقراءة فقط.'},
+    'logbookValidatedBanner': {'fr': 'Votre carnet a été validé par votre encadrant.', 'en': 'Your logbook has been validated by your supervisor.', 'ar': 'تمت المصادقة على دفترك من طرف مشرفك.'},
+    'logbookOfficialBanner': {'fr': 'Votre carnet a été finalisé comme officiel.', 'en': 'Your logbook has been finalized as official.', 'ar': 'صُودق على دفترك نهائيا.'},
+    'logbookRejectedBanner': {'fr': 'Votre carnet a été renvoyé : {r}', 'en': 'Your logbook was returned: {r}', 'ar': 'أُعيد دفترك: {r}'},
+    'logbookResubmit': {'fr': 'Resoumettre pour validation', 'en': 'Resubmit for validation', 'ar': 'إعادة الإرسال للمصادقة'},
+    'assistantTitle': {'fr': 'Assistant stagiaire', 'en': 'Intern assistant', 'ar': 'مساعد المتربص'},
+    'assistantExplain': {'fr': 'Posez vos questions sur les procédures, l’organisation de vos tâches et la documentation. Réponses indicatives à partir de la base officielle.', 'en': 'Ask about procedures, task organisation and documentation. Advisory answers from the official base.', 'ar': 'اطرح أسئلتك حول الإجراءات وتنظيم مهامك والتوثيق. إجابات استرشادية من القاعدة الرسمية.'},
+    'assistantPlaceholder': {'fr': 'Ex. Comment organiser mes tâches cette semaine ?', 'en': 'E.g. How should I organise my tasks this week?', 'ar': 'مثال: كيف أنظم مهامي هذا الأسبوع؟'},
+    'assistantSend': {'fr': 'Envoyer', 'en': 'Send', 'ar': 'إرسال'},
+    'assistantEmpty': {'fr': 'Aucun message pour le moment.', 'en': 'No messages yet.', 'ar': 'لا رسائل بعد.'},
+    'assistantThinking': {'fr': 'Réflexion…', 'en': 'Thinking…', 'ar': 'جارٍ التفكير…'},
+    'assistantUnavailable': {'fr': 'Assistant indisponible pour le moment. Réessayez plus tard.', 'en': 'Assistant unavailable right now. Try again later.', 'ar': 'المساعد غير متاح حاليا. حاول لاحقا.'},
     'showPassword': {'fr': 'Afficher', 'en': 'Show', 'ar': 'إظهار'},
     'hidePassword': {'fr': 'Masquer', 'en': 'Hide', 'ar': 'إخفاء'},
     'prevWeek': {'fr': 'Semaine précédente', 'en': 'Previous week', 'ar': 'الأسبوع السابق'},
@@ -639,6 +669,39 @@ class AppLocalizations {
   String get logbookSuggestions => _get('logbookSuggestions');
   String logbookModel(String n) =>
       _get('logbookModel').replaceAll('{n}', n);
+  String get logbookSubmit => _get('logbookSubmit');
+  String get logbookSubmitSending => _get('logbookSubmitSending');
+  String get logbookSubmittedOk => _get('logbookSubmittedOk');
+  String get logbookSubmitEmpty => _get('logbookSubmitEmpty');
+  String logbookSubmitFailed(String e) =>
+      _get('logbookSubmitFailed').replaceAll('{e}', e);
+  String get logbookStatusSubmitted => _get('logbookStatusSubmitted');
+  String get logbookStatusValidated => _get('logbookStatusValidated');
+  String get logbookStatusRejected => _get('logbookStatusRejected');
+  String get logbookStatusOfficial => _get('logbookStatusOfficial');
+  String get logbookQueueTitle => _get('logbookQueueTitle');
+  String get logbookNotSubmitted => _get('logbookNotSubmitted');
+  String get logbookReviewTitle => _get('logbookReviewTitle');
+  String get logbookContentLabel => _get('logbookContentLabel');
+  String get logbookRejectReasonLabel => _get('logbookRejectReasonLabel');
+  String get logbookRejectReasonHint => _get('logbookRejectReasonHint');
+  String get logbookRejectReasonRequired =>
+      _get('logbookRejectReasonRequired');
+  String get logbookValidatedOk => _get('logbookValidatedOk');
+  String get logbookRejectedOk => _get('logbookRejectedOk');
+  String get logbookSubmittedBanner => _get('logbookSubmittedBanner');
+  String get logbookValidatedBanner => _get('logbookValidatedBanner');
+  String get logbookOfficialBanner => _get('logbookOfficialBanner');
+  String logbookRejectedBanner(String r) =>
+      _get('logbookRejectedBanner').replaceAll('{r}', r);
+  String get logbookResubmit => _get('logbookResubmit');
+  String get assistantTitle => _get('assistantTitle');
+  String get assistantExplain => _get('assistantExplain');
+  String get assistantPlaceholder => _get('assistantPlaceholder');
+  String get assistantSend => _get('assistantSend');
+  String get assistantEmpty => _get('assistantEmpty');
+  String get assistantThinking => _get('assistantThinking');
+  String get assistantUnavailable => _get('assistantUnavailable');
   String get showPassword => _get('showPassword');
   String get hidePassword => _get('hidePassword');
   String get prevWeek => _get('prevWeek');

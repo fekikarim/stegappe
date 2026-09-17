@@ -423,4 +423,74 @@ class InternshipRepositoryImpl implements InternshipRepository {
           String internshipId) async =>
       remote.generateLogbookDraft(
           internshipId, await _bearer());
+
+  @override
+  Future<void> submitLogbook(
+          String internshipId, String finalText) async =>
+      remote.submitLogbook(
+          internshipId, finalText, await _bearer());
+
+  @override
+  Future<LogbookState?> getLogbook(String internshipId) async {
+    try {
+      return await remote.getLogbook(internshipId, await _bearer());
+    } on ApiException catch (e) {
+      if (e.kind == ApiErrorKind.notFound) return null;
+      rethrow;
+    }
+  }
+
+  @override
+  Future<LogbookState> validateLogbook(
+          String internshipId, String logbookId) async =>
+      remote.validateLogbook(
+          internshipId, logbookId, await _bearer());
+
+  @override
+  Future<LogbookState> rejectLogbook(
+          String internshipId, String logbookId, String reason) async =>
+      remote.rejectLogbook(
+          internshipId, logbookId, await _bearer(), reason: reason);
+
+  @override
+  Future<LogbookState> promoteLogbookOfficial(
+          String internshipId, String logbookId) async =>
+      remote.promoteLogbookOfficial(
+          internshipId, logbookId, await _bearer());
+
+  @override
+  Future<List<PendingLogbookReview>> pendingLogbookReviews() async {
+    final ids = await supervisedInternshipIds();
+    final out = <PendingLogbookReview>[];
+    final results = await Future.wait(ids.map((id) async {
+      try {
+        final logbook = await getLogbook(id);
+        if (logbook == null || !logbook.isPendingReview) {
+          return const <PendingLogbookReview>[];
+        }
+        String reference = id;
+        try {
+          reference = (await getInternship(id)).reference;
+        } on Exception {
+          // Reference is decoration; the queue matters.
+        }
+        return [
+          PendingLogbookReview(
+              internshipId: id,
+              internshipReference: reference,
+              logbook: logbook),
+        ];
+      } on Exception {
+        return const <PendingLogbookReview>[];
+      }
+    }));
+    for (final r in results) {
+      out.addAll(r);
+    }
+    return out;
+  }
+
+  @override
+  Future<String> askAssistant(String question) async =>
+      remote.askAssistant(question, await _bearer());
 }

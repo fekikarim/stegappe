@@ -7,11 +7,13 @@ import '../../../../core/network/api_exception.dart';
 import '../../../../core/theme/steg_spacing.dart';
 import '../../../../core/widgets/steg_states.dart';
 import '../../../../core/widgets/steg_status_chip.dart';
+import '../../domain/repositories/internship_repository.dart';
 import '../providers/workspace_providers.dart';
 import '../widgets/dashboard_sections.dart';
 import '../widgets/status_labels.dart';
 import 'deliverable_detail_screen.dart';
 import 'journal_detail_sheet.dart';
+import 'logbook_detail_screen.dart';
 
 /// Supervisor queue: SUBMITTED journal entries across supervised
 /// internships (discovered via PRIVATE conversations).
@@ -58,11 +60,16 @@ class SupervisorValidationsScreen extends ConsumerWidget {
               ),
               data: (items) {
                 if (items.isEmpty) {
-                  // Journal queue empty — deliverables section below
-                  // still renders (or the combined empty state).
-                  return _DeliverablesQueueSliver(
-                    isOnline: isOnline,
-                    journalEmpty: true,
+                  // Journal queue empty — deliverables + logbook sections
+                  // below still render (or the combined empty state).
+                  return SliverMainAxisGroup(
+                    slivers: [
+                      _DeliverablesQueueSliver(
+                        isOnline: isOnline,
+                        journalEmpty: true,
+                      ),
+                      const _LogbookQueueSliver(journalEmpty: true),
+                    ],
                   );
                 }
                 return SliverMainAxisGroup(
@@ -123,6 +130,9 @@ class SupervisorValidationsScreen extends ConsumerWidget {
                       isOnline: isOnline,
                       journalEmpty: false,
                     ),
+                    const _LogbookQueueSliver(
+                      journalEmpty: false,
+                    ),
                   ],
                 );
               },
@@ -149,6 +159,11 @@ class _DeliverablesQueueSliver extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context);
     final async = ref.watch(pendingDeliverableReviewsProvider);
+    final logbookEmpty = (ref
+            .watch(pendingLogbookReviewsProvider)
+            .valueOrNull ??
+        const <PendingLogbookReview>[])
+        .isEmpty;
     return async.when(
       loading: () => const SliverToBoxAdapter(
         child: Padding(
@@ -172,7 +187,13 @@ class _DeliverablesQueueSliver extends ConsumerWidget {
       ),
       data: (items) {
         if (items.isEmpty) {
-          if (!journalEmpty) {
+          if (!journalEmpty && !logbookEmpty) {
+            return const SliverToBoxAdapter(
+                child: SizedBox.shrink());
+          }
+          if (!logbookEmpty) {
+            // Deliverables empty but logbook queue has items; the
+            // logbook section renders below instead of the empty view.
             return const SliverToBoxAdapter(
                 child: SizedBox.shrink());
           }
@@ -235,6 +256,93 @@ class _DeliverablesQueueSliver extends ConsumerWidget {
           ],
         );
       },
+    );
+  }
+}
+
+/// Logbook review queue rendered beneath the deliverables queue:
+/// SUBMITTED logbooks across supervised internships (server-authoritative
+/// status; the backend gatekeepers the transition).
+class _LogbookQueueSliver extends ConsumerWidget {
+  const _LogbookQueueSliver({required this.journalEmpty});
+
+  final bool journalEmpty;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context);
+    final async = ref.watch(pendingLogbookReviewsProvider);
+    return async.when(
+      loading: () => const SliverToBoxAdapter(
+        child: Padding(
+          padding: EdgeInsets.symmetric(vertical: StegSpacing.md),
+          child: Center(
+              child: SizedBox(
+                  width: 24,
+                  height: 24,
+                  child: CircularProgressIndicator(strokeWidth: 2))),
+        ),
+      ),
+      error: (e, _) => SliverToBoxAdapter(
+        child: Padding(
+          padding: const EdgeInsets.only(top: StegSpacing.sm),
+          child: Text(
+            e is ApiException ? e.message : e.toString(),
+            style: TextStyle(
+                color: Theme.of(context).colorScheme.error),
+          ),
+        ),
+      ),
+      data: (items) => items.isEmpty
+          ? const SliverToBoxAdapter(child: SizedBox.shrink())
+          : SliverMainAxisGroup(
+              slivers: [
+                SliverToBoxAdapter(
+                  child: Padding(
+                    padding: const EdgeInsets.only(
+                        top: StegSpacing.md, bottom: StegSpacing.xs),
+                    child: Text(
+                      '${l10n.logbookQueueTitle} (${items.length})',
+                      style: Theme.of(context).textTheme.titleMedium,
+                    ),
+                  ),
+                ),
+                SliverList(
+                  delegate: SliverChildBuilderDelegate(
+                    (ctx, i) {
+                      final p = items[i];
+                      return Card(
+                        child: ListTile(
+                          leading: const Icon(Icons.menu_book_outlined),
+                          title: Text(p.internshipReference,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis),
+                          subtitle: p.logbook.submittedAt == null
+                              ? null
+                              : Text(formatDay(p.logbook.submittedAt!,
+                                  Localizations.localeOf(ctx))),
+                          trailing: StegStatusChip(
+                            label: logbookStatusLabel(
+                                p.logbook.status, l10n),
+                            kind: logbookStatusKind(p.logbook.status),
+                          ),
+                          onTap: () => Navigator.of(ctx).push(
+                            MaterialPageRoute(
+                              builder: (_) => LogbookDetailScreen(
+                                internshipId: p.internshipId,
+                                internshipReference:
+                                    p.internshipReference,
+                              ),
+                            ),
+                          ),
+                        ),
+                      );
+                    },
+                    childCount: items.length,
+                  ),
+                ),
+              ],
+            ),
     );
   }
 }
