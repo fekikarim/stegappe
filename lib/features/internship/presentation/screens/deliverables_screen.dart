@@ -3,7 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/connectivity/connectivity_service.dart';
 import '../../../../core/l10n/app_localizations.dart';
-import '../../../../core/network/api_exception.dart';
+import '../../../../core/network/error_messages.dart';
 import '../../../../core/theme/steg_spacing.dart';
 import '../../../../core/widgets/steg_states.dart';
 import '../../../../core/widgets/steg_status_chip.dart';
@@ -79,9 +79,7 @@ class DeliverablesScreen extends ConsumerWidget {
                   return SliverFillRemaining(
                     hasScrollBody: false,
                     child: StegErrorView(
-                      message: e is ApiException
-                          ? e.message
-                          : e.toString(),
+                      message: context.userError(e).message,
                       onRetry: () =>
                           ref.invalidate(deliverablesListProvider),
                     ),

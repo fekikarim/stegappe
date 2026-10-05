@@ -6,6 +6,7 @@ import 'package:intl/intl.dart';
 
 import '../../../../core/l10n/app_localizations.dart';
 import '../../../../core/network/api_exception.dart';
+import '../../../../core/network/error_messages.dart';
 import '../../../../core/theme/steg_spacing.dart';
 import '../../../../core/widgets/steg_button.dart';
 import '../../../../core/widgets/steg_fields.dart';
@@ -164,14 +165,15 @@ class _JournalComposerScreenState
         _titleError = e.fieldMessage('title');
         _descError = e.fieldMessage('description') ??
             e.fieldMessage('entryDate');
-        _serverError =
-            (_titleError == null && _descError == null) ? e.message : null;
+        _serverError = (_titleError == null && _descError == null)
+            ? userMessageOf(e, l10n)
+            : null;
       });
     } on Exception catch (e) {
       if (!mounted) return;
       setState(() {
         _working = false;
-        _serverError = e.toString();
+        _serverError = userMessageOf(e, l10n);
       });
     }
   }

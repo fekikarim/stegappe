@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/connectivity/connectivity_service.dart';
 import '../../../../core/l10n/app_localizations.dart';
+import '../../../../core/network/error_messages.dart';
 import '../../../../core/theme/steg_spacing.dart';
 import '../../data/services/stomp_chat_service.dart';
 import '../providers/messaging_providers.dart';
@@ -129,7 +130,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen>
                     child: CircularProgressIndicator())
                 : chat.initError != null && chat.messages.isEmpty
                     ? _ChatError(
-                        message: chat.initError!,
+                        message: context.userError(chat.initError!).message,
                         onRetry: () => ref
                             .read(chatControllerProvider(
                                     widget.conversationId)

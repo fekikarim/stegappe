@@ -104,7 +104,7 @@ abstract final class StegTheme {
       useMaterial3: true,
       colorScheme: scheme.copyWith(
         primary: StegColors.primaryBright,
-        error: const Color(0xFFE56A6C),
+        error: StegColors.errorDark,
         surface: StegColors.darkSurface,
       ),
       scaffoldBackgroundColor: StegColors.darkPage,

@@ -3,9 +3,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/connectivity/connectivity_service.dart';
 import '../../../core/l10n/app_localizations.dart';
+import '../../../core/theme/steg_motion.dart';
 import '../../../core/widgets/connectivity_banner.dart';
 import '../../auth/domain/entities/app_user.dart';
 import '../../auth/presentation/providers/auth_providers.dart';
+import '../../auth/presentation/role_label.dart';
 import '../../internship/presentation/screens/intern_home_screen.dart';
 import '../../internship/presentation/screens/journal_list_screen.dart';
 import '../../internship/presentation/screens/supervised_interns_screen.dart';
@@ -67,7 +69,7 @@ class RoleScaffold extends ConsumerWidget {
             child: reducedMotion
                 ? current.page
                 : AnimatedSwitcher(
-                    duration: const Duration(milliseconds: 180),
+                    duration: StegMotion.shell,
                     child: KeyedSubtree(
                       key: ValueKey(index),
                       child: current.page,
@@ -77,9 +79,7 @@ class RoleScaffold extends ConsumerWidget {
         ],
       ),
       bottomNavigationBar: Semantics(
-        label: user.mobileRole == UserRole.intern
-            ? AppLocalizations.of(context).roleIntern
-            : AppLocalizations.of(context).roleSupervisor,
+        label: roleLabel(AppLocalizations.of(context), user.mobileRole),
         child: NavigationBar(
           selectedIndex: index,
           onDestinationSelected: onIndexChanged,

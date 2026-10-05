@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/l10n/app_localizations.dart';
-import '../../../../core/network/api_exception.dart';
+import '../../../../core/network/error_messages.dart';
 import '../../../../core/theme/steg_spacing.dart';
 import '../../../../core/widgets/steg_button.dart';
 import '../../../../core/widgets/steg_dialog.dart';
@@ -87,7 +87,7 @@ class _JournalDetailBody extends ConsumerWidget {
                     child: CircularProgressIndicator(strokeWidth: 2))),
           ),
           error: (e, _) => Text(
-              e is ApiException ? e.message : e.toString(),
+              context.userError(e).message,
               style: TextStyle(
                   color: Theme.of(context).colorScheme.error)),
           data: (comments) => comments.isEmpty
@@ -165,8 +165,7 @@ class _JournalDetailBody extends ConsumerWidget {
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(
-                e is ApiException ? e.message : e.toString()),
+            content: Text(context.userError(e).message),
           ),
         );
       }
@@ -248,7 +247,7 @@ class _ReviewDialogState extends ConsumerState<_ReviewDialog> {
       if (!mounted) return;
       setState(() {
         _working = false;
-        _error = e is ApiException ? e.message : e.toString();
+        _error = userMessageOf(e, l10n);
       });
     }
   }

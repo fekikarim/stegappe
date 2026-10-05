@@ -8,6 +8,7 @@ import '../../../core/widgets/steg_button.dart';
 import '../../../core/widgets/steg_card.dart';
 import '../../../core/widgets/steg_fields.dart';
 import '../../auth/presentation/providers/auth_providers.dart';
+import '../../auth/presentation/role_label.dart';
 
 /// Profile / settings tab: user identity (CIN never shown — not exposed
 /// by any mobile endpoint), language + theme controls.
@@ -33,6 +34,14 @@ class MoreTab extends ConsumerWidget {
               if (user != null) ...[
                 Text(user.email,
                     style: Theme.of(context).textTheme.bodyLarge),
+                const SizedBox(height: StegSpacing.xxs),
+                // SH-PRO-01: the role is visible (and announced) so a
+                // supervisor/admin-supervisor never has to guess.
+                Text(roleLabel(l10n, user.mobileRole),
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: Theme.of(context).colorScheme.primary,
+                          fontWeight: FontWeight.w600,
+                        )),
                 const SizedBox(height: StegSpacing.xs),
                 BidiText(
                   user.id.isEmpty ? '—' : user.id,

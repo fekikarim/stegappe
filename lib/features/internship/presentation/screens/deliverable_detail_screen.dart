@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/l10n/app_localizations.dart';
-import '../../../../core/network/api_exception.dart';
+import '../../../../core/network/error_messages.dart';
 import '../../../../core/theme/steg_spacing.dart';
 import '../../../../core/widgets/steg_button.dart';
 import '../../../../core/widgets/steg_fields.dart';
@@ -47,8 +47,7 @@ class _DeliverableDetailScreenState
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(
-                e is ApiException ? e.message : e.toString()),
+            content: Text(context.userError(e).message),
           ),
         );
       }
@@ -73,8 +72,7 @@ class _DeliverableDetailScreenState
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(
-                e is ApiException ? e.message : e.toString()),
+            content: Text(userMessageOf(e, l10n)),
           ),
         );
       }
@@ -99,7 +97,7 @@ class _DeliverableDetailScreenState
       body: async.when(
         loading: () => const StegLoading(),
         error: (e, _) => StegErrorView(
-          message: e is ApiException ? e.message : e.toString(),
+          message: context.userError(e).message,
           onRetry: () =>
               refreshDeliverables(ref, widget.deliverableId),
         ),
@@ -232,9 +230,7 @@ class _DeliverableDetailScreenState
                           child: CircularProgressIndicator(
                               strokeWidth: 2))),
                   error: (e, _) => Text(
-                      e is ApiException
-                          ? e.message
-                          : e.toString(),
+                      context.userError(e).message,
                       style: TextStyle(
                           color: Theme.of(context)
                               .colorScheme
@@ -432,7 +428,7 @@ class _DeliverableReviewDialogState
       if (!mounted) return;
       setState(() {
         _working = false;
-        _error = e is ApiException ? e.message : e.toString();
+        _error = userMessageOf(e, l10n);
       });
     }
   }

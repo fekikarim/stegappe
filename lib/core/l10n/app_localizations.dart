@@ -371,6 +371,82 @@ class AppLocalizations {
     'assistantEmpty': {'fr': 'Aucun message pour le moment.', 'en': 'No messages yet.', 'ar': 'لا رسائل بعد.'},
     'assistantThinking': {'fr': 'Réflexion…', 'en': 'Thinking…', 'ar': 'جارٍ التفكير…'},
     'assistantUnavailable': {'fr': 'Assistant indisponible pour le moment. Réessayez plus tard.', 'en': 'Assistant unavailable right now. Try again later.', 'ar': 'المساعد غير متاح حاليا. حاول لاحقا.'},
+    'roleAdminSupervisor': {
+      'fr': 'Encadrant (administrateur)',
+      'en': 'Supervisor (administrator)',
+      'ar': 'مؤطر (مسؤول)',
+    },
+    // --- Centralized user-facing error messages (T00 error model) ---
+    'errGeneric': {
+      'fr': 'Une erreur est survenue. Réessayez.',
+      'en': 'Something went wrong. Please try again.',
+      'ar': 'حدث خطأ. حاول مرة أخرى.',
+    },
+    'errNetwork': {
+      'fr': 'Connexion requise. Vérifiez votre réseau puis réessayez.',
+      'en': 'Connection required. Check your network and try again.',
+      'ar': 'الاتصال مطلوب. تحقق من الشبكة ثم أعد المحاولة.',
+    },
+    'errSessionExpired': {
+      'fr': 'Votre session a expiré. Reconnectez-vous.',
+      'en': 'Your session has expired. Please sign in again.',
+      'ar': 'انتهت جلستك. يرجى تسجيل الدخول من جديد.',
+    },
+    'errForbidden': {
+      'fr': 'Vous n’avez pas la permission d’effectuer cette action.',
+      'en': 'You do not have permission to perform this action.',
+      'ar': 'ليس لديك إذن لتنفيذ هذا الإجراء.',
+    },
+    'errNotFound': {
+      'fr': 'L’élément demandé est introuvable.',
+      'en': 'The requested item was not found.',
+      'ar': 'العنصر المطلوب غير موجود.',
+    },
+    'errConflict': {
+      'fr': 'Cette action entre en conflit avec l’état actuel. Actualisez puis réessayez.',
+      'en': 'This action conflicts with the current state. Refresh and try again.',
+      'ar': 'يتعارض هذا الإجراء مع الحالة الحالية. حدّث البيانات ثم أعد المحاولة.',
+    },
+    'errValidation': {
+      'fr': 'Certaines informations sont invalides. Vérifiez le formulaire.',
+      'en': 'Some information is invalid. Please check the form.',
+      'ar': 'بعض المعلومات غير صالحة. تحقق من النموذج.',
+    },
+    'errBadRequest': {
+      'fr': 'La demande n’a pas pu être traitée. Réessayez.',
+      'en': 'The request could not be processed. Please try again.',
+      'ar': 'تعذرت معالجة الطلب. حاول مرة أخرى.',
+    },
+    'errServer': {
+      'fr': 'Le service est temporairement indisponible. Réessayez dans un instant.',
+      'en': 'The service is temporarily unavailable. Please try again shortly.',
+      'ar': 'الخدمة غير متاحة مؤقتا. أعد المحاولة بعد قليل.',
+    },
+    'errRateLimited': {
+      'fr': 'Trop de tentatives. Patientez un instant puis réessayez.',
+      'en': 'Too many attempts. Please wait a moment and try again.',
+      'ar': 'محاولات كثيرة. انتظر لحظة ثم أعد المحاولة.',
+    },
+    'errInvalidTransition': {
+      'fr': 'Cette transition n’est pas autorisée dans l’état actuel.',
+      'en': 'This transition is not allowed in the current state.',
+      'ar': 'هذا الانتقال غير مسموح في الحالة الحالية.',
+    },
+    'errUploadRejected': {
+      'fr': 'Le fichier a été refusé par la vérification de sécurité.',
+      'en': 'The file was rejected by the security scan.',
+      'ar': 'تم رفض الملف أثناء الفحص الأمني.',
+    },
+    'errAiUnavailable': {
+      'fr': 'Le service IA est indisponible. Vous pouvez continuer manuellement.',
+      'en': 'The AI service is unavailable. You can continue manually.',
+      'ar': 'خدمة الذكاء الاصطناعي غير متاحة. يمكنك المتابعة يدويا.',
+    },
+    'errPasswordChangeRequired': {
+      'fr': 'Vous devez changer votre mot de passe avant de continuer.',
+      'en': 'You must change your password before continuing.',
+      'ar': 'يجب تغيير كلمة المرور قبل المتابعة.',
+    },
     'showPassword': {'fr': 'Afficher', 'en': 'Show', 'ar': 'إظهار'},
     'hidePassword': {'fr': 'Masquer', 'en': 'Hide', 'ar': 'إخفاء'},
     'prevWeek': {'fr': 'Semaine précédente', 'en': 'Previous week', 'ar': 'الأسبوع السابق'},
@@ -708,6 +784,22 @@ class AppLocalizations {
   String get assistantEmpty => _get('assistantEmpty');
   String get assistantThinking => _get('assistantThinking');
   String get assistantUnavailable => _get('assistantUnavailable');
+  String get roleAdminSupervisor => _get('roleAdminSupervisor');
+  // --- Centralized user-facing error messages (T00 error model) ---
+  String get errGeneric => _get('errGeneric');
+  String get errNetwork => _get('errNetwork');
+  String get errSessionExpired => _get('errSessionExpired');
+  String get errForbidden => _get('errForbidden');
+  String get errNotFound => _get('errNotFound');
+  String get errConflict => _get('errConflict');
+  String get errValidation => _get('errValidation');
+  String get errBadRequest => _get('errBadRequest');
+  String get errServer => _get('errServer');
+  String get errRateLimited => _get('errRateLimited');
+  String get errInvalidTransition => _get('errInvalidTransition');
+  String get errUploadRejected => _get('errUploadRejected');
+  String get errAiUnavailable => _get('errAiUnavailable');
+  String get errPasswordChangeRequired => _get('errPasswordChangeRequired');
   String get showPassword => _get('showPassword');
   String get hidePassword => _get('hidePassword');
   String get prevWeek => _get('prevWeek');

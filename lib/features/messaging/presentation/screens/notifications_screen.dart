@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/l10n/app_localizations.dart';
-import '../../../../core/network/api_exception.dart';
+import '../../../../core/network/error_messages.dart';
 import '../../../../core/theme/steg_spacing.dart';
 import '../../../../core/widgets/steg_states.dart';
 import '../../../../core/network/paged.dart';
@@ -82,9 +82,7 @@ class _NotificationsScreenState
                 if (context.mounted) {
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(
-                      content: Text(e is ApiException
-                          ? e.message
-                          : e.toString()),
+                      content: Text(context.userError(e).message),
                     ),
                   );
                 }
@@ -126,8 +124,7 @@ class _NotificationsScreenState
               child: async.when(
                 loading: () => const StegLoading(),
                 error: (e, _) => StegErrorView(
-                  message:
-                      e is ApiException ? e.message : e.toString(),
+                  message: context.userError(e).message,
                   onRetry: () =>
                       ref.invalidate(notificationsProvider),
                 ),
@@ -237,8 +234,7 @@ class _NotificationsScreenState
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(
-                e is ApiException ? e.message : e.toString()),
+            content: Text(context.userError(e).message),
           ),
         );
       }
@@ -261,9 +257,7 @@ class _NotificationsScreenState
         if (context.mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text(e is ApiException
-                  ? e.message
-                  : e.toString()),
+              content: Text(context.userError(e).message),
             ),
           );
           return;
@@ -287,7 +281,9 @@ int? _tabFor(String? entity, UserRole role) {
         'CONVERSATION' || 'MESSAGE' => 3,
         _ => null,
       },
-    UserRole.supervisor => switch (t) {
+    // The admin-supervisor reuses the supervisor shell (D1), so it maps to
+    // the same destinations.
+    UserRole.supervisor || UserRole.adminSupervisor => switch (t) {
         'TASK' || 'JOURNALENTRY' || 'DELIVERABLE' => 2,
         'CONVERSATION' || 'MESSAGE' => 3,
         'INTERNSHIP' => 1,

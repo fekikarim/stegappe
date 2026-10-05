@@ -3,7 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/connectivity/connectivity_service.dart';
 import '../../../../core/l10n/app_localizations.dart';
-import '../../../../core/network/api_exception.dart';
+import '../../../../core/network/error_messages.dart';
 import '../../../../core/theme/steg_spacing.dart';
 import '../../../../core/widgets/steg_states.dart';
 import '../../../../core/widgets/steg_status_chip.dart';
@@ -76,7 +76,7 @@ class InternHomeScreen extends ConsumerWidget {
                 return SliverFillRemaining(
                   hasScrollBody: false,
                   child: StegErrorView(
-                    message: _messageOf(e),
+                    message: context.userError(e).message,
                     onRetry: () => refreshWorkspace(ref),
                   ),
                 );
@@ -92,9 +92,6 @@ class InternHomeScreen extends ConsumerWidget {
       ),
     );
   }
-
-  String _messageOf(Object e) =>
-      e is ApiException ? e.message : e.toString();
 }
 
 class _StaleBody extends StatelessWidget {
@@ -400,7 +397,7 @@ class _NotificationsCard extends ConsumerWidget {
           } on Exception catch (e) {
             if (context.mounted) {
               ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(content: Text(e.toString())),
+                SnackBar(content: Text(context.userError(e).message)),
               );
             }
           }

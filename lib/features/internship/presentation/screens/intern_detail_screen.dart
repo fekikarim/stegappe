@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/l10n/app_localizations.dart';
-import '../../../../core/network/api_exception.dart';
+import '../../../../core/network/error_messages.dart';
 import '../../../../core/theme/steg_spacing.dart';
 import '../../../../core/widgets/steg_button.dart';
 import '../../../../core/widgets/steg_states.dart';
@@ -39,7 +39,7 @@ class InternDetailScreen extends ConsumerWidget {
       body: async.when(
         loading: () => const StegLoading(),
         error: (e, _) => StegErrorView(
-          message: e is ApiException ? e.message : e.toString(),
+          message: context.userError(e).message,
           onRetry: () => refreshSupervisor(ref, internshipId),
         ),
         data: (d) => RefreshIndicator(
@@ -244,7 +244,7 @@ class InternDetailScreen extends ConsumerWidget {
                           child: CircularProgressIndicator(
                               strokeWidth: 2))),
                   error: (e, _) => Text(
-                      e is ApiException ? e.message : e.toString(),
+                      context.userError(e).message,
                       style: TextStyle(
                           color:
                               Theme.of(context).colorScheme.error)),

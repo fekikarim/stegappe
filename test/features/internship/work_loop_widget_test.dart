@@ -277,7 +277,10 @@ void main() {
       await tester.pumpAndSettle();
       // Dialog stays open with the failure; queue unchanged.
       expect(find.text('Réviser l’entrée'), findsOneWidget);
-      expect(find.text('Exception: offline'), findsOneWidget);
+      // T00 error model: the raw exception text is replaced by a localized
+      // sentence, and the raw exception must never reach the screen.
+      expect(find.text('Une erreur est survenue. Réessayez.'), findsOneWidget);
+      expect(find.textContaining('Exception: offline'), findsNothing);
       expect(fake.decisions, isEmpty);
     });
   });

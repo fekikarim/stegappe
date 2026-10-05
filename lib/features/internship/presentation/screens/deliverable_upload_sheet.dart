@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/l10n/app_localizations.dart';
 import '../../../../core/network/api_exception.dart';
+import '../../../../core/network/error_messages.dart';
 import '../../../../core/theme/steg_spacing.dart';
 import '../../../../core/widgets/steg_button.dart';
 import '../../../../core/widgets/steg_dialog.dart';
@@ -154,13 +155,13 @@ class _VersionUploadSheetState
       if (!mounted) return;
       setState(() {
         _phase = _UploadPhase.error;
-        _serverError = e.message;
+        _serverError = userMessageOf(e, l10n);
       });
     } on Exception catch (e) {
       if (!mounted) return;
       setState(() {
         _phase = _UploadPhase.error;
-        _serverError = e.toString();
+        _serverError = userMessageOf(e, l10n);
       });
     }
   }
@@ -349,13 +350,13 @@ class _DeliverableUploadSheetState
         _uploading = false;
         _titleError = e.fieldMessage('title');
         _serverError =
-            _titleError == null ? e.message : null;
+            _titleError == null ? userMessageOf(e, l10n) : null;
       });
     } on Exception catch (e) {
       if (!mounted) return;
       setState(() {
         _uploading = false;
-        _serverError = e.toString();
+        _serverError = userMessageOf(e, l10n);
       });
     }
   }

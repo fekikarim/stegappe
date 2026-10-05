@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/l10n/app_localizations.dart';
 import '../../../../core/network/api_exception.dart';
+import '../../../../core/network/error_messages.dart';
 import '../../../../core/services/share_files.dart';
 import '../../../../core/theme/steg_spacing.dart';
 import '../../../../core/widgets/steg_button.dart';
@@ -147,13 +148,13 @@ class _AttachmentSheetState
       if (!mounted) return;
       setState(() {
         _uploading = false;
-        _serverError = e.message;
+        _serverError = userMessageOf(e, l10n);
       });
     } on Exception catch (e) {
       if (!mounted) return;
       setState(() {
         _uploading = false;
-        _serverError = e.toString();
+        _serverError = userMessageOf(e, l10n);
       });
     }
   }
@@ -297,8 +298,7 @@ class _AttachmentPreviewBodyState
       if (mounted) {
         setState(() {
           _loading = false;
-          _error =
-              e is ApiException ? e.message : e.toString();
+          _error = context.userError(e).message;
         });
       }
     }

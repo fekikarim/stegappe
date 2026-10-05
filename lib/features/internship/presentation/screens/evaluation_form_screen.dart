@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/l10n/app_localizations.dart';
-import '../../../../core/network/api_exception.dart';
+import '../../../../core/network/error_messages.dart';
 import '../../../../core/network/paged.dart';
 import '../../../../core/theme/steg_spacing.dart';
 import '../../../../core/widgets/steg_button.dart';
@@ -190,8 +190,7 @@ class _EvaluationFormScreenState
       if (!mounted) return;
       setState(() {
         _submitting = false;
-        _formError =
-            e is ApiException ? e.message : e.toString();
+        _formError = context.userError(e).message;
       });
     }
   }
@@ -226,7 +225,7 @@ class _EvaluationFormScreenState
       body: templatesAsync.when(
         loading: () => const StegLoading(),
         error: (e, _) => StegErrorView(
-          message: e is ApiException ? e.message : e.toString(),
+          message: context.userError(e).message,
           onRetry: () =>
               ref.invalidate(evaluationTemplatesProvider),
         ),
@@ -245,8 +244,7 @@ class _EvaluationFormScreenState
           return criteriaAsync.when(
             loading: () => const StegLoading(),
             error: (e, _) => StegErrorView(
-              message:
-                  e is ApiException ? e.message : e.toString(),
+              message: context.userError(e).message,
               onRetry: () => ref.invalidate(
                   templateCriteriaProvider(_templateId!)),
             ),
@@ -352,9 +350,7 @@ class _EvaluationFormScreenState
                           strokeWidth: 2),
                     )),
                     error: (e, _) => Text(
-                        e is ApiException
-                            ? e.message
-                            : e.toString(),
+                        context.userError(e).message,
                         style: TextStyle(
                             color: Theme.of(context)
                                 .colorScheme

@@ -15,6 +15,9 @@ abstract final class StegColors {
   static const Color warning = Color(0xFF9A6200);
   static const Color error = Color(0xFFD32325);
 
+  /// Lighter error tone for dark surfaces (contrast on the deep-navy theme).
+  static const Color errorDark = Color(0xFFE56A6C);
+
   // Light surfaces
   static const Color lightPage = Color(0xFFF4F6F9);
   static const Color lightSurface = Color(0xFFFFFFFF);
@@ -32,4 +35,48 @@ abstract final class StegColors {
   static const Color darkTextSecondary = Color(0xFFB7C9D8);
 
   static const Color primaryBright = Color(0xFF3E9BDC);
+
+  // ── New tokens required by T00 (calendar / scheduling / AI / community) ──
+
+  /// "Scheduled task" (visible only from a future date, D8). Indigo, kept
+  /// clearly apart from the info blue and the AI violet.
+  static const Color scheduledTask = Color(0xFF6D4CA8);
+  static const Color scheduledTaskDark = Color(0xFF9B7FD4);
+
+  /// "Awaiting approval" (student marked the task done, review pending, D6).
+  /// Amber-orange, distinct from the `warning` token.
+  static const Color awaitingApproval = Color(0xFFC77700);
+  static const Color awaitingApprovalDark = Color(0xFFFFB74D);
+
+  /// AI features accent (assistant, AI task generation / classification).
+  static const Color aiAccent = Color(0xFF7C3AED);
+  static const Color aiAccentDark = Color(0xFFA78BFA);
+
+  /// Community feed accent (ST-COM-01).
+  static const Color communityAccent = Color(0xFF0E7490);
+  static const Color communityAccentDark = Color(0xFF4FB3C9);
+
+  /// Calendar period palette (T12): six fills that (a) sit in the mid-tone band
+  /// so they stay visible on both the light page (#F4F6F9) and the dark surface
+  /// (#10293F) and (b) have pairwise-distinct greyscale luminance so the periods
+  /// remain tellable apart without colour. Always paired with a label/icon — the
+  /// palette is never the only signal (UX_UI.md §2.3).
+  static const List<Color> calendarPalette = <Color>[
+    Color(0xFF0E3A5C), // navy   (greyscale ≈ 49)
+    Color(0xFF14708F), // teal   (greyscale ≈ 88)
+    Color(0xFF458A3E), // green  (greyscale ≈ 109)
+    Color(0xFFAE7E2E), // amber  (greyscale ≈ 131)
+    Color(0xFFD88E3A), // orange (greyscale ≈ 155)
+    Color(0xFFE0AD3C), // gold   (greyscale ≈ 175)
+  ];
+
+  /// Stable period → colour mapping. Wraps for more periods than palette
+  /// entries so a long calendar never renders an index error.
+  static Color calendarColorFor(int index) =>
+      calendarPalette[index.abs() % calendarPalette.length];
+
+  /// Perceived greyscale luminance (0–255) of a token — exposed so the token
+  /// test can prove the calendar palette is greyscale-distinguishable.
+  static double greyscaleLuminance(Color c) =>
+      0.299 * (c.r * 255) + 0.587 * (c.g * 255) + 0.114 * (c.b * 255);
 }

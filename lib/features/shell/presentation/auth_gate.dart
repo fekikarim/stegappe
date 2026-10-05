@@ -50,9 +50,13 @@ class _AuthGateState extends ConsumerState<AuthGate> {
     return switch (state) {
       AuthInitial() || AuthLoading() => const SplashScreen(),
       AuthUnauthenticated() => const LoginScreen(),
+      // Admin-as-supervisor (D1) reuses the supervisor shell: the backend
+      // scopes "my students" from the supervision link, and no admin-only
+      // staff module is reachable from here (BR-07).
       AuthAuthenticated(:final user) => switch (user.mobileRole) {
         UserRole.intern => InternShell(user: user),
-        UserRole.supervisor => SupervisorShell(user: user),
+        UserRole.supervisor || UserRole.adminSupervisor =>
+          SupervisorShell(user: user),
         UserRole.unsupported => const UnsupportedRoleScreen(),
       },
     };

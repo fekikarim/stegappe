@@ -3,7 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/connectivity/connectivity_service.dart';
 import '../../../../core/l10n/app_localizations.dart';
-import '../../../../core/network/api_exception.dart';
+import '../../../../core/network/error_messages.dart';
 import '../../../../core/theme/steg_spacing.dart';
 import '../../../../core/widgets/steg_states.dart';
 import '../providers/workspace_providers.dart';
@@ -42,8 +42,7 @@ class SupervisedInternsScreen extends ConsumerWidget {
               error: (e, _) => SliverFillRemaining(
                 hasScrollBody: false,
                 child: StegErrorView(
-                  message:
-                      e is ApiException ? e.message : e.toString(),
+                  message: context.userError(e).message,
                   onRetry: () => refreshSupervisor(ref),
                 ),
               ),

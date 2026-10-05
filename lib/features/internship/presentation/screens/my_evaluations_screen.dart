@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/l10n/app_localizations.dart';
-import '../../../../core/network/api_exception.dart';
+import '../../../../core/network/error_messages.dart';
 import '../../../../core/theme/steg_spacing.dart';
 import '../../../../core/widgets/steg_states.dart';
 import '../../domain/entities/evaluation.dart';
@@ -57,9 +57,7 @@ class MyEvaluationsScreen extends ConsumerWidget {
                   return SliverFillRemaining(
                     hasScrollBody: false,
                     child: StegErrorView(
-                      message: e is ApiException
-                          ? e.message
-                          : e.toString(),
+                      message: context.userError(e).message,
                       onRetry: () =>
                           ref.invalidate(myEvaluationsProvider),
                     ),

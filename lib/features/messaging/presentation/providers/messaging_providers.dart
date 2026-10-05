@@ -99,7 +99,10 @@ class ChatState {
   final bool hasMore;
   final bool loadingMore;
   final bool initialized;
-  final String? initError;
+
+  /// The raw failure (never a `toString()`): screens localize it once with
+  /// `context.userError(initError)` at the render edge (T00 error model).
+  final Object? initError;
 
   int? get maxSequence =>
       messages.isEmpty ? null : messages.last.sequenceNumber;
@@ -112,7 +115,7 @@ class ChatState {
     bool? hasMore,
     bool? loadingMore,
     bool? initialized,
-    String? initError,
+    Object? initError,
     bool clearInitError = false,
   }) =>
       ChatState(
@@ -149,7 +152,9 @@ class FailedMessage {
 
   final String content;
   final DateTime at;
-  final String error;
+
+  /// Raw failure object; localized at the render edge (T00 error model).
+  final Object? error;
 }
 
 final chatControllerProvider = StateNotifierProvider.family<
@@ -192,7 +197,7 @@ class ChatController extends StateNotifier<ChatState> {
     } on Exception catch (e) {
       if (!_disposed) {
         state = state.copyWith(
-            initialized: true, initError: e.toString());
+            initialized: true, initError: e);
       }
     }
   }
@@ -250,7 +255,7 @@ class ChatController extends StateNotifier<ChatState> {
     } on Exception catch (e) {
       if (!_disposed) {
         state = state.copyWith(
-            initialized: true, initError: e.toString());
+            initialized: true, initError: e);
       }
     }
   }
@@ -335,7 +340,7 @@ class ChatController extends StateNotifier<ChatState> {
           FailedMessage(
               content: content,
               at: DateTime.now(),
-              error: e.toString()),
+              error: e),
         ],
       );
     }
