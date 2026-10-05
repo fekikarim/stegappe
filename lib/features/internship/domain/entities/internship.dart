@@ -1,15 +1,31 @@
 import 'package:equatable/equatable.dart';
 
-/// Backend-owned internship statuses (authoritative).
-enum InternshipStatus { planned, active, completed, cancelled, archived }
+/// Backend-owned internship statuses (authoritative, AGENTS.md §4).
+///
+/// S1b: the legacy `planned` / `active` / `completed` values were removed and
+/// replaced by the explicit chain APPROVED → IN_PROGRESS → REPORT_SUBMITTED →
+/// UNDER_VALIDATION → VALIDATED → RECEIPT_ISSUED.
+enum InternshipStatus {
+  approved,
+  inProgress,
+  reportSubmitted,
+  underValidation,
+  validated,
+  receiptIssued,
+  cancelled,
+  archived,
+}
 
 InternshipStatus internshipStatusFrom(String? raw) =>
     switch (raw?.toUpperCase()) {
-      'ACTIVE' => InternshipStatus.active,
-      'COMPLETED' => InternshipStatus.completed,
+      'IN_PROGRESS' => InternshipStatus.inProgress,
+      'REPORT_SUBMITTED' => InternshipStatus.reportSubmitted,
+      'UNDER_VALIDATION' => InternshipStatus.underValidation,
+      'VALIDATED' => InternshipStatus.validated,
+      'RECEIPT_ISSUED' => InternshipStatus.receiptIssued,
       'CANCELLED' => InternshipStatus.cancelled,
       'ARCHIVED' => InternshipStatus.archived,
-      _ => InternshipStatus.planned,
+      _ => InternshipStatus.approved,
     };
 
 /// Backend-computed type. Displayed only — never derived on-device.
@@ -96,6 +112,8 @@ class InternshipAssignment extends Equatable {
   final DateTime? startDate;
   final DateTime? endDate;
 
+  /// Assignment status (NOT the internship status): an assignment is ACTIVE,
+  /// ENDED, REASSIGNED… — a different enum from §4's internship chain.
   bool get isActive => status.toUpperCase() == 'ACTIVE';
 
   @override

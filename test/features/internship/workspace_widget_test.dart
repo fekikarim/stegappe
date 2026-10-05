@@ -17,14 +17,17 @@ import 'package:stegappe/features/internship/domain/entities/work_items.dart';
 
 import '../../test_fixtures.dart';
 
-const _intern =
-    AppUser(id: 'u1', email: 'intern@u.tn', roles: ['INTERN']);
+const _intern = AppUser(id: 'u1', email: 'intern@u.tn', roles: ['INTERN']);
 
 class _FakeAuthRepo implements AuthRepository {
   @override
-  Future<AppUser> login(
-          {required String email, required String password}) =>
+  Future<AppUser> login({required String email, required String password}) =>
       throw UnimplementedError();
+  @override
+  Future<void> changePassword({
+    required String currentPassword,
+    required String newPassword,
+  }) async {}
   @override
   Future<void> logout() async {}
   @override
@@ -73,10 +76,10 @@ Future<void> pumpWorkspace(
 
 void main() {
   group('Intern dashboard (acceptance)', () {
-    testWidgets('shows today, progress, journal, deliverables, notifications',
-        (tester) async {
-      await pumpWorkspace(
-          tester, const InternHomeScreen(user: _intern));
+    testWidgets('shows today, progress, journal, deliverables, notifications', (
+      tester,
+    ) async {
+      await pumpWorkspace(tester, const InternHomeScreen(user: _intern));
 
       // "What should I do?"
       expect(find.text('Aujourd’hui'), findsWidgets);
@@ -94,18 +97,21 @@ void main() {
       expect(find.textContaining('DSI'), findsOneWidget);
     });
 
-    testWidgets('no linked internship shows honest empty state',
-        (tester) async {
+    testWidgets('no linked internship shows honest empty state', (
+      tester,
+    ) async {
       final fake = FakeInternshipRepository()..noInternship = true;
-      await pumpWorkspace(tester,
-          const InternHomeScreen(user: _intern),
-          fake: fake);
-      expect(
-          find.text('Aucun stage lié pour le moment'), findsOneWidget);
+      await pumpWorkspace(
+        tester,
+        const InternHomeScreen(user: _intern),
+        fake: fake,
+      );
+      expect(find.text('Aucun stage lié pour le moment'), findsOneWidget);
     });
 
-    testWidgets('offline with cache shows stale notice, not blank',
-        (tester) async {
+    testWidgets('offline with cache shows stale notice, not blank', (
+      tester,
+    ) async {
       final data = fixtureDashboard(DateTime.now());
       await pumpWorkspace(
         tester,
@@ -119,24 +125,25 @@ void main() {
         ],
       );
       expect(
-          find.text(
-              'Données hors ligne — peuvent être obsolètes.'),
-          findsOneWidget);
+        find.text('Données hors ligne — peuvent être obsolètes.'),
+        findsOneWidget,
+      );
       expect(find.text('STG-2026-0001'), findsOneWidget);
     });
 
     testWidgets('arabic dashboard is genuinely RTL', (tester) async {
       await pumpWorkspace(
-          tester, const InternHomeScreen(user: _intern),
-          locale: const Locale('ar'));
+        tester,
+        const InternHomeScreen(user: _intern),
+        locale: const Locale('ar'),
+      );
       final ctx = tester.element(find.byType(InternHomeScreen));
       expect(Directionality.of(ctx), TextDirection.rtl);
       expect(find.text('اليوم'), findsWidgets);
       expect(find.text('المهام المنجزة'), findsOneWidget);
     });
 
-    testWidgets('timeline shows phase and backend milestones',
-        (tester) async {
+    testWidgets('timeline shows phase and backend milestones', (tester) async {
       await pumpWorkspace(tester, const TimelineScreen());
       expect(find.text('Chronologie du stage'), findsOneWidget);
       expect(find.text('Stage en cours'), findsOneWidget);
@@ -157,8 +164,7 @@ void main() {
       expect(find.text('Today task'), findsOneWidget);
     });
 
-    testWidgets('filter chip queries the backend with status',
-        (tester) async {
+    testWidgets('filter chip queries the backend with status', (tester) async {
       final fake = FakeInternshipRepository();
       await pumpWorkspace(tester, const TaskListScreen(), fake: fake);
       await tester.tap(find.text('Terminées'));
@@ -168,8 +174,9 @@ void main() {
       expect(find.text('Today task'), findsNothing);
     });
 
-    testWidgets('detail sheet offers server-confirmed transitions',
-        (tester) async {
+    testWidgets('detail sheet offers server-confirmed transitions', (
+      tester,
+    ) async {
       final fake = FakeInternshipRepository();
       await pumpWorkspace(tester, const TaskListScreen(), fake: fake);
       // Explicit details chevron next to 'Today task' (checkbox taps
@@ -179,8 +186,7 @@ void main() {
       expect(find.text('Marquer comme terminée'), findsOneWidget);
       await tester.tap(find.text('Marquer comme terminée'));
       await tester.pumpAndSettle();
-      expect(fake.statusUpdates,
-          contains(('t-today', TaskStatus.completed)));
+      expect(fake.statusUpdates, contains(('t-today', TaskStatus.completed)));
     });
   });
 }

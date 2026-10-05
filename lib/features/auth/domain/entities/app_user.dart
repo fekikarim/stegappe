@@ -8,9 +8,11 @@ UserRole userRoleFromBackend(List<String> roles) {
   // Live backend issues Spring-style authorities ("ROLE_SUPERVISOR").
   // Strip the prefix before matching (verified against /api/auth/login).
   final upper = roles
-      .map((r) => r.toUpperCase().startsWith('ROLE_')
-          ? r.toUpperCase().substring(5)
-          : r.toUpperCase())
+      .map(
+        (r) => r.toUpperCase().startsWith('ROLE_')
+            ? r.toUpperCase().substring(5)
+            : r.toUpperCase(),
+      )
       .toSet();
   // SUPERVISOREmployees may carry both; supervisor shell wins for staff UX.
   if (upper.contains('SUPERVISOR')) return UserRole.supervisor;
@@ -24,11 +26,13 @@ class AppUser {
     required this.id,
     required this.email,
     required this.roles,
+    this.mustChangePassword = false,
   });
 
   final String id;
   final String email;
   final List<String> roles;
+  final bool mustChangePassword;
 
   UserRole get mobileRole => userRoleFromBackend(roles);
 }

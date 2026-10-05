@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'app.dart';
+import 'core/config/app_config.dart';
 import 'core/l10n/settings_providers.dart';
 import 'core/storage/prefs_store.dart';
 
@@ -19,6 +20,9 @@ Future<void> main() async {
   await runZonedGuarded(
     () async {
       WidgetsFlutterBinding.ensureInitialized();
+      // Production-critical: refuse to start a build whose backend URL was
+      // never provided (no dev default exists by design — see AppConfig).
+      AppConfig.ensureConfigured();
       FlutterError.onError = (details) {
         if (kDebugMode) {
           FlutterError.presentError(details);

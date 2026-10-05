@@ -7,6 +7,7 @@ abstract final class Endpoints {
   static const String refresh = '/api/auth/refresh';
   static const String logout = '/api/auth/logout';
   static const String logoutAll = '/api/auth/logout-all';
+  static const String changePassword = '/api/auth/change-password';
 
   static const String candidateMe = '/api/candidates/me';
   static const String internships = '/api/internships';
@@ -14,14 +15,11 @@ abstract final class Endpoints {
   static String internshipTasks(String id) => '/api/internships/$id/tasks';
   static String journalEntries(String id) =>
       '/api/internships/$id/journal/entries';
-  static String deliverables(String id) =>
-      '/api/internships/$id/deliverables';
-  static String evaluations(String id) =>
-      '/api/internships/$id/evaluations';
+  static String deliverables(String id) => '/api/internships/$id/deliverables';
+  static String evaluations(String id) => '/api/internships/$id/evaluations';
   static String classification(String id) =>
       '/api/internships/$id/classification';
-  static String assignments(String id) =>
-      '/api/internships/$id/assignments';
+  static String assignments(String id) => '/api/internships/$id/assignments';
   static String task(String taskId) => '/api/internships/tasks/$taskId';
   static String taskStatus(String taskId) =>
       '/api/internships/tasks/$taskId/status';
@@ -33,8 +31,7 @@ abstract final class Endpoints {
       '/api/internships/journal/entries/$entryId/reject';
   static String journalComments(String entryId) =>
       '/api/journal/entries/$entryId/comments';
-  static String deliverable(String id) =>
-      '/api/internships/deliverables/$id';
+  static String deliverable(String id) => '/api/internships/deliverables/$id';
   static String deliverableVersions(String id) =>
       '/api/internships/deliverables/$id/versions';
   static String deliverableSubmit(String id) =>
@@ -68,8 +65,7 @@ abstract final class Endpoints {
       '/api/conversations/$id/messages';
   static String conversationMessagesWithAttachment(String id) =>
       '/api/conversations/$id/messages/with-attachment';
-  static String conversationRead(String id) =>
-      '/api/conversations/$id/read';
+  static String conversationRead(String id) => '/api/conversations/$id/read';
   static String conversationDelivered(String id) =>
       '/api/conversations/$id/delivered';
   static String attachmentDownload(String attachmentId) =>
@@ -78,8 +74,7 @@ abstract final class Endpoints {
   static const String notificationsReadAll = '/api/notifications/read-all';
   static const String notificationsUnreadCount =
       '/api/notifications/unread-count';
-  static String notificationRead(String id) =>
-      '/api/notifications/$id/read';
+  static String notificationRead(String id) => '/api/notifications/$id/read';
   // --- D6 AI (advisory only; logbook is the participant endpoint) ---
   static String aiLogbook(String internshipId) =>
       '/api/ai/internships/$internshipId/logbook/generate';

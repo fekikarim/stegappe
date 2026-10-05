@@ -46,3 +46,9 @@ app.*.map.json
 
 # Widget Preview related
 .widget_preview/
+
+# Local environment files hold real secrets and must never be committed.
+# `.env.example` is the committed template required by AGENTS.md 9.5.
+.env
+.env.*
+!.env.example

@@ -16,16 +16,20 @@ import '../../test_fixtures.dart';
 
 class _FakeAuth implements AuthRepository {
   @override
-  Future<AppUser> login(
-          {required String email, required String password}) =>
+  Future<AppUser> login({required String email, required String password}) =>
       throw UnimplementedError();
+  @override
+  Future<void> changePassword({
+    required String currentPassword,
+    required String newPassword,
+  }) async {}
   @override
   Future<void> logout() async {}
   @override
   Future<bool> refreshSession() async => true;
   @override
-  Future<AppUser?> restoreSession() async => const AppUser(
-      id: 'u1', email: 'intern@u.tn', roles: ['INTERN']);
+  Future<AppUser?> restoreSession() async =>
+      const AppUser(id: 'u1', email: 'intern@u.tn', roles: ['INTERN']);
 }
 
 Future<FakeInternshipRepository> pumpD6(
@@ -65,8 +69,7 @@ Future<FakeInternshipRepository> pumpD6(
 
 void main() {
   group('progress overview (acceptance)', () {
-    testWidgets('combines tasks/journal/deliverables/timeline',
-        (tester) async {
+    testWidgets('combines tasks/journal/deliverables/timeline', (tester) async {
       await pumpD6(tester, const ProgressScreen());
 
       expect(find.text('Progression globale'), findsOneWidget);
@@ -81,63 +84,59 @@ void main() {
   });
 
   group('advisory logbook (acceptance)', () {
-    testWidgets('draft is review-only with safety labels',
-        (tester) async {
+    testWidgets('draft is review-only with safety labels', (tester) async {
       await pumpD6(tester, const LogbookScreen());
 
       expect(find.text('Assistance IA'), findsWidgets);
+      expect(find.text('Données sensibles (CIN) exclues'), findsOneWidget);
       expect(
-          find.text(
-              'Données sensibles (CIN) exclues'),
-          findsOneWidget);
-      expect(
-          find.textContaining(
-              'vérification humaine requise'),
-          findsOneWidget);
+        find.textContaining('vérification humaine requise'),
+        findsOneWidget,
+      );
       // Draft prefilled for review, editable, never auto-sent.
       expect(find.textContaining('Période'), findsOneWidget);
       await tester.dragUntilVisible(
-          find.text('Vérifiez les dates.'),
-          find.byType(ListView),
-          const Offset(0, -300));
+        find.text('Vérifiez les dates.'),
+        find.byType(ListView),
+        const Offset(0, -300),
+      );
       expect(find.text('Vérifiez les dates.'), findsOneWidget);
       // No approve/finance/status actions anywhere.
       expect(find.text('Valider'), findsNothing);
       expect(find.text('Approuver'), findsNothing);
     });
 
-    testWidgets('edited text stays local until regenerate',
-        (tester) async {
+    testWidgets('edited text stays local until regenerate', (tester) async {
       await pumpD6(tester, const LogbookScreen());
 
-      await tester.enterText(
-          find.byType(TextField), 'Ma version relue.');
+      await tester.enterText(find.byType(TextField), 'Ma version relue.');
       await tester.pump();
       expect(find.text('Ma version relue.'), findsOneWidget);
     });
 
-    testWidgets('reviewed text is submitted for validation explicitly',
-        (tester) async {
+    testWidgets('reviewed text is submitted for validation explicitly', (
+      tester,
+    ) async {
       final fake = await pumpD6(tester, const LogbookScreen());
 
-      await tester.enterText(
-          find.byType(TextField), 'Version finale relue.');
+      await tester.enterText(find.byType(TextField), 'Version finale relue.');
       await tester.dragUntilVisible(
-          find.text('Soumettre pour validation'),
-          find.byType(ListView),
-          const Offset(0, -300));
+        find.text('Soumettre pour validation'),
+        find.byType(ListView),
+        const Offset(0, -300),
+      );
       await tester.tap(find.text('Soumettre pour validation'));
       await tester.pumpAndSettle();
 
       expect(fake.submittedLogbooks, hasLength(1));
       expect(fake.submittedLogbooks.single.internshipId, 'internship-1');
       expect(fake.submittedLogbooks.single.text, 'Version finale relue.');
-      expect(find.text('Carnet soumis pour validation.'),
-          findsOneWidget);
+      expect(find.text('Carnet soumis pour validation.'), findsOneWidget);
     });
 
-    testWidgets('AI outage degrades to retry card, core intact',
-        (tester) async {
+    testWidgets('AI outage degrades to retry card, core intact', (
+      tester,
+    ) async {
       final fake = FakeInternshipRepository()..failAi = true;
       await pumpD6(tester, const LogbookScreen(), fake: fake);
 

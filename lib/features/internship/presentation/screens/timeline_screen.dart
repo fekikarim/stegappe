@@ -73,7 +73,8 @@ class _PhaseHeader extends StatelessWidget {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     final internship = data.internship;
-    final String phase = internship.status == InternshipStatus.completed ||
+    final String phase = internship.status == InternshipStatus.validated ||
+            internship.status == InternshipStatus.receiptIssued ||
             internship.status == InternshipStatus.archived
         ? l10n.phaseFinished
         : data.now.isBefore(internship.startDate)

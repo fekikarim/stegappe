@@ -9,22 +9,28 @@ class AuthRemoteDataSource {
   final ApiClient _client;
 
   Future<AuthTokens> login(LoginRequest request) => _client.post(
-        Endpoints.login,
-        body: request.toJson(),
-        decode: (json) =>
-            AuthTokens.fromJson(json as Map<String, dynamic>),
-      );
+    Endpoints.login,
+    body: request.toJson(),
+    decode: (json) => AuthTokens.fromJson(json as Map<String, dynamic>),
+  );
 
   Future<AuthTokens> refresh(String refreshToken) => _client.post(
-        Endpoints.refresh,
-        body: {'refreshToken': refreshToken},
-        decode: (json) =>
-            AuthTokens.fromJson(json as Map<String, dynamic>),
-      );
+    Endpoints.refresh,
+    body: {'refreshToken': refreshToken},
+    decode: (json) => AuthTokens.fromJson(json as Map<String, dynamic>),
+  );
 
-  Future<void> logout(String? accessToken) => _client.post(
-        Endpoints.logout,
-        bearer: accessToken,
-        decode: (_) {},
-      );
+  Future<void> logout(String? accessToken) =>
+      _client.post(Endpoints.logout, bearer: accessToken, decode: (_) {});
+
+  Future<void> changePassword({
+    required String currentPassword,
+    required String newPassword,
+    required String accessToken,
+  }) => _client.post(
+    Endpoints.changePassword,
+    bearer: accessToken,
+    body: {'currentPassword': currentPassword, 'newPassword': newPassword},
+    decode: (_) {},
+  );
 }

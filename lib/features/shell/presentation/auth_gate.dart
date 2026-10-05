@@ -7,6 +7,7 @@ import '../../auth/domain/entities/app_user.dart';
 import '../../auth/presentation/providers/auth_providers.dart';
 import '../../auth/presentation/screens/login_screen.dart';
 import '../../auth/presentation/screens/splash_screen.dart';
+import '../../auth/presentation/screens/change_password_screen.dart';
 import '../../messaging/presentation/providers/messaging_providers.dart';
 import 'role_shells.dart';
 
@@ -25,7 +26,8 @@ class _AuthGateState extends ConsumerState<AuthGate> {
   void initState() {
     super.initState();
     Future.microtask(
-        () => ref.read(authControllerProvider.notifier).bootstrap());
+      () => ref.read(authControllerProvider.notifier).bootstrap(),
+    );
   }
 
   @override
@@ -43,15 +45,16 @@ class _AuthGateState extends ConsumerState<AuthGate> {
       // Foreground socket sync for the whole session (notifications +
       // unread badges). Idempotent: provider boots subscriptions once.
       ref.watch(foregroundSyncProvider);
+      if (state.user.mustChangePassword) return const ChangePasswordScreen();
     }
     return switch (state) {
       AuthInitial() || AuthLoading() => const SplashScreen(),
       AuthUnauthenticated() => const LoginScreen(),
       AuthAuthenticated(:final user) => switch (user.mobileRole) {
-          UserRole.intern => InternShell(user: user),
-          UserRole.supervisor => SupervisorShell(user: user),
-          UserRole.unsupported => const UnsupportedRoleScreen(),
-        },
+        UserRole.intern => InternShell(user: user),
+        UserRole.supervisor => SupervisorShell(user: user),
+        UserRole.unsupported => const UnsupportedRoleScreen(),
+      },
     };
   }
 }
@@ -68,8 +71,7 @@ class UnsupportedRoleScreen extends ConsumerWidget {
         title: l10n.unsupportedRole,
         icon: Icons.lock_outline,
         actionLabel: l10n.logout,
-        onAction: () =>
-            ref.read(authControllerProvider.notifier).logout(),
+        onAction: () => ref.read(authControllerProvider.notifier).logout(),
       ),
     );
   }

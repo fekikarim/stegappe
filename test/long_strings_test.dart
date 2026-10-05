@@ -52,7 +52,7 @@ void main() {
             internshipId: 'i1',
             reference: 'STG-2026-0000000001-TRÈS-LONGUE-RÉFÉRENCE',
             internName: _longAr,
-            status: InternshipStatus.active,
+            status: InternshipStatus.inProgress,
             type: InternshipType.pfe,
             startDate: DateTime(2026, 1, 1),
             endDate: DateTime(2026, 12, 31),

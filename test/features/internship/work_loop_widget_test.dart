@@ -24,9 +24,13 @@ class _FakeAuth implements AuthRepository {
   final AppUser user;
 
   @override
-  Future<AppUser> login(
-          {required String email, required String password}) =>
+  Future<AppUser> login({required String email, required String password}) =>
       throw UnimplementedError();
+  @override
+  Future<void> changePassword({
+    required String currentPassword,
+    required String newPassword,
+  }) async {}
   @override
   Future<void> logout() async {}
   @override
@@ -39,7 +43,10 @@ Future<FakeInternshipRepository> pumpLoop(
   WidgetTester tester,
   Widget page, {
   AppUser user = const AppUser(
-      id: 'u1', email: 'intern@u.tn', roles: ['INTERN']),
+    id: 'u1',
+    email: 'intern@u.tn',
+    roles: ['INTERN'],
+  ),
   FakeInternshipRepository? fake,
   MemoryComposerDraftStore? drafts,
   bool online = true,
@@ -84,8 +91,9 @@ Future<FakeInternshipRepository> pumpLoop(
 
 void main() {
   group('task create/edit loop', () {
-    testWidgets('FAB opens editor; empty title is rejected inline',
-        (tester) async {
+    testWidgets('FAB opens editor; empty title is rejected inline', (
+      tester,
+    ) async {
       final fake = FakeInternshipRepository();
       await pumpLoop(tester, const TaskListScreen(), fake: fake);
 
@@ -113,8 +121,9 @@ void main() {
       expect(find.text('Tâche enregistrée.'), findsOneWidget);
     });
 
-    testWidgets('failed toggle rolls back, never stuck confirmed',
-        (tester) async {
+    testWidgets('failed toggle rolls back, never stuck confirmed', (
+      tester,
+    ) async {
       final fake = FakeInternshipRepository()..failWrites = true;
       await pumpLoop(tester, const TaskListScreen(), fake: fake);
 
@@ -133,8 +142,9 @@ void main() {
   });
 
   group('journal loop', () {
-    testWidgets('composer autosaves locally, then creates + submits',
-        (tester) async {
+    testWidgets('composer autosaves locally, then creates + submits', (
+      tester,
+    ) async {
       final fake = FakeInternshipRepository();
       final drafts = MemoryComposerDraftStore();
       final day = DateTime.now();
@@ -158,11 +168,16 @@ void main() {
       expect(await drafts.load('internship-1', day), isNull);
     });
 
-    testWidgets('day strip filters server-side; empty day is honest',
-        (tester) async {
+    testWidgets('day strip filters server-side; empty day is honest', (
+      tester,
+    ) async {
       final fake = FakeInternshipRepository(now: DateTime(2026, 9, 15));
-      await pumpLoop(tester, const JournalListScreen(),
-          fake: fake, selectedDay: DateTime(2026, 9, 15));
+      await pumpLoop(
+        tester,
+        const JournalListScreen(),
+        fake: fake,
+        selectedDay: DateTime(2026, 9, 15),
+      );
       // Only entries recorded on the selected day are shown.
       expect(find.text('Draft entry'), findsOneWidget);
       expect(find.text('Submitted entry'), findsNothing);
@@ -173,17 +188,19 @@ void main() {
       expect(find.text('Aucune entrée pour le moment.'), findsOneWidget);
     });
 
-    testWidgets('detail shows comments + submit for drafts',
-        (tester) async {
+    testWidgets('detail shows comments + submit for drafts', (tester) async {
       final fake = FakeInternshipRepository(now: DateTime(2026, 9, 15));
-      await pumpLoop(tester, const JournalListScreen(),
-          fake: fake, selectedDay: DateTime(2026, 9, 15));
+      await pumpLoop(
+        tester,
+        const JournalListScreen(),
+        fake: fake,
+        selectedDay: DateTime(2026, 9, 15),
+      );
 
       await tester.tap(find.text('Draft entry'));
       await tester.pumpAndSettle();
       expect(find.text('Détail de l’entrée'), findsOneWidget);
-      expect(
-          find.text('Bien détaillé, continue.'), findsOneWidget);
+      expect(find.text('Bien détaillé, continue.'), findsOneWidget);
 
       await tester.tap(find.text('Soumettre pour validation'));
       await tester.pumpAndSettle();
@@ -192,26 +209,26 @@ void main() {
   });
 
   group('supervisor validation loop', () {
-    const sup = AppUser(
-        id: 's1', email: 'sup@steg.tn', roles: ['SUPERVISOR']);
+    const sup = AppUser(id: 's1', email: 'sup@steg.tn', roles: ['SUPERVISOR']);
 
     testWidgets('queue lists submitted entries', (tester) async {
-      await pumpLoop(tester,
-          const SupervisorValidationsScreen(),
-          user: sup);
+      await pumpLoop(tester, const SupervisorValidationsScreen(), user: sup);
       expect(find.text('Submitted entry'), findsOneWidget);
       // Journal + deliverable queues share the internship reference.
       expect(find.textContaining('STG-2026-0001'), findsWidgets);
       expect(find.text('Rapport de stage'), findsOneWidget);
     });
 
-    testWidgets('reject requires a comment; then records decision',
-        (tester) async {
+    testWidgets('reject requires a comment; then records decision', (
+      tester,
+    ) async {
       final fake = FakeInternshipRepository();
-      await pumpLoop(tester,
-          const SupervisorValidationsScreen(),
-          user: sup,
-          fake: fake);
+      await pumpLoop(
+        tester,
+        const SupervisorValidationsScreen(),
+        user: sup,
+        fake: fake,
+      );
 
       await tester.tap(find.text('Submitted entry'));
       await tester.pumpAndSettle();
@@ -221,28 +238,36 @@ void main() {
       // Empty comment is refused inline; nothing sent.
       await tester.tap(find.text('Demander une correction').last);
       await tester.pump();
-      expect(find.text('Veuillez expliquer la correction demandée.'),
-          findsOneWidget);
+      expect(
+        find.text('Veuillez expliquer la correction demandée.'),
+        findsOneWidget,
+      );
       expect(fake.decisions, isEmpty);
 
-      await tester.enterText(find.byType(TextField).last, 'Ajoute les chiffres.');
+      await tester.enterText(
+        find.byType(TextField).last,
+        'Ajoute les chiffres.',
+      );
       await tester.tap(find.text('Demander une correction').last);
       await tester.pumpAndSettle();
       expect(
-          fake.decisions,
-          contains(
-              ('j-sub', 'REJECTED', 'Ajoute les chiffres.')));
+        fake.decisions,
+        contains(('j-sub', 'REJECTED', 'Ajoute les chiffres.')),
+      );
       expect(find.text('Correction demandée.'), findsOneWidget);
     });
 
-    testWidgets('offline decision visibly fails, never pretends success',
-        (tester) async {
+    testWidgets('offline decision visibly fails, never pretends success', (
+      tester,
+    ) async {
       final fake = FakeInternshipRepository()..failWrites = true;
-      await pumpLoop(tester,
-          const SupervisorValidationsScreen(),
-          user: sup,
-          fake: fake,
-          online: false);
+      await pumpLoop(
+        tester,
+        const SupervisorValidationsScreen(),
+        user: sup,
+        fake: fake,
+        online: false,
+      );
 
       await tester.tap(find.text('Submitted entry'));
       await tester.pumpAndSettle();

@@ -130,9 +130,12 @@ class AppLocalizations {
     'typeObservation': {'fr': 'Observation', 'en': 'Observation', 'ar': 'تربص ملاحظة'},
     'typePerfectionnement': {'fr': 'Perfectionnement', 'en': 'Perfectionnement', 'ar': 'تربص استكمال'},
     'typePFE': {'fr': 'PFE', 'en': 'PFE', 'ar': 'مشروع نهاية الدراسة'},
-    'stPlanned': {'fr': 'Planifié', 'en': 'Planned', 'ar': 'مخطط'},
-    'stActive': {'fr': 'En cours', 'en': 'Active', 'ar': 'جارٍ'},
-    'stCompleted': {'fr': 'Terminé', 'en': 'Completed', 'ar': 'مكتمل'},
+    'stApproved': {'fr': 'Approuvé', 'en': 'Approved', 'ar': 'مصادق عليه'},
+    'stInProgress': {'fr': 'En cours', 'en': 'In progress', 'ar': 'جارٍ'},
+    'stReportSubmitted': {'fr': 'Rapport déposé', 'en': 'Report submitted', 'ar': 'تم تسليم التقرير'},
+    'stUnderValidation': {'fr': 'En validation', 'en': 'Under validation', 'ar': 'قيد التحقق'},
+    'stValidated': {'fr': 'Validé', 'en': 'Validated', 'ar': 'تم التحقق'},
+    'stReceiptIssued': {'fr': 'Reçu émis', 'en': 'Receipt issued', 'ar': 'تم إصدار الوصل'},
     'stCancelled': {'fr': 'Annulé', 'en': 'Cancelled', 'ar': 'ملغى'},
     'stArchived': {'fr': 'Archivé', 'en': 'Archived', 'ar': 'مؤرشف'},
     'tsTodo': {'fr': 'À faire', 'en': 'To do', 'ar': 'للإنجاز'},
@@ -439,9 +442,12 @@ class AppLocalizations {
   String get typeObservation => _get('typeObservation');
   String get typePerfectionnement => _get('typePerfectionnement');
   String get typePFE => _get('typePFE');
-  String get stPlanned => _get('stPlanned');
-  String get stActive => _get('stActive');
-  String get stCompleted => _get('stCompleted');
+  String get stApproved => _get('stApproved');
+  String get stInProgress => _get('stInProgress');
+  String get stReportSubmitted => _get('stReportSubmitted');
+  String get stUnderValidation => _get('stUnderValidation');
+  String get stValidated => _get('stValidated');
+  String get stReceiptIssued => _get('stReceiptIssued');
   String get stCancelled => _get('stCancelled');
   String get stArchived => _get('stArchived');
   String get tsTodo => _get('tsTodo');

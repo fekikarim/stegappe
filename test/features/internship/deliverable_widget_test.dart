@@ -21,9 +21,13 @@ class _FakeAuth implements AuthRepository {
   final AppUser user;
 
   @override
-  Future<AppUser> login(
-          {required String email, required String password}) =>
+  Future<AppUser> login({required String email, required String password}) =>
       throw UnimplementedError();
+  @override
+  Future<void> changePassword({
+    required String currentPassword,
+    required String newPassword,
+  }) async {}
   @override
   Future<void> logout() async {}
   @override
@@ -36,7 +40,10 @@ Future<FakeInternshipRepository> pumpDeliv(
   WidgetTester tester,
   Widget page, {
   AppUser user = const AppUser(
-      id: 'u1', email: 'intern@u.tn', roles: ['INTERN']),
+    id: 'u1',
+    email: 'intern@u.tn',
+    roles: ['INTERN'],
+  ),
   FakeInternshipRepository? fake,
 }) async {
   final repo = fake ?? FakeInternshipRepository();
@@ -71,8 +78,7 @@ Future<FakeInternshipRepository> pumpDeliv(
 
 void main() {
   group('deliverable checklist (acceptance)', () {
-    testWidgets('groups actuals by state with honest counts',
-        (tester) async {
+    testWidgets('groups actuals by state with honest counts', (tester) async {
       await pumpDeliv(tester, const DeliverablesScreen());
 
       expect(find.text('À finaliser (1)'), findsOneWidget);
@@ -83,22 +89,21 @@ void main() {
       expect(find.text('Présentation finale'), findsOneWidget);
       // Exact backend-confirmed limits are displayed.
       expect(
-          find.text(
-              'PDF uniquement · 25 Mo max · versions conservées'),
-          findsNothing); // subtitle lives on sheets, not the list
+        find.text('PDF uniquement · 25 Mo max · versions conservées'),
+        findsNothing,
+      ); // subtitle lives on sheets, not the list
     });
 
-    testWidgets('FAB opens creation sheet with PDF-only rules',
-        (tester) async {
+    testWidgets('FAB opens creation sheet with PDF-only rules', (tester) async {
       await pumpDeliv(tester, const DeliverablesScreen());
 
       await tester.tap(find.byTooltip('Nouveau livrable'));
       await tester.pumpAndSettle();
       expect(find.text('Nouveau livrable'), findsWidgets);
       expect(
-          find.text(
-              'PDF uniquement · 25 Mo max · versions conservées'),
-          findsOneWidget);
+        find.text('PDF uniquement · 25 Mo max · versions conservées'),
+        findsOneWidget,
+      );
       // No file picked: upload stays disabled (no dead action).
       final upload = find.widgetWithText(ElevatedButton, 'Téléverser');
       expect(tester.widget<ElevatedButton>(upload).enabled, isFalse);
@@ -106,36 +111,36 @@ void main() {
   });
 
   group('versioned detail', () {
-    testWidgets('history shows every version, newest first',
-        (tester) async {
+    testWidgets('history shows every version, newest first', (tester) async {
       await pumpDeliv(
-          tester, const DeliverableDetailScreen(deliverableId: 'd-sub'));
+        tester,
+        const DeliverableDetailScreen(deliverableId: 'd-sub'),
+      );
 
       expect(find.text('Rapport de stage'), findsWidgets);
       expect(find.textContaining('rapport-v2.pdf'), findsOneWidget);
       expect(find.textContaining('rapport-v1.pdf'), findsOneWidget);
       // v2 listed before v1 (latest first, nothing overwritten).
-      final v2 = tester
-          .getTopLeft(find.textContaining('rapport-v2.pdf'))
-          .dy;
-      final v1 = tester
-          .getTopLeft(find.textContaining('rapport-v1.pdf'))
-          .dy;
+      final v2 = tester.getTopLeft(find.textContaining('rapport-v2.pdf')).dy;
+      final v1 = tester.getTopLeft(find.textContaining('rapport-v1.pdf')).dy;
       expect(v2, lessThan(v1));
     });
 
-    testWidgets('download goes through the backend endpoint',
-        (tester) async {
+    testWidgets('download goes through the backend endpoint', (tester) async {
       final fake = FakeInternshipRepository();
       final shared = <String>[];
       await tester.pumpWidget(
         ProviderScope(
           overrides: [
-            authRepositoryProvider.overrideWithValue(_FakeAuth(
+            authRepositoryProvider.overrideWithValue(
+              _FakeAuth(
                 const AppUser(
-                    id: 'u1',
-                    email: 'intern@u.tn',
-                    roles: ['INTERN']))),
+                  id: 'u1',
+                  email: 'intern@u.tn',
+                  roles: ['INTERN'],
+                ),
+              ),
+            ),
             internshipRepositoryProvider.overrideWithValue(fake),
             isOnlineProvider.overrideWith((ref) => true),
             shareFnProvider.overrideWithValue((bytes, name) async {
@@ -152,8 +157,7 @@ void main() {
               GlobalCupertinoLocalizations.delegate,
             ],
             theme: StegTheme.light(),
-            home: const DeliverableDetailScreen(
-                deliverableId: 'd-sub'),
+            home: const DeliverableDetailScreen(deliverableId: 'd-sub'),
           ),
         ),
       );
@@ -170,10 +174,13 @@ void main() {
       expect(shared, ['rapport-v2.pdf:4']);
     });
 
-    testWidgets('validated deliverable blocks new versions explicitly',
-        (tester) async {
+    testWidgets('validated deliverable blocks new versions explicitly', (
+      tester,
+    ) async {
       await pumpDeliv(
-          tester, const DeliverableDetailScreen(deliverableId: 'd-sub'));
+        tester,
+        const DeliverableDetailScreen(deliverableId: 'd-sub'),
+      );
       // Fixture is SUBMITTED: new version allowed, submit hidden.
       expect(find.text('Nouvelle version'), findsOneWidget);
       expect(find.text('Soumettre pour validation'), findsNothing);
@@ -181,14 +188,12 @@ void main() {
   });
 
   group('supervisor deliverable review', () {
-    const sup = AppUser(
-        id: 's1', email: 'sup@steg.tn', roles: ['SUPERVISOR']);
+    const sup = AppUser(id: 's1', email: 'sup@steg.tn', roles: ['SUPERVISOR']);
 
-    testWidgets('queue shows submitted deliverables with reference',
-        (tester) async {
-      await pumpDeliv(tester,
-          const SupervisorValidationsScreen(),
-          user: sup);
+    testWidgets('queue shows submitted deliverables with reference', (
+      tester,
+    ) async {
+      await pumpDeliv(tester, const SupervisorValidationsScreen(), user: sup);
       await tester.dragUntilVisible(
         find.text('Rapport de stage'),
         find.byType(CustomScrollView),
@@ -198,13 +203,14 @@ void main() {
       expect(find.textContaining('STG-2026-0001'), findsWidgets);
     });
 
-    testWidgets('validate records a server-confirmed decision',
-        (tester) async {
+    testWidgets('validate records a server-confirmed decision', (tester) async {
       final fake = FakeInternshipRepository();
-      await pumpDeliv(tester,
-          const SupervisorValidationsScreen(),
-          user: sup,
-          fake: fake);
+      await pumpDeliv(
+        tester,
+        const SupervisorValidationsScreen(),
+        user: sup,
+        fake: fake,
+      );
       await tester.dragUntilVisible(
         find.text('Rapport de stage'),
         find.byType(CustomScrollView),
@@ -217,8 +223,7 @@ void main() {
       // Confirm in the review dialog (empty comment allowed).
       await tester.tap(find.text('Valider').last);
       await tester.pumpAndSettle();
-      expect(fake.deliverableDecisions,
-          contains(('d-sub', 'VALIDATED', null)));
+      expect(fake.deliverableDecisions, contains(('d-sub', 'VALIDATED', null)));
     });
   });
 }

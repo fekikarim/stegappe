@@ -11,10 +11,7 @@ import '../models/auth_models.dart';
 /// Role claims are decoded client-side for ROUTING ONLY; the backend
 /// re-authorizes every request server-side.
 class AuthRepositoryImpl implements AuthRepository {
-  AuthRepositoryImpl({
-    required this.remote,
-    required this.tokens,
-  });
+  AuthRepositoryImpl({required this.remote, required this.tokens});
 
   final AuthRemoteDataSource remote;
   final TokenStorage tokens;
@@ -30,8 +27,37 @@ class AuthRepositoryImpl implements AuthRepository {
     await tokens.saveTokens(
       accessToken: authTokens.accessToken,
       refreshToken: authTokens.refreshToken,
+      mustChangePassword: authTokens.mustChangePassword,
     );
-    return _userFromAccessToken(authTokens.accessToken, email);
+    return _userFromAccessToken(
+      authTokens.accessToken,
+      email,
+      authTokens.mustChangePassword,
+    );
+  }
+
+  @override
+  Future<void> changePassword({
+    required String currentPassword,
+    required String newPassword,
+  }) async {
+    final access = await tokens.readAccessToken();
+    if (access == null || access.isEmpty) {
+      throw const ApiException(
+        kind: ApiErrorKind.unauthorized,
+        message: 'Session expired.',
+      );
+    }
+    await remote.changePassword(
+      currentPassword: currentPassword,
+      newPassword: newPassword,
+      accessToken: access,
+    );
+    await tokens.saveTokens(
+      accessToken: access,
+      refreshToken: (await tokens.readRefreshToken()) ?? '',
+      mustChangePassword: false,
+    );
   }
 
   @override
@@ -54,9 +80,17 @@ class AuthRepositoryImpl implements AuthRepository {
       if (!ok) return null;
       final fresh = await tokens.readAccessToken();
       if (fresh == null || fresh.isEmpty) return null;
-      return _userFromAccessToken(fresh, null);
+      return _userFromAccessToken(
+        fresh,
+        null,
+        await tokens.readMustChangePassword(),
+      );
     }
-    return _userFromAccessToken(access, null);
+    return _userFromAccessToken(
+      access,
+      null,
+      await tokens.readMustChangePassword(),
+    );
   }
 
   @override
@@ -68,6 +102,7 @@ class AuthRepositoryImpl implements AuthRepository {
       await tokens.saveTokens(
         accessToken: authTokens.accessToken,
         refreshToken: authTokens.refreshToken,
+        mustChangePassword: authTokens.mustChangePassword,
       );
       return true;
     } on ApiException {
@@ -83,8 +118,7 @@ class AuthRepositoryImpl implements AuthRepository {
     if (parts.length != 3) return const {};
     try {
       final normalized = base64.normalize(parts[1]);
-      final json =
-          utf8.decode(base64Url.decode(normalized));
+      final json = utf8.decode(base64Url.decode(normalized));
       final map = jsonDecode(json);
       return map is Map<String, dynamic> ? map : const {};
     } on Exception {
@@ -92,12 +126,21 @@ class AuthRepositoryImpl implements AuthRepository {
     }
   }
 
-  static AppUser _userFromAccessToken(String jwt, String? emailFallback) {
+  static AppUser _userFromAccessToken(
+    String jwt,
+    String? emailFallback,
+    bool mustChangePassword,
+  ) {
     final payload = decodePayload(jwt);
     final roles = _rolesOf(payload);
     final id = (payload['sub'] ?? payload['userId'] ?? '').toString();
     final email = (payload['email'] ?? emailFallback ?? '').toString();
-    return AppUser(id: id, email: email, roles: roles);
+    return AppUser(
+      id: id,
+      email: email,
+      roles: roles,
+      mustChangePassword: mustChangePassword,
+    );
   }
 
   static List<String> _rolesOf(Map<String, dynamic> payload) {
@@ -111,10 +154,7 @@ class AuthRepositoryImpl implements AuthRepository {
     final payload = decodePayload(jwt);
     final exp = payload['exp'];
     if (exp is! num) return false; // no claim => let backend decide
-    final expiry =
-        DateTime.fromMillisecondsSinceEpoch(exp.toInt() * 1000);
-    return DateTime.now().isAfter(
-      expiry.subtract(const Duration(seconds: 30)),
-    );
+    final expiry = DateTime.fromMillisecondsSinceEpoch(exp.toInt() * 1000);
+    return DateTime.now().isAfter(expiry.subtract(const Duration(seconds: 30)));
   }
 }

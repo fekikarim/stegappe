@@ -11,6 +11,7 @@ import 'package:stegappe/core/theme/steg_theme.dart';
 import 'package:stegappe/features/auth/domain/entities/app_user.dart';
 import 'package:stegappe/features/auth/domain/repositories/auth_repository.dart';
 import 'package:stegappe/features/auth/presentation/providers/auth_providers.dart';
+import 'package:stegappe/features/auth/presentation/screens/change_password_screen.dart';
 import 'package:stegappe/features/internship/presentation/providers/workspace_providers.dart';
 import 'package:stegappe/features/messaging/presentation/providers/messaging_providers.dart';
 import 'package:stegappe/features/shell/presentation/auth_gate.dart';
@@ -18,15 +19,20 @@ import 'package:stegappe/features/shell/presentation/auth_gate.dart';
 import 'test_fixtures.dart';
 import 'features/messaging/messaging_widget_test.dart'
     show FakeMessagingRepo, FakeNotifRepo, FakeStomp;
+
 import 'package:stegappe/features/messaging/data/services/stomp_chat_service.dart';
 
 class _GateAuth implements AuthRepository {
   var loggedOut = false;
 
   @override
-  Future<AppUser> login(
-          {required String email, required String password}) =>
+  Future<AppUser> login({required String email, required String password}) =>
       throw UnimplementedError();
+  @override
+  Future<void> changePassword({
+    required String currentPassword,
+    required String newPassword,
+  }) async {}
   @override
   Future<void> logout() async {
     loggedOut = true;
@@ -35,16 +41,15 @@ class _GateAuth implements AuthRepository {
   @override
   Future<bool> refreshSession() async => true;
   @override
-  Future<AppUser?> restoreSession() async => const AppUser(
-      id: 'u1', email: 'intern@u.tn', roles: ['INTERN']);
+  Future<AppUser?> restoreSession() async =>
+      const AppUser(id: 'u1', email: 'intern@u.tn', roles: ['INTERN']);
 }
 
 /// D7 gate: logout tears down the session completely — tokens revoked
 /// (repo), socket disconnected, fresh service on next login — and the
 /// UI returns to the login screen (crash-free transition).
 void main() {
-  testWidgets('logout disconnects socket and returns to login',
-      (tester) async {
+  testWidgets('logout disconnects socket and returns to login', (tester) async {
     SharedPreferences.setMockInitialValues({});
     final prefs = await PrefsStore.load();
     final auth = _GateAuth();
@@ -56,12 +61,13 @@ void main() {
         overrides: [
           prefsStoreProvider.overrideWithValue(prefs),
           authRepositoryProvider.overrideWithValue(auth),
-          internshipRepositoryProvider
-              .overrideWithValue(FakeInternshipRepository()),
+          internshipRepositoryProvider.overrideWithValue(
+            FakeInternshipRepository(),
+          ),
           messagingRepositoryProvider.overrideWithValue(
-              FakeMessagingRepo(stomp: stomp)),
-          notificationRepositoryProvider
-              .overrideWithValue(FakeNotifRepo()),
+            FakeMessagingRepo(stomp: stomp),
+          ),
+          notificationRepositoryProvider.overrideWithValue(FakeNotifRepo()),
           stompChatServiceProvider.overrideWithValue(stomp),
           isOnlineProvider.overrideWith((ref) => true),
         ],
@@ -93,6 +99,62 @@ void main() {
     // Back at login, no crash, no leftover shell.
     expect(find.text('Se connecter'), findsOneWidget);
     expect(find.text('Accueil'), findsNothing);
+    expect(tester.takeException(), isNull);
+  });
+
+  /// The ApiClient callback wired in apiClientProvider calls
+  /// `authControllerProvider.notifier.requirePasswordChange()` on a 403
+  /// PASSWORD_CHANGE_REQUIRED. This test fires that exact method and proves
+  /// the gate swaps the whole shell for the forced-change screen.
+  testWidgets('password-change-required callback shows ChangePasswordScreen', (
+    tester,
+  ) async {
+    SharedPreferences.setMockInitialValues({});
+    final prefs = await PrefsStore.load();
+    final auth = _GateAuth();
+    final stomp = FakeStomp();
+    stomp.setState(ChatConnectionState.connected);
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          prefsStoreProvider.overrideWithValue(prefs),
+          authRepositoryProvider.overrideWithValue(auth),
+          internshipRepositoryProvider.overrideWithValue(
+            FakeInternshipRepository(),
+          ),
+          messagingRepositoryProvider.overrideWithValue(
+            FakeMessagingRepo(stomp: stomp),
+          ),
+          notificationRepositoryProvider.overrideWithValue(FakeNotifRepo()),
+          stompChatServiceProvider.overrideWithValue(stomp),
+          isOnlineProvider.overrideWith((ref) => true),
+        ],
+        child: MaterialApp(
+          locale: const Locale('fr'),
+          supportedLocales: StegLocales.supported,
+          localizationsDelegates: const [
+            AppLocalizations.delegate,
+            GlobalMaterialLocalizations.delegate,
+            GlobalWidgetsLocalizations.delegate,
+            GlobalCupertinoLocalizations.delegate,
+          ],
+          theme: StegTheme.light(),
+          home: const AuthGate(),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    // Normal authenticated intern shell first.
+    expect(find.byType(ChangePasswordScreen), findsNothing);
+
+    ProviderScope.containerOf(
+      tester.element(find.byType(AuthGate)),
+    ).read(authControllerProvider.notifier).requirePasswordChange();
+    await tester.pumpAndSettle();
+
+    expect(find.byType(ChangePasswordScreen), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
 }

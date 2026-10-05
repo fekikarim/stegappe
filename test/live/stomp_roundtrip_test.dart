@@ -18,10 +18,14 @@ import 'package:stegappe/features/messaging/data/services/stomp_chat_service_imp
 ///  4. unauthorized conversation access rejected (error frame, no leak).
 const _live =
     bool.fromEnvironment('LIVE_BACKEND', defaultValue: false);
-const _httpBase = 'http://localhost:8080';
-const _wsBase = 'ws://localhost:8080';
-const _email = 'supervisor.steg@steg.tn';
-const _password = 'Supervisor#2026';
+const _httpBase = String.fromEnvironment('LIVE_HTTP_BASE',
+    defaultValue: 'http://localhost:8080');
+const _wsBase =
+    String.fromEnvironment('LIVE_WS_BASE', defaultValue: 'ws://localhost:8080');
+const _email = String.fromEnvironment('LIVE_EMAIL',
+    defaultValue: 'supervisor.steg@steg.tn');
+const _password = String.fromEnvironment('LIVE_PASSWORD',
+    defaultValue: 'Supervisor#2026');
 
 Future<String> _login(ApiClient client) async {
   final tokens = await client.post(

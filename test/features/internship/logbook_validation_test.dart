@@ -21,9 +21,13 @@ class _FakeAuth implements AuthRepository {
   final AppUser user;
 
   @override
-  Future<AppUser> login(
-          {required String email, required String password}) =>
+  Future<AppUser> login({required String email, required String password}) =>
       throw UnimplementedError();
+  @override
+  Future<void> changePassword({
+    required String currentPassword,
+    required String newPassword,
+  }) async {}
   @override
   Future<void> logout() async {}
   @override
@@ -32,10 +36,8 @@ class _FakeAuth implements AuthRepository {
   Future<AppUser?> restoreSession() async => user;
 }
 
-const _sup =
-    AppUser(id: 's1', email: 'sup@steg.tn', roles: ['SUPERVISOR']);
-const _intern =
-    AppUser(id: 'u1', email: 'intern@u.tn', roles: ['INTERN']);
+const _sup = AppUser(id: 's1', email: 'sup@steg.tn', roles: ['SUPERVISOR']);
+const _intern = AppUser(id: 'u1', email: 'intern@u.tn', roles: ['INTERN']);
 
 Future<FakeInternshipRepository> _pump(
   WidgetTester tester,
@@ -75,28 +77,33 @@ Future<FakeInternshipRepository> _pump(
 
 void main() {
   group('supervisor logbook review (acceptance)', () {
-    testWidgets('submitted logbook opens with content + both actions',
-        (tester) async {
+    testWidgets('submitted logbook opens with content + both actions', (
+      tester,
+    ) async {
       final fake = FakeInternshipRepository()..seedSubmittedLogbook();
-      await _pump(tester,
-          const LogbookDetailScreen(internshipId: 'internship-1'),
-          fake: fake);
+      await _pump(
+        tester,
+        const LogbookDetailScreen(internshipId: 'internship-1'),
+        fake: fake,
+      );
 
       expect(find.text('Carnet de stage'), findsOneWidget);
       expect(find.text('Contenu soumis'), findsOneWidget);
-      expect(find.textContaining('Rapport final du carnet'),
-          findsOneWidget);
+      expect(find.textContaining('Rapport final du carnet'), findsOneWidget);
       expect(find.text('Soumis pour validation'), findsOneWidget);
       expect(find.text('Valider'), findsOneWidget);
       expect(find.text('Demander une correction'), findsOneWidget);
     });
 
-    testWidgets('validate is server-confirmed and locks the logbook',
-        (tester) async {
+    testWidgets('validate is server-confirmed and locks the logbook', (
+      tester,
+    ) async {
       final fake = FakeInternshipRepository()..seedSubmittedLogbook();
-      await _pump(tester,
-          const LogbookDetailScreen(internshipId: 'internship-1'),
-          fake: fake);
+      await _pump(
+        tester,
+        const LogbookDetailScreen(internshipId: 'internship-1'),
+        fake: fake,
+      );
 
       await tester.tap(find.text('Valider'));
       await tester.pumpAndSettle();
@@ -105,20 +112,20 @@ void main() {
       await tester.pumpAndSettle();
 
       // Backend now authoritative VALIDATED; snackbar confirms.
-      expect(fake.logbooks['internship-1']!.status,
-          LogbookStatus.validated);
+      expect(fake.logbooks['internship-1']!.status, LogbookStatus.validated);
       expect(find.text('Carnet validé.'), findsOneWidget);
       // Decision row gone: nothing left to approve.
       expect(find.text('Demander une correction'), findsNothing);
       expect(find.text('Valider'), findsNothing);
     });
 
-    testWidgets('reject requires a reason (no local bypass)',
-        (tester) async {
+    testWidgets('reject requires a reason (no local bypass)', (tester) async {
       final fake = FakeInternshipRepository()..seedSubmittedLogbook();
-      await _pump(tester,
-          const LogbookDetailScreen(internshipId: 'internship-1'),
-          fake: fake);
+      await _pump(
+        tester,
+        const LogbookDetailScreen(internshipId: 'internship-1'),
+        fake: fake,
+      );
 
       await tester.tap(find.text('Demander une correction'));
       await tester.pumpAndSettle();
@@ -126,42 +133,44 @@ void main() {
       await tester.pump();
 
       expect(find.text('Veuillez indiquer un motif.'), findsOneWidget);
-      expect(fake.logbooks['internship-1']!.status,
-          LogbookStatus.submitted); // unchanged
+      expect(
+        fake.logbooks['internship-1']!.status,
+        LogbookStatus.submitted,
+      ); // unchanged
     });
 
-    testWidgets('reject with reason records the server state and reason',
-        (tester) async {
+    testWidgets('reject with reason records the server state and reason', (
+      tester,
+    ) async {
       final fake = FakeInternshipRepository()..seedSubmittedLogbook();
-      await _pump(tester,
-          const LogbookDetailScreen(internshipId: 'internship-1'),
-          fake: fake);
+      await _pump(
+        tester,
+        const LogbookDetailScreen(internshipId: 'internship-1'),
+        fake: fake,
+      );
 
       await tester.tap(find.text('Demander une correction'));
       await tester.pumpAndSettle();
-      await tester.enterText(
-          find.byType(TextField), 'Dates à revoir.');
+      await tester.enterText(find.byType(TextField), 'Dates à revoir.');
       await tester.tap(find.text('Demander une correction').last);
       await tester.pumpAndSettle();
 
-      expect(fake.logbooks['internship-1']!.status,
-          LogbookStatus.rejected);
-      expect(fake.logbooks['internship-1']!.rejectionReason,
-          'Dates à revoir.');
-      expect(find.text('Carnet renvoyé pour correction.'),
-          findsOneWidget);
+      expect(fake.logbooks['internship-1']!.status, LogbookStatus.rejected);
+      expect(fake.logbooks['internship-1']!.rejectionReason, 'Dates à revoir.');
+      expect(find.text('Carnet renvoyé pour correction.'), findsOneWidget);
     });
 
-    testWidgets('validations queue lists the submitted logbook and opens it',
-        (tester) async {
+    testWidgets('validations queue lists the submitted logbook and opens it', (
+      tester,
+    ) async {
       final fake = FakeInternshipRepository()..seedSubmittedLogbook();
-      await _pump(tester, const SupervisorValidationsScreen(),
-          fake: fake);
+      await _pump(tester, const SupervisorValidationsScreen(), fake: fake);
 
       await tester.dragUntilVisible(
-          find.text('Carnets en attente (1)'),
-          find.byType(CustomScrollView),
-          const Offset(0, -300));
+        find.text('Carnets en attente (1)'),
+        find.byType(CustomScrollView),
+        const Offset(0, -300),
+      );
       expect(find.text('STG-2026-0001'), findsWidgets);
 
       await tester.tap(find.byIcon(Icons.menu_book_outlined).first);
@@ -171,19 +180,23 @@ void main() {
       expect(find.text('Demander une correction'), findsOneWidget);
     });
 
-    testWidgets('intern detail shows the logbook status entry point',
-        (tester) async {
+    testWidgets('intern detail shows the logbook status entry point', (
+      tester,
+    ) async {
       final fake = FakeInternshipRepository()..seedSubmittedLogbook();
-      await _pump(tester,
-          const LogbookDetailScreen(internshipId: 'internship-1'),
-          fake: fake);
+      await _pump(
+        tester,
+        const LogbookDetailScreen(internshipId: 'internship-1'),
+        fake: fake,
+      );
       expect(find.text('Carnet de stage'), findsOneWidget);
     });
   });
 
   group('intern logbook status flow (acceptance)', () {
-    testWidgets('rejected logbook shows the reason and resubmits',
-        (tester) async {
+    testWidgets('rejected logbook shows the reason and resubmits', (
+      tester,
+    ) async {
       final fake = FakeInternshipRepository();
       fake.logbooks['internship-1'] = LogbookState(
         id: 'logbook-1',
@@ -194,30 +207,32 @@ void main() {
         submittedAt: DateTime.now(),
         createdAt: DateTime.now(),
       );
-      await _pump(tester, const LogbookScreen(), user: _intern,
-          fake: fake);
+      await _pump(tester, const LogbookScreen(), user: _intern, fake: fake);
 
       // Banner carries the supervisor's reason.
-      expect(find.text('Votre carnet a été renvoyé : Dates à revoir.'),
-          findsOneWidget);
+      expect(
+        find.text('Votre carnet a été renvoyé : Dates à revoir.'),
+        findsOneWidget,
+      );
       // Editor keeps the submitted text for editing.
       expect(find.text('Version à corriger.'), findsOneWidget);
 
       await tester.dragUntilVisible(
-          find.text('Resoumettre pour validation'),
-          find.byType(ListView),
-          const Offset(0, -300));
+        find.text('Resoumettre pour validation'),
+        find.byType(ListView),
+        const Offset(0, -300),
+      );
       await tester.tap(find.text('Resoumettre pour validation'));
       await tester.pumpAndSettle();
 
       expect(fake.submittedLogbooks, hasLength(1));
       expect(fake.submittedLogbooks.single.text, 'Version à corriger.');
-      expect(fake.logbooks['internship-1']!.status,
-          LogbookStatus.submitted);
+      expect(fake.logbooks['internship-1']!.status, LogbookStatus.submitted);
     });
 
-    testWidgets('validated logbook is read-only with no submit action',
-        (tester) async {
+    testWidgets('validated logbook is read-only with no submit action', (
+      tester,
+    ) async {
       final fake = FakeInternshipRepository();
       fake.logbooks['internship-1'] = LogbookState(
         id: 'logbook-1',
@@ -228,12 +243,12 @@ void main() {
         validatedAt: DateTime.now(),
         createdAt: DateTime.now(),
       );
-      await _pump(tester, const LogbookScreen(), user: _intern,
-          fake: fake);
+      await _pump(tester, const LogbookScreen(), user: _intern, fake: fake);
 
       expect(
-          find.text('Votre carnet a été validé par votre encadrant.'),
-          findsOneWidget);
+        find.text('Votre carnet a été validé par votre encadrant.'),
+        findsOneWidget,
+      );
       expect(find.text('Contenu soumis'), findsOneWidget);
       expect(find.text('Version finale validée.'), findsOneWidget);
       expect(find.byType(TextField), findsNothing);

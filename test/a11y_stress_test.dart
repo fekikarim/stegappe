@@ -17,20 +17,25 @@ import 'package:stegappe/features/messaging/presentation/screens/chat_screen.dar
 import 'test_fixtures.dart';
 import 'features/messaging/messaging_widget_test.dart'
     show FakeMessagingRepo, FakeNotifRepo, FakeStomp;
+
 import 'package:stegappe/features/messaging/data/services/stomp_chat_service.dart';
 
 class _FakeAuth implements AuthRepository {
   @override
-  Future<AppUser> login(
-          {required String email, required String password}) =>
+  Future<AppUser> login({required String email, required String password}) =>
       throw UnimplementedError();
+  @override
+  Future<void> changePassword({
+    required String currentPassword,
+    required String newPassword,
+  }) async {}
   @override
   Future<void> logout() async {}
   @override
   Future<bool> refreshSession() async => true;
   @override
-  Future<AppUser?> restoreSession() async => const AppUser(
-      id: 'u1', email: 'intern@u.tn', roles: ['INTERN']);
+  Future<AppUser?> restoreSession() async =>
+      const AppUser(id: 'u1', email: 'intern@u.tn', roles: ['INTERN']);
 }
 
 /// D6 audit: 2x text scaling + Arabic RTL must not overflow or crash on
@@ -49,15 +54,14 @@ Future<void> pumpStressed(
         authRepositoryProvider.overrideWithValue(_FakeAuth()),
         internshipRepositoryProvider.overrideWithValue(repo),
         messagingRepositoryProvider.overrideWithValue(
-            FakeMessagingRepo(stomp: stomp)),
-        notificationRepositoryProvider
-            .overrideWithValue(FakeNotifRepo()),
+          FakeMessagingRepo(stomp: stomp),
+        ),
+        notificationRepositoryProvider.overrideWithValue(FakeNotifRepo()),
         stompChatServiceProvider.overrideWithValue(stomp),
         isOnlineProvider.overrideWith((ref) => true),
       ],
       child: MediaQuery(
-        data: const MediaQueryData(
-            textScaler: TextScaler.linear(2)),
+        data: const MediaQueryData(textScaler: TextScaler.linear(2)),
         child: MaterialApp(
           locale: const Locale('ar'),
           supportedLocales: StegLocales.supported,
@@ -83,10 +87,8 @@ Future<void> pumpStressed(
 void main() {
   group('D6 a11y stress (2x text + Arabic RTL)', () {
     testWidgets('dashboard survives', (tester) async {
-      const user = AppUser(
-          id: 'u1', email: 'intern@u.tn', roles: ['INTERN']);
-      await pumpStressed(
-          tester, const InternHomeScreen(user: user));
+      const user = AppUser(id: 'u1', email: 'intern@u.tn', roles: ['INTERN']);
+      await pumpStressed(tester, const InternHomeScreen(user: user));
       expect(find.text('اليوم'), findsWidgets);
       expect(tester.takeException(), isNull);
     });
@@ -99,9 +101,9 @@ void main() {
 
     testWidgets('chat survives', (tester) async {
       await pumpStressed(
-          tester,
-          const ChatScreen(
-              conversationId: 'c1', title: 't'));
+        tester,
+        const ChatScreen(conversationId: 'c1', title: 't'),
+      );
       expect(find.byType(TextField), findsOneWidget);
       expect(tester.takeException(), isNull);
     });

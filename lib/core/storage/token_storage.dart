@@ -9,7 +9,9 @@ abstract class TokenStorage {
   Future<void> saveTokens({
     required String accessToken,
     required String refreshToken,
+    bool mustChangePassword = false,
   });
+  Future<bool> readMustChangePassword();
   Future<String?> readAccessToken();
   Future<String?> readRefreshToken();
   Future<void> clear();
@@ -17,10 +19,11 @@ abstract class TokenStorage {
 
 class SecureTokenStorage implements TokenStorage {
   SecureTokenStorage({FlutterSecureStorage? storage})
-      : _storage = storage ??
-            const FlutterSecureStorage(
-              aOptions: AndroidOptions(encryptedSharedPreferences: true),
-            );
+    : _storage =
+          storage ??
+          const FlutterSecureStorage(
+            aOptions: AndroidOptions(encryptedSharedPreferences: true),
+          );
 
   final FlutterSecureStorage _storage;
 
@@ -31,11 +34,17 @@ class SecureTokenStorage implements TokenStorage {
   Future<void> saveTokens({
     required String accessToken,
     required String refreshToken,
-  }) =>
-      Future.wait([
-        _storage.write(key: _kAccess, value: accessToken),
-        _storage.write(key: _kRefresh, value: refreshToken),
-      ]);
+    bool mustChangePassword = false,
+  }) => Future.wait([
+    _storage.write(key: _kAccess, value: accessToken),
+    _storage.write(key: _kRefresh, value: refreshToken),
+    _storage.write(
+      key: _kMustChangePassword,
+      value: mustChangePassword.toString(),
+    ),
+  ]);
+
+  static const _kMustChangePassword = 'steg.must_change_password.v1';
 
   @override
   Future<String?> readAccessToken() => _storage.read(key: _kAccess);
@@ -44,10 +53,15 @@ class SecureTokenStorage implements TokenStorage {
   Future<String?> readRefreshToken() => _storage.read(key: _kRefresh);
 
   @override
+  Future<bool> readMustChangePassword() async =>
+      (await _storage.read(key: _kMustChangePassword)) == 'true';
+
+  @override
   Future<void> clear() => Future.wait([
-        _storage.delete(key: _kAccess),
-        _storage.delete(key: _kRefresh),
-      ]);
+    _storage.delete(key: _kAccess),
+    _storage.delete(key: _kRefresh),
+    _storage.delete(key: _kMustChangePassword),
+  ]);
 }
 
 /// In-memory fake for widget/unit tests. Never used in production.
@@ -59,10 +73,14 @@ class InMemoryTokenStorage implements TokenStorage {
   Future<void> saveTokens({
     required String accessToken,
     required String refreshToken,
+    bool mustChangePassword = false,
   }) async {
     access = accessToken;
     refresh = refreshToken;
+    mustChange = mustChangePassword;
   }
+
+  bool mustChange = false;
 
   @override
   Future<String?> readAccessToken() async => access;
@@ -71,8 +89,12 @@ class InMemoryTokenStorage implements TokenStorage {
   Future<String?> readRefreshToken() async => refresh;
 
   @override
+  Future<bool> readMustChangePassword() async => mustChange;
+
+  @override
   Future<void> clear() async {
     access = null;
     refresh = null;
+    mustChange = false;
   }
 }

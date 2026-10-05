@@ -157,6 +157,25 @@ void main() {
     });
   });
 
+  group('403 PASSWORD_CHANGE_REQUIRED interceptor', () {
+    test('triggers onPasswordChangeRequired callback', () async {
+      var called = false;
+      final client = ApiClient(
+        baseUrl: 'http://x',
+        onPasswordChangeRequired: () { called = true; },
+        httpClient: MockClient((_) async {
+          return http.Response(
+              '{"status":403,"error":"PASSWORD_CHANGE_REQUIRED","message":"PASSWORD_CHANGE_REQUIRED"}',
+              403);
+        }),
+      );
+      await expectLater(
+          client.get('/x', decode: (_) {}),
+          throwsA(isA<ApiException>()));
+      expect(called, isTrue);
+    });
+  });
+
   group('multipart upload streams with progress', () {
     test('progress climbs to total and server JSON decodes',
         () async {

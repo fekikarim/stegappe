@@ -25,9 +25,13 @@ class _FakeRepo implements AuthRepository {
   final AppUser? user;
 
   @override
-  Future<AppUser> login(
-          {required String email, required String password}) =>
+  Future<AppUser> login({required String email, required String password}) =>
       throw UnimplementedError();
+  @override
+  Future<void> changePassword({
+    required String currentPassword,
+    required String newPassword,
+  }) async {}
   @override
   Future<void> logout() async {}
   @override
@@ -51,8 +55,9 @@ Future<void> _pumpGate(
         // Force online so connectivity stream (async) cannot hide content.
         isOnlineProvider.overrideWith((ref) => true),
         // Live workspace tabs need internship data (D1 wiring).
-        internshipRepositoryProvider
-            .overrideWithValue(FakeInternshipRepository()),
+        internshipRepositoryProvider.overrideWithValue(
+          FakeInternshipRepository(),
+        ),
       ],
       child: MaterialApp(
         locale: locale,
@@ -76,11 +81,16 @@ void main() {
     testWidgets('intern shell renders 5 tabs', (tester) async {
       await _pumpGate(
         tester,
-        user: const AppUser(
-            id: 'i1', email: 'intern@u.tn', roles: ['INTERN']),
+        user: const AppUser(id: 'i1', email: 'intern@u.tn', roles: ['INTERN']),
       );
       expect(find.byType(InternShell), findsOneWidget);
-      for (final label in ['Accueil', 'Tâches', 'Journal', 'Messages', 'Plus']) {
+      for (final label in [
+        'Accueil',
+        'Tâches',
+        'Journal',
+        'Messages',
+        'Plus',
+      ]) {
         expect(find.text(label), findsWidgets);
       }
     });
@@ -89,7 +99,10 @@ void main() {
       await _pumpGate(
         tester,
         user: const AppUser(
-            id: 's1', email: 'sup@steg.tn', roles: ['SUPERVISOR']),
+          id: 's1',
+          email: 'sup@steg.tn',
+          roles: ['SUPERVISOR'],
+        ),
       );
       expect(find.byType(SupervisorShell), findsOneWidget);
       expect(find.text('Stagiaires'), findsWidgets);
@@ -99,14 +112,15 @@ void main() {
     testWidgets('unsupported backend role shows access-denied', (tester) async {
       await _pumpGate(
         tester,
-        user: const AppUser(
-            id: 'h1', email: 'hr@steg.tn', roles: ['HR']),
+        user: const AppUser(id: 'h1', email: 'hr@steg.tn', roles: ['HR']),
       );
       expect(find.byType(UnsupportedRoleScreen), findsOneWidget);
       expect(
-          find.text(
-              'Ce rôle n’est pas pris en charge dans l’application mobile.'),
-          findsOneWidget);
+        find.text(
+          'Ce rôle n’est pas pris en charge dans l’application mobile.',
+        ),
+        findsOneWidget,
+      );
     });
 
     testWidgets('no session shows login', (tester) async {
@@ -118,10 +132,11 @@ void main() {
 
   group('RTL verification on actual widgets', () {
     testWidgets('arabic pumps real RTL Directionality', (tester) async {
-      await _pumpGate(tester,
-          user: const AppUser(
-              id: 'i1', email: 'intern@u.tn', roles: ['INTERN']),
-          locale: const Locale('ar'));
+      await _pumpGate(
+        tester,
+        user: const AppUser(id: 'i1', email: 'intern@u.tn', roles: ['INTERN']),
+        locale: const Locale('ar'),
+      );
       final ctx = tester.element(find.byType(InternShell));
       expect(Directionality.of(ctx), TextDirection.rtl);
       // Arabic labels render on real widgets, not just dir attribute.
@@ -131,16 +146,18 @@ void main() {
   });
 
   group('Design system', () {
-    testWidgets('StegButton meets 48px touch target + semantics',
-        (tester) async {
+    testWidgets('StegButton meets 48px touch target + semantics', (
+      tester,
+    ) async {
       final semantics = tester.ensureSemantics();
       var tapped = false;
       await tester.pumpWidget(
         MaterialApp(
           home: Scaffold(
             body: StegButton(
-                label: 'Save changes',
-                onPressed: () => tapped = true),
+              label: 'Save changes',
+              onPressed: () => tapped = true,
+            ),
           ),
         ),
       );
@@ -149,23 +166,24 @@ void main() {
       expect(
         tester.getSemantics(find.byType(StegButton)),
         matchesSemantics(
-            label: 'Save changes',
-            isButton: true,
-            isEnabled: true,
-            hasEnabledState: true),
+          label: 'Save changes',
+          isButton: true,
+          isEnabled: true,
+          hasEnabledState: true,
+        ),
       );
       await tester.tap(find.byType(StegButton));
       expect(tapped, isTrue);
       semantics.dispose();
     });
 
-    testWidgets('StegStatusChip carries text label (never color-only)',
-        (tester) async {
+    testWidgets('StegStatusChip carries text label (never color-only)', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         const MaterialApp(
           home: Scaffold(
-            body: StegStatusChip(
-                label: 'En cours', kind: StegStatusKind.info),
+            body: StegStatusChip(label: 'En cours', kind: StegStatusKind.info),
           ),
         ),
       );
@@ -185,15 +203,14 @@ void main() {
             GlobalWidgetsLocalizations.delegate,
             GlobalCupertinoLocalizations.delegate,
           ],
-          home: const Scaffold(
-            body: ConnectivityBanner(isOnline: false),
-          ),
+          home: const Scaffold(body: ConnectivityBanner(isOnline: false)),
         ),
       );
       expect(find.textContaining('Hors ligne'), findsWidgets);
       expect(
         find.bySemanticsLabel(
-            'Hors ligne — les données affichées peuvent être obsolètes.'),
+          'Hors ligne — les données affichées peuvent être obsolètes.',
+        ),
         findsOneWidget,
       );
       semantics.dispose();

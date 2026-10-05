@@ -69,6 +69,7 @@ class ApiClient {
     required String baseUrl,
     http.Client? httpClient,
     this.onUnauthorized,
+    this.onPasswordChangeRequired,
     this.refreshPath = Endpoints.refresh,
   })  : _baseUrl = baseUrl.endsWith('/')
             ? baseUrl.substring(0, baseUrl.length - 1)
@@ -78,6 +79,7 @@ class ApiClient {
   final String _baseUrl;
   final http.Client _http;
   final RefreshHandler? onUnauthorized;
+  final void Function()? onPasswordChangeRequired;
   final String refreshPath;
 
   /// Idempotent read with opt-in bounded retry (exponential backoff)
@@ -190,8 +192,15 @@ class ApiClient {
         throw ApiException.unknown('The server returned an invalid response.');
       }
     }
+    final errorBody = _tryErrorBody(response.body);
+    if (response.statusCode == 403 &&
+        (errorBody?['message'] == 'PASSWORD_CHANGE_REQUIRED' ||
+         errorBody?['error'] == 'PASSWORD_CHANGE_REQUIRED') &&
+        onPasswordChangeRequired != null) {
+      onPasswordChangeRequired!();
+    }
     throw ApiException.fromStatus(
-        response.statusCode, _tryErrorBody(response.body));
+        response.statusCode, errorBody);
   }
 
   /// Authenticated binary download (no public URLs, Bearer enforced).
@@ -219,8 +228,15 @@ class ApiClient {
     if (response.statusCode >= 200 && response.statusCode < 300) {
       return response.bodyBytes;
     }
+    final errorBody = _tryErrorBody(response.body);
+    if (response.statusCode == 403 &&
+        (errorBody?['message'] == 'PASSWORD_CHANGE_REQUIRED' ||
+         errorBody?['error'] == 'PASSWORD_CHANGE_REQUIRED') &&
+        onPasswordChangeRequired != null) {
+      onPasswordChangeRequired!();
+    }
     throw ApiException.fromStatus(
-        response.statusCode, _tryErrorBody(response.body));
+        response.statusCode, errorBody);
   }
 
   static Map<String, dynamic>? _tryErrorBody(String body) {
@@ -311,6 +327,14 @@ class ApiClient {
     } on Exception {
       errorBody = null;
     }
+
+    if (response.statusCode == 403 &&
+        (errorBody?['message'] == 'PASSWORD_CHANGE_REQUIRED' ||
+         errorBody?['error'] == 'PASSWORD_CHANGE_REQUIRED') &&
+        onPasswordChangeRequired != null) {
+      onPasswordChangeRequired!();
+    }
+
     throw ApiException.fromStatus(response.statusCode, errorBody);
   }
 

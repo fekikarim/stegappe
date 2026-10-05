@@ -13,20 +13,25 @@ import 'package:stegappe/features/messaging/presentation/providers/messaging_pro
 import 'test_fixtures.dart';
 import 'features/messaging/messaging_widget_test.dart'
     show FakeMessagingRepo, FakeNotifRepo, FakeStomp;
+
 import 'package:stegappe/features/auth/domain/repositories/auth_repository.dart';
 
 class _JourneyAuth implements AuthRepository {
   @override
-  Future<AppUser> login(
-          {required String email, required String password}) =>
+  Future<AppUser> login({required String email, required String password}) =>
       throw UnimplementedError();
+  @override
+  Future<void> changePassword({
+    required String currentPassword,
+    required String newPassword,
+  }) async {}
   @override
   Future<void> logout() async {}
   @override
   Future<bool> refreshSession() async => true;
   @override
-  Future<AppUser?> restoreSession() async => const AppUser(
-      id: 'u1', email: 'intern@u.tn', roles: ['INTERN']);
+  Future<AppUser?> restoreSession() async =>
+      const AppUser(id: 'u1', email: 'intern@u.tn', roles: ['INTERN']);
 }
 
 /// Full business loop through the REAL providers with fakes behind
@@ -45,56 +50,55 @@ void main() {
     final container = ProviderContainer(
       overrides: [
         authRepositoryProvider.overrideWithValue(_JourneyAuth()),
-        internshipRepositoryProvider
-            .overrideWithValue(internshipRepo),
-        messagingRepositoryProvider
-            .overrideWithValue(messagingRepo),
-        notificationRepositoryProvider
-            .overrideWithValue(FakeNotifRepo()),
+        internshipRepositoryProvider.overrideWithValue(internshipRepo),
+        messagingRepositoryProvider.overrideWithValue(messagingRepo),
+        notificationRepositoryProvider.overrideWithValue(FakeNotifRepo()),
         stompChatServiceProvider.overrideWithValue(stomp),
       ],
     );
     addTearDown(container.dispose);
 
     // 1. Login + session restore.
-    await container
-        .read(authControllerProvider.notifier)
-        .bootstrap();
+    await container.read(authControllerProvider.notifier).bootstrap();
     final auth = container.read(authControllerProvider);
     expect(auth, isA<AuthAuthenticated>());
-    expect((auth as AuthAuthenticated).user.mobileRole,
-        UserRole.intern);
+    expect((auth as AuthAuthenticated).user.mobileRole, UserRole.intern);
 
     // 2. Today's tasks from the dashboard aggregate.
-    final internshipId =
-        await container.read(myInternshipIdProvider.future);
+    final internshipId = await container.read(myInternshipIdProvider.future);
     expect(internshipId, 'internship-1');
-    final dashboard =
-        await container.read(dashboardProvider.future);
-    expect(
-        dashboard.todayTasks.any((t) => t.id == 't-today'), isTrue);
+    final dashboard = await container.read(dashboardProvider.future);
+    expect(dashboard.todayTasks.any((t) => t.id == 't-today'), isTrue);
 
     // 3. Real-life meeting → planned task → completed task.
-    final created = await internshipRepo.createTask(internshipId!,
-        title: 'Préparer la démo', dueDate: DateTime.now());
+    final created = await internshipRepo.createTask(
+      internshipId!,
+      title: 'Préparer la démo',
+      dueDate: DateTime.now(),
+    );
     expect(created.status, TaskStatus.todo);
     final done = await internshipRepo.updateTaskStatus(
-        created.id, TaskStatus.completed);
+      created.id,
+      TaskStatus.completed,
+    );
     expect(done.status, TaskStatus.completed);
 
     // 4. Journal: record what actually happened, then submit.
-    final entry = await internshipRepo.createJournal(internshipId,
-        title: 'Journée démo',
-        description: 'Préparé et présenté la démo.',
-        entryDate: DateTime.now());
+    final entry = await internshipRepo.createJournal(
+      internshipId,
+      title: 'Journée démo',
+      description: 'Préparé et présenté la démo.',
+      entryDate: DateTime.now(),
+    );
     expect(entry.status, JournalStatus.draft);
-    final submitted =
-        await internshipRepo.submitJournal(entry.id);
+    final submitted = await internshipRepo.submitJournal(entry.id);
     expect(submitted.status, JournalStatus.submitted);
 
     // 5. Supervisor validation (contract-level; backend gates by role).
     final validated = await internshipRepo.validateJournal(
-        'j-sub', 'Bien documenté.');
+      'j-sub',
+      'Bien documenté.',
+    );
     expect(validated.status, JournalStatus.validated);
 
     // 6. Deliverable: create with file → submit.
@@ -106,23 +110,19 @@ void main() {
     );
     expect(deliv.status, DeliverableStatus.draft);
     expect(deliv.currentVersion, 1);
-    final submittedDeliv =
-        await internshipRepo.submitDeliverable(deliv.id);
+    final submittedDeliv = await internshipRepo.submitDeliverable(deliv.id);
     expect(submittedDeliv.status, isNotNull);
 
     // 7. Message to the supervisor over the live socket path.
-    final sent =
-        await messagingRepo.send('c1', 'Bonjour, démo prête !');
+    final sent = await messagingRepo.send('c1', 'Bonjour, démo prête !');
     // STOMP-connected fake: echo arrives via broadcast (null here).
     expect(sent, isNull);
     expect(stomp.sent, contains('Bonjour, démo prête !'));
     // 8. Evaluation authored from the backend template + criteria.
     final templates = await internshipRepo.listTemplates();
     expect(templates.map((t) => t.id), contains('t1'));
-    final criteria =
-        await internshipRepo.templateCriteria('t1');
-    expect(criteria.map((c) => c.id),
-        containsAll(['c-tech', 'c-soft']));
+    final criteria = await internshipRepo.templateCriteria('t1');
+    expect(criteria.map((c) => c.id), containsAll(['c-tech', 'c-soft']));
     final evaluation = await internshipRepo.createEvaluation(
       internshipId,
       templateId: 't1',
@@ -139,13 +139,11 @@ void main() {
       'completed': true,
       'score': 16,
     });
-    final detail =
-        await internshipRepo.evaluationDetail(evaluation.id);
+    final detail = await internshipRepo.evaluationDetail(evaluation.id);
     expect(detail.totalScore, 15.0); // authoritative server value
 
     // 9. Advisory logbook draft from recorded data (review-only).
-    final draft =
-        await internshipRepo.generateLogbookDraft(internshipId);
+    final draft = await internshipRepo.generateLogbookDraft(internshipId);
     expect(draft.draftText, isNotEmpty);
     expect(draft.cinExcluded, isTrue);
     expect(draft.recommendations, isNotEmpty);

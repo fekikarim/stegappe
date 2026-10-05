@@ -21,18 +21,24 @@ String internshipTypeLabel(InternshipType? type, AppLocalizations l10n) =>
 String internshipStatusLabel(
         InternshipStatus status, AppLocalizations l10n) =>
     switch (status) {
-      InternshipStatus.planned => l10n.stPlanned,
-      InternshipStatus.active => l10n.stActive,
-      InternshipStatus.completed => l10n.stCompleted,
+      InternshipStatus.approved => l10n.stApproved,
+      InternshipStatus.inProgress => l10n.stInProgress,
+      InternshipStatus.reportSubmitted => l10n.stReportSubmitted,
+      InternshipStatus.underValidation => l10n.stUnderValidation,
+      InternshipStatus.validated => l10n.stValidated,
+      InternshipStatus.receiptIssued => l10n.stReceiptIssued,
       InternshipStatus.cancelled => l10n.stCancelled,
       InternshipStatus.archived => l10n.stArchived,
     };
 
 StegStatusKind internshipStatusKind(InternshipStatus status) =>
     switch (status) {
-      InternshipStatus.planned => StegStatusKind.neutral,
-      InternshipStatus.active => StegStatusKind.info,
-      InternshipStatus.completed => StegStatusKind.success,
+      InternshipStatus.approved => StegStatusKind.neutral,
+      InternshipStatus.inProgress => StegStatusKind.info,
+      InternshipStatus.reportSubmitted => StegStatusKind.info,
+      InternshipStatus.underValidation => StegStatusKind.info,
+      InternshipStatus.validated => StegStatusKind.success,
+      InternshipStatus.receiptIssued => StegStatusKind.success,
       InternshipStatus.cancelled => StegStatusKind.error,
       InternshipStatus.archived => StegStatusKind.neutral,
     };

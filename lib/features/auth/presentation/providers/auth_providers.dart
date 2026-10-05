@@ -9,13 +9,21 @@ import '../../domain/repositories/auth_repository.dart';
 import '../../data/datasources/auth_remote_data_source.dart';
 import '../../data/repositories/auth_repository_impl.dart';
 
-final tokenStorageProvider =
-    Provider<TokenStorage>((ref) => SecureTokenStorage());
+final tokenStorageProvider = Provider<TokenStorage>(
+  (ref) => SecureTokenStorage(),
+);
 
 /// Central HTTP client. Constructed without auth dependencies so the
 /// provider graph stays acyclic; repositories own 401 → refresh → retry.
-final apiClientProvider = Provider<ApiClient>(
-  (ref) => ApiClient(baseUrl: AppConfig.apiBaseUrl),
+/// The explicit provider type breaks the static inference cycle with
+/// [authControllerProvider] (which transitively depends on this provider).
+final Provider<ApiClient> apiClientProvider = Provider<ApiClient>(
+  (ref) => ApiClient(
+    baseUrl: AppConfig.apiBaseUrl,
+    onPasswordChangeRequired: () {
+      ref.read(authControllerProvider.notifier).requirePasswordChange();
+    },
+  ),
 );
 
 final authRemoteDataSourceProvider = Provider<AuthRemoteDataSource>(
@@ -52,14 +60,14 @@ class AuthUnauthenticated extends AuthState {
   final String? message;
 }
 
-final authControllerProvider =
-    StateNotifierProvider<AuthController, AuthState>(
-        (ref) => AuthController(ref.watch(authRepositoryProvider)));
+final authControllerProvider = StateNotifierProvider<AuthController, AuthState>(
+  (ref) => AuthController(ref.watch(authRepositoryProvider)),
+);
 
 class AuthController extends StateNotifier<AuthState> {
   AuthController(AuthRepository repo)
-      : _repo = repo,
-        super(const AuthInitial());
+    : _repo = repo,
+      super(const AuthInitial());
 
   final AuthRepository _repo;
   ApiException? lastError;
@@ -77,14 +85,10 @@ class AuthController extends StateNotifier<AuthState> {
     }
   }
 
-  Future<bool> login({
-    required String email,
-    required String password,
-  }) async {
+  Future<bool> login({required String email, required String password}) async {
     state = const AuthLoading();
     try {
-      final user =
-          await _repo.login(email: email, password: password);
+      final user = await _repo.login(email: email, password: password);
       state = AuthAuthenticated(user);
       return true;
     } on ApiException catch (e) {
@@ -94,8 +98,47 @@ class AuthController extends StateNotifier<AuthState> {
     }
   }
 
+  Future<bool> changePassword({
+    required String currentPassword,
+    required String newPassword,
+  }) async {
+    final current = state;
+    if (current is! AuthAuthenticated) return false;
+    try {
+      await _repo.changePassword(
+        currentPassword: currentPassword,
+        newPassword: newPassword,
+      );
+      state = AuthAuthenticated(
+        AppUser(
+          id: current.user.id,
+          email: current.user.email,
+          roles: current.user.roles,
+        ),
+      );
+      return true;
+    } on ApiException catch (e) {
+      lastError = e;
+      return false;
+    }
+  }
+
   Future<void> logout() async {
     await _repo.logout();
     state = const AuthUnauthenticated();
+  }
+
+  void requirePasswordChange() {
+    final current = state;
+    if (current is AuthAuthenticated) {
+      state = AuthAuthenticated(
+        AppUser(
+          id: current.user.id,
+          email: current.user.email,
+          roles: current.user.roles,
+          mustChangePassword: true,
+        ),
+      );
+    }
   }
 }
