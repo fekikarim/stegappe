@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/connectivity/connectivity_service.dart';
@@ -7,6 +8,8 @@ import '../../../../core/network/error_messages.dart';
 import '../../../../core/offline/pending_writes.dart';
 import '../../../../core/theme/steg_spacing.dart';
 import '../../data/services/stomp_chat_service.dart';
+import '../../domain/entities/conversation.dart'
+    show ChatMessage, ChatMessageRules;
 import '../providers/messaging_providers.dart';
 import '../widgets/message_bubble.dart';
 import 'attachment_sheet.dart';
@@ -116,6 +119,19 @@ class _ChatScreenState extends ConsumerState<ChatScreen>
 
     // Newest-first for the reversed ListView (bottom = latest).
     final newestFirst = chat.messages.reversed.toList();
+    // Flat rows: failed + pending bubbles first (newest-first), then history
+    // with a day separator each time the calendar day changes (T07 §14).
+    final rows = <Object>[
+      for (var i = chat.failed.length - 1; i >= 0; i--) chat.failed[i],
+      for (var i = chat.pending.length - 1; i >= 0; i--) chat.pending[i],
+    ];
+    for (var i = 0; i < newestFirst.length; i++) {
+      final m = newestFirst[i];
+      if (i == 0 || !_sameDay(newestFirst[i - 1].sentAt, m.sentAt)) {
+        rows.add(_DayHeader(date: m.sentAt));
+      }
+      rows.add(m);
+    }
 
     return Scaffold(
       appBar: AppBar(
@@ -172,45 +188,10 @@ class _ChatScreenState extends ConsumerState<ChatScreen>
                                 reverse: true,
                                 physics:
                                     const AlwaysScrollableScrollPhysics(),
-                                itemCount:
-                                    newestFirst.length +
-                                        chat.pending.length +
-                                        chat.failed.length +
-                                        (chat.hasMore ? 1 : 0),
+                                itemCount: rows.length +
+                                    (chat.hasMore ? 1 : 0),
                                 itemBuilder: (ctx, i) {
-                                  if (i <
-                                      chat.failed.length) {
-                                    final f = chat
-                                        .failed[chat
-                                                .failed.length -
-                                            1 -
-                                            i];
-                                    return _FailedBubble(
-                                        failed: f,
-                                        conversationId: widget
-                                            .conversationId);
-                                  }
-                                  final pi = i -
-                                      chat.failed.length;
-                                  if (pi <
-                                      chat.pending.length) {
-                                    final p = chat.pending[
-                                        chat.pending.length -
-                                            1 -
-                                            pi];
-                                    return _PendingBubble(
-                                      pending: p,
-                                      queued: ref.watch(
-                                          pendingWritesProvider.select(
-                                              (s) => s.items.any((w) =>
-                                                  w.localId ==
-                                                  p.localId))),
-                                    );
-                                  }
-                                  final mi = pi -
-                                      chat.pending.length;
-                                  if (mi >=
-                                      newestFirst.length) {
+                                  if (i >= rows.length) {
                                     // Older history exists but is
                                     // fetched only on scroll: no
                                     // perpetual motion (settle +
@@ -232,9 +213,26 @@ class _ChatScreenState extends ConsumerState<ChatScreen>
                                                           2))),
                                     );
                                   }
+                                  final row = rows[i];
+                                  if (row is FailedMessage) {
+                                    return _FailedBubble(
+                                        failed: row,
+                                        conversationId: widget
+                                            .conversationId);
+                                  }
+                                  if (row is PendingMessage) {
+                                    return _PendingBubble(
+                                      pending: row,
+                                      queued: ref.watch(
+                                          pendingWritesProvider.select(
+                                              (s) => s.items.any((w) =>
+                                                  w.localId ==
+                                                  row.localId))),
+                                    );
+                                  }
+                                  if (row is _DayHeader) return row;
                                   return MessageBubble(
-                                      message:
-                                          newestFirst[mi]);
+                                      message: row as ChatMessage);
                                 },
                               ),
                       ),
@@ -243,8 +241,26 @@ class _ChatScreenState extends ConsumerState<ChatScreen>
             controller: _composer,
             sending: _sending,
             onSend: _send,
-            onAttach: () => showAttachmentSheet(context,
-                conversationId: widget.conversationId),
+            // T07 (ST-MSG-02): resolve the conversation's internship for the
+            // "send a document" picker. Null (offline/unknown) hides that
+            // option; device pick still works. The list itself stays
+            // server-filtered — never client-filtered (BR-38 §3).
+            onAttach: () {
+              final conversations =
+                  ref.read(conversationsProvider).valueOrNull;
+              String? internshipId;
+              if (conversations != null) {
+                for (final c in conversations) {
+                  if (c.id == widget.conversationId) {
+                    internshipId = c.internshipId;
+                    break;
+                  }
+                }
+              }
+              showAttachmentSheet(context,
+                  conversationId: widget.conversationId,
+                  internshipId: internshipId);
+            },
           ),
         ],
       ),
@@ -314,6 +330,59 @@ final _socketStateProvider =
   final stomp = ref.watch(stompChatServiceProvider);
   return stomp.state;
 });
+
+/// Calendar-day equality in local time (day separators, T07 §14).
+bool _sameDay(DateTime a, DateTime b) {
+  final x = a.toLocal();
+  final y = b.toLocal();
+  return x.year == y.year && x.month == y.month && x.day == y.day;
+}
+
+/// Sticky-feel day separator: Today / Yesterday / locale full date.
+/// Locale-aware through MaterialLocalizations (RTL-safe, no extra deps).
+class _DayHeader extends StatelessWidget {
+  const _DayHeader({required this.date});
+
+  final DateTime date;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    final local = date.toLocal();
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final day = DateTime(local.year, local.month, local.day);
+    final label = day == today
+        ? l10n.msgToday
+        : day == today.subtract(const Duration(days: 1))
+            ? l10n.msgYesterday
+            : MaterialLocalizations.of(context).formatFullDate(local);
+    return Semantics(
+      header: true,
+      label: label,
+      excludeSemantics: true,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: StegSpacing.xs),
+        child: Center(
+          child: Container(
+            padding: const EdgeInsets.symmetric(
+                horizontal: StegSpacing.sm,
+                vertical: StegSpacing.xs),
+            decoration: BoxDecoration(
+              color: Theme.of(context)
+                  .colorScheme
+                  .surfaceContainerHighest,
+              borderRadius:
+                  BorderRadius.circular(StegSpacing.radiusFull),
+            ),
+            child: Text(label,
+                style: Theme.of(context).textTheme.bodySmall),
+          ),
+        ),
+      ),
+    );
+  }
+}
 
 class _ChatError extends StatelessWidget {
   const _ChatError({required this.message, required this.onRetry});
@@ -445,8 +514,12 @@ class _FailedBubble extends ConsumerWidget {
                     chatControllerProvider(
                             conversationId)
                         .notifier);
+                // T07/BR-56: the retry reuses the failed attempt's key so a
+                // replay after a successful server write cannot duplicate.
+                final key = failed.key;
                 controller.discardFailed(failed);
-                controller.send(failed.content);
+                controller.send(failed.content,
+                    idempotencyKey: key);
               },
             ),
             IconButton(
@@ -508,6 +581,19 @@ class _Composer extends StatelessWidget {
                   controller: controller,
                   minLines: 1,
                   maxLines: 4,
+                  // T07 §5: server contract `@Size(max=4000)` mirrored for UX
+                  // (the server stays authoritative; over-long pastes fail
+                  // fast with the precise sentence instead of a raw error).
+                  maxLength: ChatMessageRules.maxLength,
+                  maxLengthEnforcement:
+                      MaxLengthEnforcement.enforced,
+                  buildCounter: (
+                    context, {
+                    required currentLength,
+                    required isFocused,
+                    maxLength,
+                  }) =>
+                      null,
                   textInputAction: TextInputAction.send,
                   onSubmitted: (_) => onSend(),
                   decoration: InputDecoration(

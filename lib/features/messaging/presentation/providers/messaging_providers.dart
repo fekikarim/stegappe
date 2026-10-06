@@ -1,11 +1,13 @@
 import 'dart:async';
 import 'dart:convert';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/network/api_exception.dart';
 import '../../../../core/network/paged.dart';
 import '../../../../core/offline/pending_writes.dart';
+import '../../../../core/realtime/community_sync.dart';
 import '../../../../core/realtime/realtime_sync.dart';
 import '../../../../core/realtime/task_sync.dart';
 import '../../../auth/presentation/providers/auth_providers.dart';
@@ -393,6 +395,7 @@ class FailedMessage {
     required this.content,
     required this.at,
     required this.error,
+    required this.key,
   });
 
   final String content;
@@ -400,6 +403,11 @@ class FailedMessage {
 
   /// Raw failure object; localized at the render edge (T00 error model).
   final Object? error;
+
+  /// The idempotency identity of the original attempt (T07/BR-56): an
+  /// explicit retry reuses it so a replay after a successful server write
+  /// cannot duplicate the message.
+  final String key;
 }
 
 final chatControllerProvider = StateNotifierProvider.family<
@@ -464,15 +472,25 @@ class ChatController extends StateNotifier<ChatState> {
     _ackUpTo(msg.sequenceNumber);
   }
 
+  /// Test seam: drives the real broadcast path ([_onFrame]) with a raw
+  /// frame, exactly as the socket delivers it (same parse, merge,
+  /// echo-drop and ack pipeline — no shortcut).
+  @visibleForTesting
+  Future<void> debugFrame(String body) async {
+    _onFrame(body);
+    await Future<void>.delayed(const Duration(milliseconds: 50));
+  }
+
   /// Drop pending bubbles echoed by the server (same sender+content).
+  /// Drops only the OLDEST match: rapid identical sends ("ok", "ok") keep
+  /// one bubble per echo instead of clearing every twin at the first echo.
   void _dropPendingEcho(ChatMessage msg) {
     if (!msg.mine) return;
-    final remaining = state.pending
-        .where((p) => p.content != msg.content)
-        .toList();
-    if (remaining.length != state.pending.length) {
-      state = state.copyWith(pending: remaining);
-    }
+    final index =
+        state.pending.indexWhere((p) => p.content == msg.content);
+    if (index < 0) return;
+    state = state.copyWith(
+        pending: [...state.pending]..removeAt(index));
   }
 
   Future<void> loadInitial() async {
@@ -577,18 +595,43 @@ class ChatController extends StateNotifier<ChatState> {
     _repo.markRead(_conversationId, seq);
   }
 
-  Future<void> send(String raw) async {
+  /// Sends one logical message. The pending bubble's local id doubles as
+  /// the idempotency key (T07/BR-56): the direct REST attempt and the
+  /// offline-queue row share it, so every retry path replays instead of
+  /// duplicating. An explicit retry of a failed bubble reuses [FailedMessage.key].
+  Future<void> send(String raw, {String? idempotencyKey}) async {
     final content = raw.trim();
     if (content.isEmpty) return;
+    if (content.length > ChatMessageRules.maxLength) {
+      state = state.copyWith(
+        failed: [
+          ...state.failed,
+          FailedMessage(
+              content: content,
+              at: DateTime.now(),
+              // Client-side pre-check of the server contract: the render edge
+              // maps MESSAGE_TOO_LONG to the precise sentence (T00 model).
+              error: const ApiException(
+                  kind: ApiErrorKind.validation,
+                  message: 'client pre-check: message exceeds 4000 characters',
+                  code: ChatMessageRules.tooLongCode),
+              key: idempotencyKey ??
+                  'p${DateTime.now().microsecondsSinceEpoch}_${_localSeq++}'),
+        ],
+      );
+      return;
+    }
     final pending = PendingMessage(
-      localId: 'p${DateTime.now().microsecondsSinceEpoch}_${_localSeq++}',
+      localId: idempotencyKey ??
+          'p${DateTime.now().microsecondsSinceEpoch}_${_localSeq++}',
       content: content,
       at: DateTime.now(),
     );
     state = state.copyWith(
         pending: [...state.pending, pending]);
     try {
-      final sent = await _repo.send(_conversationId, content);
+      final sent = await _repo.send(_conversationId, content,
+          idempotencyKey: pending.localId);
       if (_disposed) return;
       state = state.copyWith(
           pending: state.pending
@@ -606,11 +649,13 @@ class ChatController extends StateNotifier<ChatState> {
       if (_disposed) return;
       if (e.kind == ApiErrorKind.network) {
         // T06/D12 offline path: keep the bubble visibly queued in the
-        // persisted store; the flush applies it exactly once on reconnect.
+        // persisted store; the flush applies it exactly once on reconnect
+        // under the same key (see enqueueMessage).
         await _queue.enqueueMessage(
           conversationId: _conversationId,
           content: content,
           localId: pending.localId,
+          idempotencyKey: pending.localId,
         );
         return;
       }
@@ -623,7 +668,8 @@ class ChatController extends StateNotifier<ChatState> {
           FailedMessage(
               content: content,
               at: DateTime.now(),
-              error: e),
+              error: e,
+              key: pending.localId),
         ],
       );
     } on Exception catch (e) {
@@ -637,7 +683,8 @@ class ChatController extends StateNotifier<ChatState> {
           FailedMessage(
               content: content,
               at: DateTime.now(),
-              error: e),
+              error: e,
+              key: pending.localId),
         ],
       );
     }
@@ -745,8 +792,33 @@ final foregroundSyncProvider = Provider<void>((ref) {
         ref.invalidate(unreadNotificationsProvider);
         ref.invalidate(totalUnreadMessagesProvider);
         ref.invalidate(notificationsProvider);
+        // T08 community sync (same posture as tasks): community-class
+        // notification frames invalidate the community surface; REST
+        // refetch wins, so duplicates/stale frames are harmless.
+        final communityCategory =
+            item == null ? null : communitySyncCategoryFor(item);
+        if (communityCategory != null) {
+          ref.read(realtimeSyncProvider).invalidate(communityCategory);
+        }
       });
       await stomp.subscribeErrors((_, _) {});
+      // T08 community topic: single session-wide owner of the slot (P15
+      // rule). Frames are `{kind, postId, at}` triggers — handed to the
+      // in-app sink, which the open feed/detail screens consume with a
+      // trailing-edge debounce before their REST resync. A subscribe
+      // failure (e.g. graduated/no access) never breaks the session:
+      // the feed stays correct over REST + resume + pull-to-refresh.
+      try {
+        final communityFrames = ref.read(communityFramesProvider);
+        await stomp.subscribeCommunity((body) {
+          communityFrames.add(body);
+          ref
+              .read(realtimeSyncProvider)
+              .invalidate(RealtimeCategory.community);
+        });
+      } on Exception {
+        // Offline or ineligible: REST remains authoritative.
+      }
       // T06 §11: flush writes queued while the app was dead or offline.
       try {
         await ref.read(pendingWritesProvider.notifier).flushAll();

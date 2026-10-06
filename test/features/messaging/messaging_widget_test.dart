@@ -94,6 +94,20 @@ class FakeStomp implements StompChatService {
   @override
   Future<void> subscribeNotifications(ChatFrameCallback onPayload) async {}
 
+  /// T08 community topic slot for widget tests.
+  ChatFrameCallback? communityHandler;
+
+  void communityInbound(String body) => communityHandler?.call(body);
+
+  @override
+  Future<void Function()> subscribeCommunity(
+          ChatFrameCallback onFrame) async {
+    communityHandler = onFrame;
+    return () {
+      communityHandler = null;
+    };
+  }
+
   @override
   Future<void> subscribeErrors(
     void Function(String code, String message) onError,
@@ -195,8 +209,10 @@ class FakeMessagingRepo implements MessagingRepository {
       conversationId == 'c1' ? _m(3) : null;
 
   @override
-  Future<SentMessage?> send(String conversationId, String content) async {
+  Future<SentMessage?> send(String conversationId, String content,
+      {String? idempotencyKey}) async {
     if (failSends) throw Exception('send failed');
+    sentKeys.add(idempotencyKey);
     final stompRef = stomp;
     final live =
         stompRef != null &&

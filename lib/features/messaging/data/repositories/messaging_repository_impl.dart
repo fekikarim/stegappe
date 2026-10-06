@@ -96,7 +96,8 @@ class MessagingRepositoryImpl implements MessagingRepository {
   }
 
   @override
-  Future<SentMessage?> send(String conversationId, String content) async {
+  Future<SentMessage?> send(String conversationId, String content,
+      {String? idempotencyKey}) async {
     final bearer = await _bearer();
     final self = await _selfId();
     if (stomp.currentState == ChatConnectionState.connected) {
@@ -109,7 +110,7 @@ class MessagingRepositoryImpl implements MessagingRepository {
     }
     final msg = await remote.sendMessageRest(
         conversationId, bearer, content,
-        selfUserId: self);
+        selfUserId: self, idempotencyKey: idempotencyKey);
     return SentMessage(message: msg, channel: SendChannel.rest);
   }
 

@@ -26,7 +26,7 @@ void main() {
                 reason: '$type reuses the label "$label"');
           }
         }
-        // 22 catalogue keys (21 + T04 SCHEDULED_TASK_VISIBLE), 22 distinct
+        // 25 catalogue keys (22 + T08's 3 community keys), 25 distinct
         // icons, none of them the generic one.
         expect(icons, hasLength(NotificationType.values.length));
         expect(labels, hasLength(NotificationType.values.length - 1));

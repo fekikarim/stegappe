@@ -51,6 +51,12 @@ String notificationTypeLabel(NotificationType type, AppLocalizations l10n) =>
         l10n.notifTypeCertificateAvailable,
       NotificationType.messageReceived => l10n.notifTypeMessageReceived,
       NotificationType.welcome => l10n.notifTypeWelcome,
+      NotificationType.communityComment =>
+        l10n.notifTypeCommunityComment,
+      NotificationType.communityPostRemoved =>
+        l10n.notifTypeCommunityPostRemoved,
+      NotificationType.communityCommentRemoved =>
+        l10n.notifTypeCommunityCommentRemoved,
       NotificationType.unknown => l10n.notifTypeGeneric,
     };
 
@@ -80,13 +86,25 @@ IconData notificationTypeIcon(NotificationType type) => switch (type) {
       NotificationType.certificateAvailable => Icons.workspace_premium_outlined,
       NotificationType.messageReceived => Icons.forum_outlined,
       NotificationType.welcome => Icons.waving_hand_outlined,
+      // T08/D7 community keys must stay pairwise-distinct, so the
+      // removals reuse neither taskDeleted's delete_outline nor each other.
+      NotificationType.communityComment => Icons.reply_outlined,
+      NotificationType.communityPostRemoved =>
+        Icons.delete_forever_outlined,
+      NotificationType.communityCommentRemoved =>
+        Icons.comments_disabled_outlined,
       NotificationType.unknown => Icons.notifications_outlined,
     };
 
 /// Semantic tone of a catalogue key, rendered through the shared
 /// [StegStatusChip] palette (info / success / warning / error / neutral).
 StegStatusKind notificationTypeKind(NotificationType type) => switch (type) {
-      NotificationType.documentRejected ||
+      // Community removals are moderation facts: warning tone, never
+  // error-red alarm (the user did nothing wrong by reading them).
+  NotificationType.communityPostRemoved ||
+  NotificationType.communityCommentRemoved =>
+    StegStatusKind.warning,
+  NotificationType.documentRejected ||
       NotificationType.taskDeleted ||
       NotificationType.applicationRejected =>
         StegStatusKind.error,
@@ -110,6 +128,7 @@ StegStatusKind notificationTypeKind(NotificationType type) => switch (type) {
       NotificationType.internshipStatusChanged ||
       NotificationType.internshipReportSubmitted ||
       NotificationType.messageReceived ||
+      NotificationType.communityComment ||
       NotificationType.welcome =>
         StegStatusKind.info,
       NotificationType.unknown => StegStatusKind.neutral,

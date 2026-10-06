@@ -14,6 +14,12 @@ import '../../../../core/widgets/steg_dialog.dart';
 import '../../../../core/widgets/steg_fields.dart';
 import '../../../internship/domain/deliverable_file_rules.dart'
     show DeliverableFileRules;
+import '../../../internship/domain/entities/work_items.dart'
+    show DeliverableSummary;
+import '../../../internship/presentation/providers/workspace_providers.dart'
+    show internshipRepositoryProvider;
+import '../../../internship/presentation/widgets/status_labels.dart'
+    show deliverableStatusLabel;
 import '../../domain/entities/conversation.dart';
 import '../providers/messaging_providers.dart';
 
@@ -47,10 +53,22 @@ abstract final class ChatAttachmentRules {
 
 /// Attachment send sheet: caption (REQUIRED by contract query param),
 /// file pick with pre-check, real progress, retry without losing state.
+///
+/// T07 (ST-MSG-02, ST-VAL-02): when [internshipId] is known (resolved from
+/// the conversation by the caller — the list is server-filtered, never
+/// client-filtered), the sheet also offers "send an internship document":
+/// an existing deliverable (journal/report) downloaded and re-sent as a
+/// chat attachment. The 10 MB chat cap still applies; oversize files name
+/// the deliverables/validation path instead.
 class AttachmentSheet extends ConsumerStatefulWidget {
-  const AttachmentSheet({super.key, required this.conversationId});
+  const AttachmentSheet(
+      {super.key, required this.conversationId, this.internshipId});
 
   final String conversationId;
+
+  /// The conversation's internship, when the caller could resolve it.
+  /// Null hides the deliverable picker (device pick still works).
+  final String? internshipId;
 
   @override
   ConsumerState<AttachmentSheet> createState() =>
@@ -67,6 +85,12 @@ class _AttachmentSheetState
   String? _serverError;
   bool _uploading = false;
   double _progress = 0;
+  // T07 deliverable picker state (ST-MSG-02): list toggle, rows future,
+  // in-flight download, picker-scoped error (never mixed into send state).
+  bool _showDocs = false;
+  Future<List<DeliverableSummary>>? _docsFuture;
+  String? _loadingDocId;
+  String? _docError;
 
   @override
   void dispose() {
@@ -159,6 +183,76 @@ class _AttachmentSheetState
     }
   }
 
+  /// T07 (ST-MSG-02): loads the internship's deliverables for the picker.
+  /// Server-scoped list; failures surface honestly with retry.
+  void _toggleDocs() {
+    final internshipId = widget.internshipId;
+    if (internshipId == null) return;
+    setState(() {
+      _showDocs = !_showDocs;
+      _docError = null;
+      if (_showDocs && _docsFuture == null) {
+        final repo = ref.read(internshipRepositoryProvider);
+        _docsFuture = repo
+            .listDeliverables(internshipId, size: 50)
+            .then((page) => page.items);
+      }
+    });
+  }
+
+  /// Downloads one deliverable version's bytes and stages them as the
+  /// attachment (caption prefilled with the document title, still editable
+  /// — the contract requires a caption). Oversize files are refused with
+  /// the alternative path, never sent partially.
+  Future<void> _stageDoc(DeliverableSummary doc) async {
+    final l10n = AppLocalizations.of(context);
+    setState(() {
+      _loadingDocId = doc.id;
+      _docError = null;
+    });
+    try {
+      final repo = ref.read(internshipRepositoryProvider);
+      final detail = await repo.getDeliverable(doc.id);
+      final fileName = detail.versions.isEmpty
+          ? null
+          : detail.versions.first.fileName;
+      if (fileName == null || fileName.isEmpty) {
+        if (!mounted) return;
+        setState(() {
+          _loadingDocId = null;
+          _docError = l10n.msgDocLoadFailed;
+        });
+        return;
+      }
+      final bytes = await repo.downloadDeliverable(doc.id);
+      if (!mounted) return;
+      final problem =
+          ChatAttachmentRules.check(fileName, bytes.length);
+      setState(() {
+        _loadingDocId = null;
+        if (problem == null) {
+          _bytes = bytes;
+          _fileName = fileName;
+          _fileError = null;
+          _showDocs = false;
+          if (_caption.text.trim().isEmpty) {
+            _caption.text = doc.title;
+          }
+        } else if (problem == 'size') {
+          _docError = l10n.msgDocTooLarge;
+        } else {
+          _docError = l10n.msgAttachWrongType;
+        }
+      });
+    } on Exception catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _loadingDocId = null;
+        _docError = userMessageOf(e, l10n);
+      });
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
@@ -174,6 +268,30 @@ class _AttachmentSheetState
           label: Text(_fileName ?? l10n.msgAttach),
           onPressed: _uploading ? null : _pick,
         ),
+        // T07 (ST-MSG-02): send journal/report from the chat. Hidden when
+        // the caller could not resolve the conversation's internship
+        // (device pick above still works).
+        if (widget.internshipId != null) ...[
+          const SizedBox(height: StegSpacing.xs),
+          OutlinedButton.icon(
+            icon: const Icon(Icons.description_outlined),
+            label: Text(l10n.msgFromDocs),
+            onPressed: _uploading ? null : _toggleDocs,
+          ),
+          if (_showDocs) _DocsPicker(
+            future: _docsFuture,
+            loadingDocId: _loadingDocId,
+            error: _docError,
+            onRetry: () => setState(() {
+              final repo = ref.read(internshipRepositoryProvider);
+              _docsFuture = repo
+                  .listDeliverables(widget.internshipId!, size: 50)
+                  .then((page) => page.items);
+              _docError = null;
+            }),
+            onPick: _uploading ? null : _stageDoc,
+          ),
+        ],
         if (_fileError != null) ...[
           const SizedBox(height: StegSpacing.xs),
           Semantics(
@@ -234,13 +352,129 @@ class _AttachmentSheetState
 }
 
 Future<void> showAttachmentSheet(BuildContext context,
-    {required String conversationId}) {
+    {required String conversationId, String? internshipId}) {
   return showStegSheet(
     context,
     title: AppLocalizations.of(context).msgAttach,
-    builder: (_) =>
-        AttachmentSheet(conversationId: conversationId),
+    builder: (_) => AttachmentSheet(
+        conversationId: conversationId, internshipId: internshipId),
   );
+}
+
+/// Inline deliverable picker rows (T07): loading / error+retry / empty
+/// (with the next action) / tappable documents with server status.
+class _DocsPicker extends StatelessWidget {
+  const _DocsPicker({
+    required this.future,
+    required this.loadingDocId,
+    required this.error,
+    required this.onRetry,
+    required this.onPick,
+  });
+
+  final Future<List<DeliverableSummary>>? future;
+  final String? loadingDocId;
+  final String? error;
+  final VoidCallback onRetry;
+  final Future<void> Function(DeliverableSummary doc)? onPick;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        const SizedBox(height: StegSpacing.xs),
+        Text(l10n.msgPickDoc,
+            style: Theme.of(context).textTheme.bodySmall),
+        const SizedBox(height: StegSpacing.xs),
+        FutureBuilder<List<DeliverableSummary>>(
+          future: future,
+          builder: (context, snapshot) {
+            if (snapshot.connectionState ==
+                ConnectionState.waiting) {
+              return const Padding(
+                padding: EdgeInsets.all(StegSpacing.sm),
+                child:
+                    Center(child: CircularProgressIndicator()),
+              );
+            }
+            if (snapshot.hasError || !snapshot.hasData) {
+              final message = snapshot.hasError
+                  ? context.userError(snapshot.error!).message
+                  : l10n.msgDocLoadFailed;
+              return Row(
+                children: [
+                  Expanded(
+                    child: Semantics(
+                      liveRegion: true,
+                      label: message,
+                      excludeSemantics: true,
+                      child: Text(message,
+                          style: TextStyle(
+                              color: Theme.of(context)
+                                  .colorScheme
+                                  .error)),
+                    ),
+                  ),
+                  TextButton(
+                      onPressed: onRetry,
+                      child: Text(l10n.retry)),
+                ],
+              );
+            }
+            final docs = snapshot.data!;
+            if (docs.isEmpty) {
+              return Text(l10n.msgNoDocs,
+                  style:
+                      Theme.of(context).textTheme.bodySmall);
+            }
+            return Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                for (final doc in docs)
+                  ListTile(
+                    contentPadding: EdgeInsets.zero,
+                    dense: true,
+                    leading: loadingDocId == doc.id
+                        ? const SizedBox(
+                            width: 20,
+                            height: 20,
+                            child: CircularProgressIndicator(
+                                strokeWidth: 2),
+                          )
+                        : const Icon(
+                            Icons.picture_as_pdf_outlined),
+                    title: Text(doc.title,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis),
+                    subtitle: Text(
+                        '${deliverableStatusLabel(doc.status, l10n)} • v${doc.currentVersion}'),
+                    enabled: onPick != null &&
+                        loadingDocId == null,
+                    onTap: onPick == null
+                        ? null
+                        : () => onPick!(doc),
+                  ),
+              ],
+            );
+          },
+        ),
+        if (error != null) ...[
+          const SizedBox(height: StegSpacing.xs),
+          Semantics(
+            liveRegion: true,
+            label: error,
+            excludeSemantics: true,
+            child: Text(error!,
+                style: TextStyle(
+                    color:
+                        Theme.of(context).colorScheme.error)),
+          ),
+        ],
+      ],
+    );
+  }
 }
 
 /// Attachment preview: downloads via the audited member-only endpoint,

@@ -108,11 +108,13 @@ class NetworkDownRepo extends FakeMessagingRepo {
   bool networkDown = true;
 
   @override
-  Future<SentMessage?> send(String conversationId, String content) async {
+  Future<SentMessage?> send(String conversationId, String content,
+      {String? idempotencyKey}) async {
     if (networkDown) {
       throw const ApiException(
           kind: ApiErrorKind.network, message: 'down');
     }
-    return super.send(conversationId, content);
+    return super.send(conversationId, content,
+        idempotencyKey: idempotencyKey);
   }
 }

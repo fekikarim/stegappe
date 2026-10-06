@@ -121,6 +121,21 @@ class FakeStompService implements StompChatService {
   @override
   Future<void> subscribeNotifications(ChatFrameCallback onPayload) async {}
 
+  /// T08 community topic slot: records the handler so tests can drive
+  /// frames through [communityInbound].
+  ChatFrameCallback? communityHandler;
+
+  void communityInbound(String body) => communityHandler?.call(body);
+
+  @override
+  Future<void Function()> subscribeCommunity(
+          ChatFrameCallback onFrame) async {
+    communityHandler = onFrame;
+    return () {
+      communityHandler = null;
+    };
+  }
+
   @override
   Future<void> subscribeErrors(
     void Function(String code, String message) onError,
@@ -200,6 +215,7 @@ Future<ProviderContainer> pumpNotifications(
   FakeNotificationsRepository? repo,
   FakeStompService? stomp,
   ValueChanged<int>? onOpenTab,
+  ValueChanged<String>? onOpenCommunityPost,
 }) async {
   final socket = stomp ?? FakeStompService();
   socket.setState(ChatConnectionState.connected);
@@ -228,8 +244,10 @@ Future<ProviderContainer> pumpNotifications(
               builder: (ctx) => TextButton(
                 onPressed: () => Navigator.of(ctx).push(
                   MaterialPageRoute<void>(
-                    builder: (_) =>
-                        NotificationsScreen(onOpenTab: onOpenTab),
+                    builder: (_) => NotificationsScreen(
+                        onOpenTab: onOpenTab,
+                        onOpenCommunityPost:
+                            onOpenCommunityPost),
                   ),
                 ),
                 child: const Text('open-notifications'),

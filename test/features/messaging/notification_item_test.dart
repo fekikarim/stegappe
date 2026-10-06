@@ -32,6 +32,12 @@ const List<String> kBackendWireValues = [
   'CERTIFICATE_AVAILABLE',
   'MESSAGE_RECEIVED',
   'WELCOME',
+  // T08/D7: community producers exist server-side (CommunityService →
+  // COMMUNITY_COMMENT / COMMUNITY_POST_REMOVED / COMMUNITY_COMMENT_REMOVED),
+  // so the keys are catalogue, not invented.
+  'COMMUNITY_COMMENT',
+  'COMMUNITY_POST_REMOVED',
+  'COMMUNITY_COMMENT_REMOVED',
 ];
 
 String wireValueOf(NotificationType type) =>

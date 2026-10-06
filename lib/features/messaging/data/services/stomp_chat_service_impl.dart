@@ -184,6 +184,28 @@ class StompChatServiceImpl implements StompChatService {
     }
   }
 
+  /// T08 community topic (single session-wide owner: the community feed
+  /// controller). Frames are `{kind, postId, at}` triggers; content always
+  /// comes from REST. Tracked in [_subs] so reconnects resubscribe it.
+  @override
+  Future<void Function()> subscribeCommunity(
+      ChatFrameCallback onFrame) async {
+    const dest = '/topic/community';
+    _subs[dest] = onFrame;
+    final client = _client;
+    if (client != null &&
+        currentState == ChatConnectionState.connected) {
+      client.subscribe(
+          destination: dest,
+          callback: (f) => onFrame(f.body ?? ''));
+    } else {
+      await ensureConnected();
+    }
+    return () {
+      _subs.remove(dest);
+    };
+  }
+
   @override
   Future<void> sendMessage(
       String conversationId, String content) async {

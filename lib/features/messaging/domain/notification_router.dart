@@ -86,6 +86,12 @@ NotificationRoute? resolveNotificationRoute(
       };
     // Application/candidate/payment/certificate events are workflow facts the
     // mobile shells have no dedicated tab for: they stay in the center.
+    // Community rows (T08) likewise return null here: they have no tab
+    // either — the notification center pushes the post detail directly
+    // through `onOpenCommunityPost` instead (see NotificationsScreen).
+    case NotificationType.communityComment:
+    case NotificationType.communityPostRemoved:
+    case NotificationType.communityCommentRemoved:
     case NotificationType.applicationSubmitted:
     case NotificationType.applicationResubmitted:
     case NotificationType.applicationAccepted:

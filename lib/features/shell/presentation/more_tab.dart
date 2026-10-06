@@ -7,6 +7,9 @@ import '../../../core/theme/steg_spacing.dart';
 import '../../../core/widgets/steg_button.dart';
 import '../../../core/widgets/steg_card.dart';
 import '../../../core/widgets/steg_fields.dart';
+import '../../community/presentation/screens/community_feed_screen.dart';
+import '../../community/presentation/screens/community_reports_screen.dart';
+import '../../auth/domain/entities/app_user.dart';
 import '../../auth/presentation/providers/auth_providers.dart';
 import '../../auth/presentation/role_label.dart';
 
@@ -26,6 +29,52 @@ class MoreTab extends ConsumerWidget {
     return ListView(
       padding: StegSpacing.screenPadding,
       children: [
+        // --- Community (T08 / ST-COM-01): peer help feed for students;
+        // staff open the same surface with moderation affordances.
+        StegCard(
+          title: l10n.communityTitle,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              ListTile(
+                contentPadding: EdgeInsets.zero,
+                leading:
+                    const Icon(Icons.forum_outlined),
+                title: Text(l10n.communityTitle),
+                subtitle: Text(l10n.communityEmptyHint,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis),
+                trailing:
+                    const Icon(Icons.arrow_forward_outlined),
+                onTap: () => Navigator.of(context).push(
+                  MaterialPageRoute(
+                      builder: (_) =>
+                          const CommunityFeedScreen()),
+                ),
+              ),
+              // Moderation queue entry: staff roles only (UX affordance;
+              // the server enforces moderation on every call).
+              if (user != null &&
+                  (user.mobileRole == UserRole.supervisor ||
+                      user.mobileRole ==
+                          UserRole.adminSupervisor))
+                ListTile(
+                  contentPadding: EdgeInsets.zero,
+                  leading:
+                      const Icon(Icons.flag_outlined),
+                  title: Text(l10n.communityReports),
+                  trailing:
+                      const Icon(Icons.arrow_forward_outlined),
+                  onTap: () => Navigator.of(context).push(
+                    MaterialPageRoute(
+                        builder: (_) =>
+                            const CommunityReportsScreen()),
+                  ),
+                ),
+            ],
+          ),
+        ),
+        const SizedBox(height: StegSpacing.md),
         StegCard(
           title: l10n.navMore,
           child: Column(

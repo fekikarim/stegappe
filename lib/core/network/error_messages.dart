@@ -75,6 +75,13 @@ const String kCodeVisibleFromOutsidePeriod = 'VISIBLE_FROM_OUTSIDE_PERIOD';
 const String kCodeTaskScheduleStaffOnly = 'TASK_SCHEDULE_STAFF_ONLY';
 const String kCodeSpecTextInvalid = 'SPEC_TEXT_INVALID';
 const String kCodeSpecTextTooLong = 'SPEC_TEXT_TOO_LONG';
+const String kCodeMessageTooLong = 'MESSAGE_TOO_LONG';
+const String kCodeContactDataNotAllowed = 'CONTACT_DATA_NOT_ALLOWED';
+const String kCodeDuplicatePost = 'DUPLICATE_POST';
+const String kCodeStudentMuted = 'STUDENT_MUTED';
+const String kCodeReportAlreadyOpen = 'REPORT_ALREADY_OPEN';
+const String kCodePostTooLong = 'POST_TOO_LONG';
+const String kCodeCommentTooLong = 'COMMENT_TOO_LONG';
 
 /// Maps one error to a [UserError]. Never returns a raw exception string.
 UserError userErrorOf(Object error, AppLocalizations l10n) {
@@ -162,6 +169,54 @@ UserError userErrorOf(Object error, AppLocalizations l10n) {
       code == kCodeSpecTextTooLong) {
     return UserError(
       message: l10n.errDraftInvalid,
+      traceId: traceId,
+      retryable: false,
+    );
+  }
+  // T07: message length is a server contract (`@Size(max=4000)`); the client
+  // pre-check in ChatController.send reuses the same code so both paths get
+  // one precise sentence — the backend message is never rendered raw.
+  if (code == kCodeMessageTooLong) {
+    return UserError(
+      message: l10n.errMessageTooLong,
+      traceId: traceId,
+      retryable: false,
+    );
+  }
+  // T08 community guardrails: each server refusal gets one actionable
+  // sentence (the backend reason/detail is never rendered raw).
+  if (code == kCodeContactDataNotAllowed) {
+    return UserError(
+      message: l10n.errCommunityContactData,
+      traceId: traceId,
+      retryable: false,
+    );
+  }
+  if (code == kCodeDuplicatePost) {
+    return UserError(
+      message: l10n.errCommunityDuplicate,
+      traceId: traceId,
+      retryable: false,
+    );
+  }
+  if (code == kCodeStudentMuted) {
+    return UserError(
+      message: l10n.errCommunityMuted,
+      traceId: traceId,
+      retryable: false,
+    );
+  }
+  if (code == kCodeReportAlreadyOpen) {
+    return UserError(
+      message: l10n.errCommunityReportOpen,
+      traceId: traceId,
+      retryable: false,
+    );
+  }
+  // T08: server length contracts shared with the composer pre-check.
+  if (code == kCodePostTooLong || code == kCodeCommentTooLong) {
+    return UserError(
+      message: l10n.errCommunityTooLong,
       traceId: traceId,
       retryable: false,
     );

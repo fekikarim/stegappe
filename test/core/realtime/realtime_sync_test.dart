@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:stegappe/core/realtime/realtime_sync.dart';
+import 'package:stegappe/features/community/presentation/providers/community_providers.dart';
 import 'package:stegappe/features/internship/presentation/providers/workspace_providers.dart';
 import 'package:stegappe/features/messaging/presentation/providers/messaging_providers.dart';
 
@@ -59,9 +60,12 @@ void main() {
       );
     });
 
-    test('community has no mobile surface yet (harmless empty mapping)', () {
-      expect(RiverpodRealtimeSync((_) {}).targetsFor(RealtimeCategory.community),
-          isEmpty);
+    test('community invalidates the feed + detail + reports providers', () {
+      final targets = RiverpodRealtimeSync((_) {}).targetsFor(
+        RealtimeCategory.community,
+      );
+      expect(targets, contains(communityFeedProvider));
+      expect(targets, contains(communityReportsProvider));
     });
   });
 

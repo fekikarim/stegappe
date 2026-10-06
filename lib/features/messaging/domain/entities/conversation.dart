@@ -61,6 +61,21 @@ class Conversation extends Equatable {
       ];
 }
 
+/// Server-authoritative message content contract (`SendMessageRequest`:
+/// `@NotBlank @Size(max=4000)`; service `EMPTY_MESSAGE` / `MESSAGE_TOO_LONG`).
+/// The app pre-checks for UX (disables empty sends, caps the composer, fails
+/// fast past the limit) but the server decides — every send path stays
+/// server-validated.
+abstract final class ChatMessageRules {
+  /// Backend `MESSAGE_TOO_LONG` limit; mirrored by the composer cap.
+  static const int maxLength = 4000;
+
+  /// Backend error code for over-length content (client pre-check + mapper).
+  static const String tooLongCode = 'MESSAGE_TOO_LONG';
+
+  static bool isSendable(String raw) => raw.trim().isNotEmpty;
+}
+
 enum MessageStatus { sent, delivered, read, edited, deleted }
 
 MessageStatus messageStatusFrom(String? raw) =>

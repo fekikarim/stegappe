@@ -8,6 +8,7 @@ import '../../../core/widgets/connectivity_banner.dart';
 import '../../auth/domain/entities/app_user.dart';
 import '../../auth/presentation/providers/auth_providers.dart';
 import '../../auth/presentation/role_label.dart';
+import '../../community/presentation/screens/community_post_detail_screen.dart';
 import '../../internship/presentation/screens/intern_home_screen.dart';
 import '../../internship/presentation/screens/journal_list_screen.dart';
 import '../../internship/presentation/screens/supervised_interns_screen.dart';
@@ -49,6 +50,14 @@ class RoleScaffold extends ConsumerWidget {
           _NotificationBell(onOpenTab: (tab) {
             // The center already popped itself; just switch tabs.
             onIndexChanged(tab);
+          }, onOpenCommunityPost: (postId) {
+            // The center already popped itself; push the post detail.
+            // A removed post renders the honest gone-note inside.
+            Navigator.of(context).push(
+              MaterialPageRoute(
+                  builder: (_) =>
+                      CommunityPostDetailScreen(postId: postId)),
+            );
           }),
           Semantics(
             label: AppLocalizations.of(context).logout,
@@ -108,9 +117,11 @@ class RoleDestination {
 /// Notification bell with unread badge → notification center.
 /// Badge reads the foreground-refreshed count (socket/resume/pull).
 class _NotificationBell extends ConsumerWidget {
-  const _NotificationBell({required this.onOpenTab});
+  const _NotificationBell(
+      {required this.onOpenTab, this.onOpenCommunityPost});
 
   final ValueChanged<int> onOpenTab;
+  final ValueChanged<String>? onOpenCommunityPost;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -128,8 +139,9 @@ class _NotificationBell extends ConsumerWidget {
             icon: const Icon(Icons.notifications_outlined),
             onPressed: () => Navigator.of(context).push(
               MaterialPageRoute(
-                  builder: (_) =>
-                      NotificationsScreen(onOpenTab: onOpenTab)),
+                  builder: (_) => NotificationsScreen(
+                      onOpenTab: onOpenTab,
+                      onOpenCommunityPost: onOpenCommunityPost)),
             ),
           ),
           if (unread > 0)

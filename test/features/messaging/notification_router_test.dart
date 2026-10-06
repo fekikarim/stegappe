@@ -109,6 +109,12 @@ void main() {
         NotificationType.finalEvaluationRequired,
         NotificationType.paymentApproved,
         NotificationType.certificateAvailable,
+        // T08 community rows have no tab either: the center pushes the
+        // post detail through onOpenCommunityPost instead (see
+        // NotificationsScreen), so the tab router stays silent.
+        NotificationType.communityComment,
+        NotificationType.communityPostRemoved,
+        NotificationType.communityCommentRemoved,
       ]) {
         expect(resolveNotificationRoute(row(type), intern), isNull,
             reason: '$type must not fake a destination');

@@ -132,9 +132,10 @@ class ApiClient {
   Future<T> delete<T>(
     String path, {
     String? bearer,
+    Map<String, String>? query,
     required T Function(dynamic json) decode,
   }) =>
-      _send<T>('DELETE', path, bearer: bearer, decode: decode);
+      _send<T>('DELETE', path, bearer: bearer, query: query, decode: decode);
 
   /// Multipart file upload with real byte progress.
   /// Backend validates content server-side (Tika); client pre-checks are
@@ -147,6 +148,7 @@ class ApiClient {
     required String fileName,
     required String contentType,
     required Uint8List bytes,
+    Map<String, String>? headers,
     void Function(int sent, int total)? onProgress,
     required T Function(dynamic json) decode,
   }) async {
@@ -158,6 +160,8 @@ class ApiClient {
     if (bearer == null || bearer.isEmpty) {
       request.headers.remove('Authorization');
     }
+    // T08: idempotency keys on multipart creates (same contract as posts).
+    if (headers != null) request.headers.addAll(headers);
     if (fields != null) request.fields.addAll(fields);
 
     var sent = 0;

@@ -35,10 +35,15 @@ import '../widgets/status_labels.dart' show formatDay, priorityLabel;
 /// refreshes via deduplicated socket payloads, app resume and pull-to-refresh
 /// instead — always foreground-honest.
 class NotificationsScreen extends ConsumerStatefulWidget {
-  const NotificationsScreen({super.key, this.onOpenTab});
+  const NotificationsScreen(
+      {super.key, this.onOpenTab, this.onOpenCommunityPost});
 
   /// Switch the underlying shell tab, then pop this screen.
   final ValueChanged<int>? onOpenTab;
+
+  /// Push a community post detail, then pop this screen (T08: community
+  /// rows have no shell tab — the detail push is their deep link).
+  final ValueChanged<String>? onOpenCommunityPost;
 
   @override
   ConsumerState<NotificationsScreen> createState() =>
@@ -214,7 +219,17 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen>
     NotificationItem n,
   ) {
     final route = resolveNotificationRoute(n, role);
-    final routable = route != null && widget.onOpenTab != null;
+    // T08 community deep link: no shell tab exists, so a community row
+    // with a post id pushes the detail directly (relatedEntityType is
+    // always CommunityPost for the three catalogue keys). Without a post
+    // id or callback the row stays in the center (fail-safe preserved).
+    final communityPostId = _communityPostId(n);
+    final communityTarget = communityPostId != null &&
+            widget.onOpenCommunityPost != null
+        ? communityPostId
+        : null;
+    final routable = (route != null && widget.onOpenTab != null) ||
+        communityTarget != null;
     final unread = !n.isRead;
     final typeLabel = notificationTypeLabel(n.type, l10n);
     final scheme = Theme.of(context).colorScheme;
@@ -278,7 +293,14 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen>
                 child: IconButton(
                   tooltip: l10n.notifOpen,
                   icon: const Icon(Icons.arrow_forward_outlined),
-                  onPressed: () => _open(n, route),
+                  onPressed: () {
+                    final target = communityTarget;
+                    if (target != null) {
+                      _openCommunity(n, target);
+                    } else {
+                      _open(n, route!);
+                    }
+                  },
                 ),
               )
             : (unread
@@ -288,7 +310,14 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen>
                   )
                 : null),
         onTap: routable
-            ? () => _open(n, route)
+            ? () {
+                final target = communityTarget;
+                if (target != null) {
+                  _openCommunity(n, target);
+                } else {
+                  _open(n, route!);
+                }
+              }
             : (unread
                 ? () => _markRead(n)
                 // Read rows have nothing left to do: tapping shows the full,
@@ -347,6 +376,48 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen>
     }
     Navigator.of(context).pop();
     widget.onOpenTab?.call(route.tab);
+  }
+
+  /// Community post id for the three T08 catalogue keys, else null.
+  /// The backend always sets relatedEntityType `CommunityPost` with the
+  /// post id for these rows (comment removals deep-link to the parent
+  /// post); anything else stays in the center.
+  String? _communityPostId(NotificationItem n) {
+    switch (n.type) {
+      case NotificationType.communityComment:
+      case NotificationType.communityPostRemoved:
+      case NotificationType.communityCommentRemoved:
+        final entity = (n.relatedEntityType ?? '').toUpperCase();
+        final id = n.relatedEntityId ?? '';
+        if (entity == 'COMMUNITYPOST' && id.isNotEmpty) return id;
+        return null;
+      default:
+        return null;
+    }
+  }
+
+  /// Mark read (when needed), pop, then push the post detail. Same
+  /// cosmetic-read rule as [_open]: a failed flag never blocks the link.
+  /// A removed post renders the honest gone-note inside the detail.
+  Future<void> _openCommunity(NotificationItem n, String postId) async {
+    final controller = ref.read(notificationsControllerProvider.notifier);
+    final l10n = AppLocalizations.of(context);
+    String? failure;
+    if (!n.isRead) {
+      try {
+        await controller.markRead(n);
+      } on Exception catch (e) {
+        failure = userMessageOf(e, l10n);
+      }
+    }
+    if (!mounted) return;
+    controller.invalidateRelatedCaches();
+    if (failure != null) {
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text(failure)));
+    }
+    Navigator.of(context).pop();
+    widget.onOpenCommunityPost?.call(postId);
   }
 
   /// Full text of a row (long titles/messages truncate in the list, never

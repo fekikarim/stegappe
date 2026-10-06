@@ -33,7 +33,13 @@ abstract class MessagingRepository {
   /// REST fallback when only HTTP is available. Throws when neither
   /// works — the UI shows failed + retry, never fake success.
   /// Returns null when sent over STOMP (echo pending via subscription).
-  Future<SentMessage?> send(String conversationId, String content);
+  ///
+  /// T07/BR-56: [idempotencyKey] identifies one logical message. The REST
+  /// fallback forwards it as `X-Idempotency-Key` so a retry after a
+  /// successful server write replays instead of duplicating. Callers reuse
+  /// the same key for the offline-queue row of that message.
+  Future<SentMessage?> send(String conversationId, String content,
+      {String? idempotencyKey});
 
   /// REST-only send with an idempotency key (T06 offline-queue flush:
   /// retries of the same logical message replay instead of duplicating).

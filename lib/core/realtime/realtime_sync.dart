@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../features/community/presentation/providers/community_providers.dart';
 import '../../features/internship/presentation/providers/workspace_providers.dart';
 import '../../features/messaging/presentation/providers/messaging_providers.dart';
 
@@ -35,9 +36,8 @@ abstract interface class RealtimeSync {
 /// Category → providers that must be refetched when that category changes.
 ///
 /// The mapping lives in one place so a feature never decides its own refresh
-/// policy. `community` is intentionally empty today: the community module
-/// ships in T08, and mapping the category to nothing keeps a future frame
-/// harmless until then.
+/// policy. T08 wires the community surface: feed + open detail + staff
+/// reports queue all refetch over REST on any community trigger.
 final Map<RealtimeCategory, List<ProviderOrFamily>> kRealtimeTargets = {
   RealtimeCategory.tasks: <ProviderOrFamily>[
     taskListProvider,
@@ -58,7 +58,11 @@ final Map<RealtimeCategory, List<ProviderOrFamily>> kRealtimeTargets = {
     unreadNotificationsProvider,
     dashboardProvider,
   ],
-  RealtimeCategory.community: <ProviderOrFamily>[],
+  RealtimeCategory.community: <ProviderOrFamily>[
+    communityFeedProvider,
+    communityPostDetailProvider,
+    communityReportsProvider,
+  ],
   RealtimeCategory.messages: <ProviderOrFamily>[
     conversationsProvider,
     totalUnreadMessagesProvider,
@@ -78,7 +82,7 @@ class RiverpodRealtimeSync implements RealtimeSync {
   final Map<RealtimeCategory, List<ProviderOrFamily>> _targets;
 
   /// Providers invalidated for [category] (empty when the category has no
-  /// mobile surface yet, e.g. `community` before T08).
+  /// mobile surface).
   List<ProviderOrFamily> targetsFor(RealtimeCategory category) =>
       _targets[category] ?? const <ProviderOrFamily>[];
 

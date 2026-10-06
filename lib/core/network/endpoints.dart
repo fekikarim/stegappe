@@ -106,6 +106,26 @@ abstract final class Endpoints {
   static const String notificationsUnreadCount =
       '/api/notifications/unread-count';
   static String notificationRead(String id) => '/api/notifications/$id/read';
+  // --- T08 student community (ST-COM-01/02, D7) ---
+  static const String communityPosts = '/api/community/posts';
+  static const String communityPostsWithAttachment =
+      '/api/community/posts/with-attachment';
+  static String communityPost(String id) => '/api/community/posts/$id';
+  static String communityPostComments(String id) =>
+      '/api/community/posts/$id/comments';
+  static String communityComment(String id) =>
+      '/api/community/comments/$id';
+  static const String communityReports = '/api/community/reports';
+  static const String communityModerationReports =
+      '/api/community/moderation/reports';
+  static String communityModerationReportResolve(String id) =>
+      '/api/community/moderation/reports/$id/resolve';
+  static const String communityModerationMutes =
+      '/api/community/moderation/mutes';
+  static String communityModerationMute(String userId) =>
+      '/api/community/moderation/mutes/$userId';
+  static String communityAttachmentDownload(String attachmentId) =>
+      '/api/community/posts/attachments/$attachmentId/download';
   // --- D6 AI (advisory only; logbook is the participant endpoint) ---
   static String aiLogbook(String internshipId) =>
       '/api/ai/internships/$internshipId/logbook/generate';

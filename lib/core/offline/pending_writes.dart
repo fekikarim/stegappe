@@ -124,14 +124,18 @@ class PendingWritesController
 
   /// Queue a chat message. The [localId] links the store row to the
   /// on-screen pending bubble so the flush can drop exactly that bubble.
+  /// T07/BR-56: pass the same [idempotencyKey] the direct send attempt used
+  /// (the pending bubble's local id) so an ambiguous failure — direct write
+  /// persisted, response lost — replays instead of duplicating on flush.
   Future<bool> enqueueMessage({
     required String conversationId,
     required String content,
     required String localId,
+    String? idempotencyKey,
   }) async {
     if (content.trim().isEmpty) return false;
     final write = PendingWrite(
-      key: _newKey(),
+      key: idempotencyKey ?? _newKey(),
       kind: PendingWriteKind.message,
       conversationId: conversationId,
       content: content,

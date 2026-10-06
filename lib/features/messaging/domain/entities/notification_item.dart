@@ -31,6 +31,10 @@ enum NotificationType {
   certificateAvailable,
   messageReceived,
   welcome,
+  // T08/D7: community comment on your post / moderator removals.
+  communityComment,
+  communityPostRemoved,
+  communityCommentRemoved,
   unknown;
 
   /// Tolerant parse of the backend wire value: null/empty/unknown → [unknown].

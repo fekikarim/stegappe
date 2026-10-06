@@ -14,6 +14,8 @@ typedef ChatFrameCallback = void Function(String body);
 ///   acks `/app/.../delivered` + `/app/.../read`
 ///   (`{"upToSequenceNumber"}`);
 /// - broadcasts `/topic/conversations/{id}` (new + status updates);
+/// - community envelopes `/topic/community` (`{kind, postId, at}` —
+///   invalidation triggers, never content; T08);
 /// - personal notifications `/user/queue/notifications`;
 /// - sender errors `/user/queue/errors` (never leaks other conversations).
 ///
@@ -37,6 +39,13 @@ abstract class StompChatService {
 
   Future<void> subscribeNotifications(ChatFrameCallback onPayload);
   Future<void> subscribeErrors(void Function(String code, String message) onError);
+
+  /// Subscribe to the community feed topic (T08). The single session-wide
+  /// owner is the community feed controller; frames are `{kind, postId,
+  /// at}` invalidation triggers. Re-subscribed automatically after
+  /// reconnects until [cancel] is called.
+  /// Returns a cancel callback.
+  Future<void Function()> subscribeCommunity(ChatFrameCallback onFrame);
 
   Future<void> sendMessage(String conversationId, String content);
   Future<void> ackDelivered(String conversationId, int upToSequence);

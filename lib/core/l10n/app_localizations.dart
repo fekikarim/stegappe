@@ -697,6 +697,49 @@ class AppLocalizations {
     'msgDownload': {'fr': 'Télécharger', 'en': 'Download', 'ar': 'تنزيل'},
     'msgNoHistory': {'fr': 'Aucun message. Dites bonjour !', 'en': 'No messages yet. Say hello!', 'ar': 'لا رسائل بعد. قل مرحبا!'},
     'msgSayHi': {'fr': 'Commencez la conversation.', 'en': 'Start the conversation.', 'ar': 'ابدأ المحادثة.'},
+    // --- T07: send journal/report from the chat (ST-MSG-02, ST-VAL-02) ---
+    'msgFromDocs': {'fr': 'Envoyer un document du stage', 'en': 'Send an internship document', 'ar': 'إرسال وثيقة من التربص'},
+    'msgPickDoc': {'fr': 'Choisir un document à envoyer', 'en': 'Choose a document to send', 'ar': 'اختر وثيقة لإرسالها'},
+    'msgNoDocs': {'fr': 'Aucun document disponible. Déposez d’abord votre journal ou votre rapport depuis l’écran Documents.', 'en': 'No documents available yet. Upload your journal or report from the Documents screen first.', 'ar': 'لا توجد وثائق متاحة بعد. أودع يومياتك أو تقريرك من شاشة الوثائق أولا.'},
+    'msgDocTooLarge': {'fr': 'Ce document dépasse 10 Mo : la messagerie ne peut pas le transporter. Envoyez-le depuis l’écran de validation/Documents.', 'en': 'This document exceeds 10 MB: chat cannot carry it. Send it from the validation/Documents screen instead.', 'ar': 'تتجاوز هذه الوثيقة 10 م.ب: لا يمكن للمحادثة نقلها. أرسلها من شاشة المصادقة/الوثائق.'},
+    'msgDocLoadFailed': {'fr': 'Document introuvable. Actualisez puis réessayez.', 'en': 'Document unavailable. Refresh and try again.', 'ar': 'الوثيقة غير متاحة. حدّث البيانات ثم أعد المحاولة.'},
+    // --- T07: day separators (relative when recent) ---
+    'msgToday': {'fr': 'Aujourd’hui', 'en': 'Today', 'ar': 'اليوم'},
+    'msgYesterday': {'fr': 'Hier', 'en': 'Yesterday', 'ar': 'أمس'},
+    // --- T08 student community (ST-COM-01/02, D7) ---
+    'communityTitle': {'fr': 'Communauté', 'en': 'Community', 'ar': 'المجتمع'},
+    'communityEmpty': {'fr': 'Aucune publication pour le moment.', 'en': 'No posts yet.', 'ar': 'لا منشورات بعد.'},
+    'communityEmptyHint': {'fr': 'Posez votre première question — vos collègues stagiaires sont là pour aider.', 'en': 'Ask your first question — your fellow interns are here to help.', 'ar': 'اطرح سؤالك الأول — زملاؤك المتربصون هنا للمساعدة.'},
+    'communityComposerHint': {'fr': 'Partagez une question ou un conseil…', 'en': 'Share a question or a tip…', 'ar': 'شارك سؤالا أو نصيحة…'},
+    'communityPublish': {'fr': 'Publier', 'en': 'Post', 'ar': 'نشر'},
+    'communityAttach': {'fr': 'Joindre image/PDF (optionnel)', 'en': 'Attach image/PDF (optional)', 'ar': 'إرفاق صورة/PDF (اختياري)'},
+    'communityComments': {'fr': 'Commentaires', 'en': 'Comments', 'ar': 'التعليقات'},
+    'communityNoComments': {'fr': 'Aucun commentaire. Soyez le premier à répondre !', 'en': 'No comments yet. Be the first to reply!', 'ar': 'لا تعليقات بعد. كن أول من يرد!'},
+    'communityAddComment': {'fr': 'Écrivez une réponse…', 'en': 'Write a reply…', 'ar': 'اكتب ردا…'},
+    'communityReport': {'fr': 'Signaler', 'en': 'Report', 'ar': 'إبلاغ'},
+    'communityReportHint': {'fr': 'Décrivez le problème (visible par les modérateurs uniquement).', 'en': 'Describe the issue (visible to moderators only).', 'ar': 'صف المشكلة (مرئي للمشرفين فقط).'},
+    'communityReportSent': {'fr': 'Signalement envoyé. Merci !', 'en': 'Report sent. Thank you!', 'ar': 'تم إرسال البلاغ. شكرا!'},
+    'communityDelete': {'fr': 'Supprimer', 'en': 'Delete', 'ar': 'حذف'},
+    'communityDeleteConfirm': {'fr': 'Supprimer définitivement ce contenu ?', 'en': 'Permanently delete this content?', 'ar': 'حذف هذا المحتوى نهائيا؟'},
+    'communityRemove': {'fr': 'Retirer (modération)', 'en': 'Remove (moderation)', 'ar': 'إزالة (إشراف)'},
+    'communityRemoveReason': {'fr': 'Motif du retrait (requis)', 'en': 'Removal reason (required)', 'ar': 'سبب الإزالة (مطلوب)'},
+    'communityMute': {'fr': 'Couper l’accès', 'en': 'Mute', 'ar': 'كتم'},
+    'communityMuteReason': {'fr': 'Motif (requis, montré à l’étudiant)', 'en': 'Reason (required, shown to the student)', 'ar': 'السبب (مطلوب، يظهر للطالب)'},
+    'communityMuteDuration': {'fr': 'Durée', 'en': 'Duration', 'ar': 'المدة'},
+    'communityMuteHour': {'fr': '1 heure', 'en': '1 hour', 'ar': 'ساعة واحدة'},
+    'communityMuteDay': {'fr': '1 jour', 'en': '1 day', 'ar': 'يوم واحد'},
+    'communityMuteWeek': {'fr': '7 jours', 'en': '7 days', 'ar': '7 أيام'},
+    'communityMuteMonth': {'fr': '30 jours', 'en': '30 days', 'ar': '30 يوما'},
+    'communityUnmute': {'fr': 'Lever la sanction', 'en': 'Unmute', 'ar': 'رفع الكتم'},
+    'communityResolve': {'fr': 'Clore le signalement', 'en': 'Resolve report', 'ar': 'غلق البلاغ'},
+    'communityResolution': {'fr': 'Conclusion (optionnelle)', 'en': 'Resolution (optional)', 'ar': 'الخلاصة (اختيارية)'},
+    'communityReports': {'fr': 'Signalements', 'en': 'Reports', 'ar': 'البلاغات'},
+    'communityOpenReports': {'fr': 'En attente', 'en': 'Open', 'ar': 'مفتوحة'},
+    'communityAllReports': {'fr': 'Tous', 'en': 'All', 'ar': 'الكل'},
+    'communityNoReports': {'fr': 'Aucun signalement. Belle communauté !', 'en': 'No reports. Healthy community!', 'ar': 'لا بلاغات. مجتمع سليم!'},
+    'communityRemovedGone': {'fr': 'Ce contenu n’est plus disponible.', 'en': 'This content is no longer available.', 'ar': 'هذا المحتوى لم يعد متاحا.'},
+    'communityNeedsConnection': {'fr': 'Connexion requise pour publier.', 'en': 'Connection required to post.', 'ar': 'الاتصال مطلوب للنشر.'},
+    'communityNewAvailable': {'fr': 'Nouveautés — tirer pour actualiser', 'en': 'New activity — pull to refresh', 'ar': 'نشاط جديد — اسحب للتحديث'},
     'sockConnecting': {'fr': 'Connexion en cours…', 'en': 'Connecting…', 'ar': 'جارٍ الاتصال…'},
     'sockOffline': {'fr': 'Temps réel indisponible — les messages s’envoient par relais.', 'en': 'Real-time unavailable — messages use fallback.', 'ar': 'الوقت الحقيقي غير متاح — تُرسل الرسائل بالطريقة البديلة.'},
     'sockLive': {'fr': 'Temps réel actif', 'en': 'Real-time live', 'ar': 'الوقت الحقيقي نشط'},
@@ -751,6 +794,13 @@ class AppLocalizations {
       'fr': 'Nouveau message', 'en': 'New message', 'ar': 'رسالة جديدة'},
     'notifTypeWelcome': {
       'fr': 'Bienvenue', 'en': 'Welcome', 'ar': 'مرحبا'},
+    // --- T08 community catalogue keys (producer-backed, D7) ---
+    'notifTypeCommunityComment': {
+      'fr': 'Réponse communauté', 'en': 'Community reply', 'ar': 'رد في المجتمع'},
+    'notifTypeCommunityPostRemoved': {
+      'fr': 'Publication retirée', 'en': 'Post removed', 'ar': 'تمت إزالة المنشور'},
+    'notifTypeCommunityCommentRemoved': {
+      'fr': 'Commentaire retiré', 'en': 'Comment removed', 'ar': 'تمت إزالة التعليق'},
     'notifTypeGeneric': {
       'fr': 'Notification', 'en': 'Notification', 'ar': 'إشعار'},
     'notifToday': {
@@ -862,6 +912,38 @@ class AppLocalizations {
       'fr': 'La demande n’a pas pu être traitée. Réessayez.',
       'en': 'The request could not be processed. Please try again.',
       'ar': 'تعذرت معالجة الطلب. حاول مرة أخرى.',
+    },
+    // --- T07: message length contract (server `@Size(max=4000)`) ---
+    'errMessageTooLong': {
+      'fr': 'Message trop long (4000 caractères maximum). Raccourcissez-le puis réessayez.',
+      'en': 'Message too long (4000 characters maximum). Shorten it and try again.',
+      'ar': 'الرسالة طويلة جدا (4000 حرف كحد أقصى). اختصرها ثم أعد المحاولة.',
+    },
+    // --- T08 community guardrails (server codes, one sentence each) ---
+    'errCommunityContactData': {
+      'fr': 'Les adresses e-mail et numéros de téléphone sont interdits dans la communauté.',
+      'en': 'Email addresses and phone numbers are not allowed in the community.',
+      'ar': 'عناوين البريد الإلكتروني وأرقام الهواتف ممنوعة في المجتمع.',
+    },
+    'errCommunityDuplicate': {
+      'fr': 'Vous avez déjà publié ce contenu récemment.',
+      'en': 'You already posted this content recently.',
+      'ar': 'لقد نشرت هذا المحتوى مؤخرا.',
+    },
+    'errCommunityMuted': {
+      'fr': 'Votre accès à la communauté est temporairement coupé.',
+      'en': 'Your community access is temporarily muted.',
+      'ar': 'تم كتم وصولك إلى المجتمع مؤقتا.',
+    },
+    'errCommunityReportOpen': {
+      'fr': 'Vous avez déjà signalé ce contenu.',
+      'en': 'You already reported this content.',
+      'ar': 'لقد أبلغت عن هذا المحتوى من قبل.',
+    },
+    'errCommunityTooLong': {
+      'fr': 'Contenu trop long (2000 caractères maximum). Raccourcissez-le puis réessayez.',
+      'en': 'Content too long (2000 characters maximum). Shorten it and try again.',
+      'ar': 'المحتوى طويل جدا (2000 حرف كحد أقصى). اختصره ثم أعد المحاولة.',
     },
     'errServer': {
       'fr': 'Le service est temporairement indisponible. Réessayez dans un instant.',
@@ -1305,6 +1387,47 @@ class AppLocalizations {
   String get msgDownload => _get('msgDownload');
   String get msgNoHistory => _get('msgNoHistory');
   String get msgSayHi => _get('msgSayHi');
+  String get msgFromDocs => _get('msgFromDocs');
+  String get msgPickDoc => _get('msgPickDoc');
+  String get msgNoDocs => _get('msgNoDocs');
+  String get msgDocTooLarge => _get('msgDocTooLarge');
+  String get msgDocLoadFailed => _get('msgDocLoadFailed');
+  String get msgToday => _get('msgToday');
+  String get msgYesterday => _get('msgYesterday');
+  // --- T08 student community getters ---
+  String get communityTitle => _get('communityTitle');
+  String get communityEmpty => _get('communityEmpty');
+  String get communityEmptyHint => _get('communityEmptyHint');
+  String get communityComposerHint => _get('communityComposerHint');
+  String get communityPublish => _get('communityPublish');
+  String get communityAttach => _get('communityAttach');
+  String get communityComments => _get('communityComments');
+  String get communityNoComments => _get('communityNoComments');
+  String get communityAddComment => _get('communityAddComment');
+  String get communityReport => _get('communityReport');
+  String get communityReportHint => _get('communityReportHint');
+  String get communityReportSent => _get('communityReportSent');
+  String get communityDelete => _get('communityDelete');
+  String get communityDeleteConfirm => _get('communityDeleteConfirm');
+  String get communityRemove => _get('communityRemove');
+  String get communityRemoveReason => _get('communityRemoveReason');
+  String get communityMute => _get('communityMute');
+  String get communityMuteReason => _get('communityMuteReason');
+  String get communityMuteDuration => _get('communityMuteDuration');
+  String get communityMuteHour => _get('communityMuteHour');
+  String get communityMuteDay => _get('communityMuteDay');
+  String get communityMuteWeek => _get('communityMuteWeek');
+  String get communityMuteMonth => _get('communityMuteMonth');
+  String get communityUnmute => _get('communityUnmute');
+  String get communityResolve => _get('communityResolve');
+  String get communityResolution => _get('communityResolution');
+  String get communityReports => _get('communityReports');
+  String get communityOpenReports => _get('communityOpenReports');
+  String get communityAllReports => _get('communityAllReports');
+  String get communityNoReports => _get('communityNoReports');
+  String get communityRemovedGone => _get('communityRemovedGone');
+  String get communityNeedsConnection => _get('communityNeedsConnection');
+  String get communityNewAvailable => _get('communityNewAvailable');
   String get sockConnecting => _get('sockConnecting');
   String get sockOffline => _get('sockOffline');
   String get sockLive => _get('sockLive');
@@ -1343,6 +1466,11 @@ class AppLocalizations {
   String get notifTypeCertificateAvailable => _get('notifTypeCertificateAvailable');
   String get notifTypeMessageReceived => _get('notifTypeMessageReceived');
   String get notifTypeWelcome => _get('notifTypeWelcome');
+  String get notifTypeCommunityComment => _get('notifTypeCommunityComment');
+  String get notifTypeCommunityPostRemoved =>
+      _get('notifTypeCommunityPostRemoved');
+  String get notifTypeCommunityCommentRemoved =>
+      _get('notifTypeCommunityCommentRemoved');
   String get notifTypeGeneric => _get('notifTypeGeneric');
   String get notifToday => _get('notifToday');
   String get notifWelcomeEmpty => _get('notifWelcomeEmpty');
@@ -1422,6 +1550,12 @@ class AppLocalizations {
   String get errConflict => _get('errConflict');
   String get errValidation => _get('errValidation');
   String get errBadRequest => _get('errBadRequest');
+  String get errMessageTooLong => _get('errMessageTooLong');
+  String get errCommunityContactData => _get('errCommunityContactData');
+  String get errCommunityDuplicate => _get('errCommunityDuplicate');
+  String get errCommunityMuted => _get('errCommunityMuted');
+  String get errCommunityReportOpen => _get('errCommunityReportOpen');
+  String get errCommunityTooLong => _get('errCommunityTooLong');
   String get errServer => _get('errServer');
   String get errRateLimited => _get('errRateLimited');
   String get errInvalidTransition => _get('errInvalidTransition');

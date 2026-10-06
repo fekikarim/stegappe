@@ -14,6 +14,7 @@ import '../providers/workspace_providers.dart';
 import '../widgets/dashboard_sections.dart';
 import '../widgets/status_labels.dart';
 import '../widgets/task_row.dart';
+import '../../../community/presentation/screens/community_feed_screen.dart';
 import 'deliverables_screen.dart';
 import 'my_evaluations_screen.dart';
 import 'progress_screen.dart';
@@ -311,6 +312,23 @@ class _DashboardContent extends ConsumerWidget {
                       ),
                   ],
                 ),
+        ),
+        const SizedBox(height: StegSpacing.md),
+
+        // --- Community (T08 / ST-COM-01): peer help feed. ---
+        DashboardSection(
+          title: l10n.communityTitle,
+          actionLabel: l10n.viewAll,
+          onAction: () => Navigator.of(context).push(
+            MaterialPageRoute(
+                builder: (_) => const CommunityFeedScreen()),
+          ),
+          child: ListTile(
+            contentPadding: EdgeInsets.zero,
+            leading: const Icon(Icons.forum_outlined),
+            title: Text(l10n.communityEmptyHint,
+                maxLines: 2, overflow: TextOverflow.ellipsis),
+          ),
         ),
         const SizedBox(height: StegSpacing.md),
 
