@@ -49,7 +49,15 @@ final assignmentsProvider =
 });
 
 /// Task status filter for the task list (null = all).
+///
+/// A non-null value is a **server** query (`?status=`) — the board itself is
+/// built from the unfiltered page.
 final taskFilterProvider = StateProvider<TaskStatus?>((ref) => null);
+
+/// Client-side task search (title/description). The page is bounded
+/// server-side (50), so filtering in memory is exact and instant; it never
+/// replaces the server status filter.
+final taskSearchProvider = StateProvider<String>((ref) => '');
 
 /// Full dashboard snapshot, fetched in parallel. Throws
 /// `StateError('no-internship')` when no internship is linked yet.
@@ -63,7 +71,10 @@ final dashboardProvider = FutureProvider<DashboardData>((ref) async {
     repo.getInternship(id),
     repo.getAssignments(id),
     repo.listTasks(id, size: 50),
-    repo.listTasks(id, size: 1, status: TaskStatus.completed),
+    // BR-11/A2: "done" = APPROVED. `COMPLETED` is work finished by the
+    // student and still awaiting the supervisor's review, so counting it here
+    // would overstate the student's progress by a whole review step.
+    repo.listTasks(id, size: 1, status: TaskStatus.approved),
     repo.listJournal(id, size: 20),
     repo.listJournal(id, size: 1, status: JournalStatus.draft),
     repo.listJournal(id, size: 1, status: JournalStatus.rejected),
@@ -319,8 +330,9 @@ final supervisedInternDetailProvider = FutureProvider.family<
     repo.getInternship(internshipId),
     repo.getAssignments(internshipId),
     repo.listTasks(internshipId, size: 50),
+    // BR-11/A2: an intern's "done" count is his APPROVED tasks only.
     repo.listTasks(internshipId,
-        size: 1, status: TaskStatus.completed),
+        size: 1, status: TaskStatus.approved),
     repo.listJournal(internshipId,
         status: JournalStatus.submitted, size: 50),
     repo.listDeliverables(internshipId, size: 50),

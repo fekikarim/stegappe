@@ -6,6 +6,7 @@ import '../../../../core/network/paged.dart';
 import '../../domain/entities/evaluation.dart';
 import '../../domain/entities/internship.dart';
 import '../../domain/entities/logbook.dart';
+import '../../domain/entities/task_classification.dart';
 import '../../domain/entities/work_items.dart';
 import '../models/internship_dtos.dart';
 
@@ -40,7 +41,8 @@ class InternshipRemoteDataSource {
     TaskStatus? status,
   }) {
     final q = pageQuery(page: page, size: size);
-    if (status != null) q['status'] = taskStatusToApi(status);
+    final api = status == null ? null : taskStatusToApi(status);
+    if (api != null) q['status'] = api;
     return _client.get(Endpoints.internshipTasks(internshipId),
         bearer: bearer,
         query: q,
@@ -48,11 +50,18 @@ class InternshipRemoteDataSource {
   }
 
   Future<InternTask> updateTaskStatus(
-          String taskId, TaskStatus status, String? bearer) =>
-      _client.patch(Endpoints.taskStatus(taskId),
-          bearer: bearer,
-          query: {'status': taskStatusToApi(status)},
-          decode: (j) => taskFromJson(_map(j)));
+      String taskId, TaskStatus status, String? bearer) {
+    final api = taskStatusToApi(status);
+    if (api == null) {
+      // T02/BR-10: `unknown` is not part of the backend vocabulary and is
+      // never sent; the board offers no transition for such a task.
+      throw StateError('unknown-task-status');
+    }
+    return _client.patch(Endpoints.taskStatus(taskId),
+        bearer: bearer,
+        query: {'status': api},
+        decode: (j) => taskFromJson(_map(j)));
+  }
 
   // --- D2 writes: tasks ---
 
@@ -497,4 +506,126 @@ class InternshipRemoteDataSource {
 
   static Map<String, dynamic> _map(dynamic j) =>
       j is Map<String, dynamic> ? j : <String, dynamic>{};
+}
+
+extension TaskClassificationDataSource on InternshipRemoteDataSource {
+  // --- T03 student task classification (intern only, server-authoritative) ---
+
+  Future<ClassificationBoard> getClassificationBoard(
+    String internshipId,
+    String? bearer,
+  ) =>
+      _client.get(Endpoints.taskCategories(internshipId),
+          bearer: bearer,
+          decode: (j) => classificationBoardFromJson(j));
+
+  Future<TaskCategory> createCategory(
+    String internshipId,
+    String? bearer, {
+    required String name,
+    String? color,
+  }) {
+    final body = <String, dynamic>{'name': name};
+    if (color != null) body['color'] = color;
+    return _client.post(Endpoints.taskCategories(internshipId),
+        bearer: bearer,
+        body: body,
+        decode: (j) =>
+            taskCategoryFromJson(InternshipRemoteDataSource._map(j)));
+  }
+
+  Future<TaskCategory> renameCategory(
+    String categoryId,
+    String? bearer, {
+    String? name,
+    String? color,
+  }) {
+    final body = <String, dynamic>{};
+    if (name != null) body['name'] = name;
+    if (color != null) body['color'] = color;
+    return _client.put(Endpoints.taskCategory(categoryId),
+        bearer: bearer,
+        body: body,
+        decode: (j) =>
+            taskCategoryFromJson(InternshipRemoteDataSource._map(j)));
+  }
+
+  Future<List<TaskCategory>> reorderCategories(
+    String? bearer,
+    List<String> orderedIds,
+  ) =>
+      _client.put(Endpoints.taskCategoriesOrder,
+          bearer: bearer,
+          body: {
+            'orderedIds': orderedIds,
+          },
+          decode: (j) => [
+            if (j is List)
+              for (final e in j)
+                if (e is Map<String, dynamic>) taskCategoryFromJson(e),
+          ]);
+
+  Future<void> deleteCategory(String categoryId, String? bearer) =>
+      _client.delete<void>(Endpoints.taskCategory(categoryId),
+          bearer: bearer, decode: (_) {});
+
+  Future<void> assignTaskCategory(
+    String taskId,
+    String? bearer, {
+    String? categoryId,
+    String? expectedCategoryId,
+    bool force = false,
+  }) =>
+      _client.put<void>(Endpoints.taskCategoryAssign(taskId),
+          bearer: bearer,
+          body: assignCategoryJson(
+              categoryId: categoryId,
+              expectedCategoryId: expectedCategoryId,
+              force: force),
+          decode: (_) {});
+
+  Future<ClassificationSuggestion> suggestCategories(
+    String internshipId,
+    String? bearer,
+  ) =>
+      _client.post(Endpoints.taskCategoriesSuggest(internshipId),
+          bearer: bearer,
+          decode: (j) {
+            final map = InternshipRemoteDataSource._map(j);
+            return ClassificationSuggestion(
+              proposals: categoryProposalsFromJson(map),
+              unclassifiedCount:
+                  (map['unclassifiedTaskCount'] as num?)?.toInt() ?? 0,
+              capped: map['capped'] == true,
+            );
+          });
+
+  Future<ApplyCategoriesResult> applyCategories(
+    String internshipId,
+    String? bearer, {
+    required List<Map<String, dynamic>> items,
+    required String idempotencyKey,
+  }) =>
+      _client.post(Endpoints.taskCategoriesApply(internshipId),
+          bearer: bearer,
+          headers: {'X-Idempotency-Key': idempotencyKey},
+          body: {
+            'items': items,
+          },
+          decode: (j) {
+            final map = InternshipRemoteDataSource._map(j);
+            return ApplyCategoriesResult(
+              batchId: map['batchId']?.toString(),
+              items: applyResultsFromJson(map),
+            );
+          });
+
+  Future<List<ApplyCategoryResult>> undoApplyBatch(
+    String batchId,
+    String? bearer,
+  ) =>
+      _client.post(Endpoints.taskCategoryUndo(batchId),
+          bearer: bearer,
+          decode: (j) => applyResultsFromJson(
+              InternshipRemoteDataSource._map(j)));
 }

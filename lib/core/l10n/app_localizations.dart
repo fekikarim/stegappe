@@ -122,7 +122,10 @@ class AppLocalizations {
     'staleData': {'fr': 'Données hors ligne — peuvent être obsolètes.', 'en': 'Offline data — may be stale.', 'ar': 'بيانات غير متصلة — قد تكون قديمة.'},
     'filterAll': {'fr': 'Toutes', 'en': 'All', 'ar': 'الكل'},
     'filterDone': {'fr': 'Terminées', 'en': 'Done', 'ar': 'المنجزة'},
-    'taskMarkComplete': {'fr': 'Marquer comme terminée', 'en': 'Mark as done', 'ar': 'تعليم كمنجزة'},
+    // T02/BR-11: the student's completion is a REVIEW REQUEST, never a final
+    // "done" — the wording must not promise a state the backend has not granted.
+    'taskSubmitForReview': {
+      'fr': 'Envoyer pour validation', 'en': 'Submit for review', 'ar': 'إرسال للتحقق'},
     'taskReopen': {'fr': 'Rouvrir', 'en': 'Reopen', 'ar': 'إعادة فتح'},
     'taskSetInProgress': {'fr': 'Commencer', 'en': 'Start', 'ar': 'بدء التنفيذ'},
     'noDueDate': {'fr': 'Sans échéance', 'en': 'No due date', 'ar': 'بدون أجل'},
@@ -140,8 +143,151 @@ class AppLocalizations {
     'stArchived': {'fr': 'Archivé', 'en': 'Archived', 'ar': 'مؤرشف'},
     'tsTodo': {'fr': 'À faire', 'en': 'To do', 'ar': 'للإنجاز'},
     'tsInProgress': {'fr': 'En cours', 'en': 'In progress', 'ar': 'قيد الإنجاز'},
-    'tsCompleted': {'fr': 'Terminée', 'en': 'Done', 'ar': 'منجزة'},
+    // T02/D6: `COMPLETED` is work finished by the student, NOT done — the
+    // supervisor's review is pending. Only APPROVED is 'Validée' (BR-11).
+    'tsAwaitingApproval': {
+      'fr': 'En attente de validation', 'en': 'Awaiting approval', 'ar': 'في انتظار المصادقة'},
+    'tsApproved': {'fr': 'Validée', 'en': 'Approved', 'ar': 'مصادق عليها'},
+    'tsDenied': {'fr': 'Refusée', 'en': 'Denied', 'ar': 'مرفوضة'},
+    'tsUnknown': {'fr': 'Statut inconnu', 'en': 'Unknown status', 'ar': 'حالة غير معروفة'},
     'tsCancelled': {'fr': 'Annulée', 'en': 'Cancelled', 'ar': 'ملغاة'},
+    'taskGroupAttention': {
+      'fr': 'À surveiller', 'en': 'Needs attention', 'ar': 'تتطلب انتباهك'},
+    'taskGroupEmpty': {
+      'fr': 'Aucune tâche ici', 'en': 'No tasks here', 'ar': 'لا توجد مهام هنا'},
+    'tasksEmptyHint': {
+      'fr': 'Elles apparaîtront ici dès que votre encadrant les ajoutera.',
+      'en': 'They will appear here as soon as your supervisor adds them.',
+      'ar': 'ستظهر هنا بمجرد أن يضيفها مشرفك.'},
+    'taskNoMatch': {
+      'fr': 'Aucune tâche ne correspond à votre recherche',
+      'en': 'No task matches your search',
+      'ar': 'لا توجد مهمة تطابق بحثك'},
+    'taskBackToProgress': {'fr': 'Reprendre', 'en': 'Resume', 'ar': 'استئناف'},
+    'taskDenialReason': {
+      'fr': 'Motif du refus', 'en': 'Reason for denial', 'ar': 'سبب الرفض'},
+    // BR-12: a denial always carries a reason server-side; the client stays
+    // tolerant of a legacy row and says so instead of showing an empty box.
+    'taskDeniedNoReason': {
+      'fr': 'Aucun motif fourni', 'en': 'No reason provided', 'ar': 'لم يتم تقديم سبب'},
+    'taskReviewedOn': {
+      'fr': 'Décidée le {d}', 'en': 'Decided on {d}', 'ar': 'بتاريخ {d}'},
+    'taskWaitingReview': {
+      'fr': 'En attente de la validation du superviseur',
+      'en': 'Waiting for the supervisor’s approval',
+      'ar': 'في انتظار مصادقة المشرف'},
+    'taskSearchHint': {
+      'fr': 'Rechercher une tâche', 'en': 'Search a task', 'ar': 'ابحث عن مهمة'},
+    'taskSearchClear': {
+      'fr': 'Effacer la recherche', 'en': 'Clear search', 'ar': 'مسح البحث'},
+    'taskViewBoard': {'fr': 'Tableau', 'en': 'Board', 'ar': 'لوحة'},
+    'taskViewList': {'fr': 'Liste', 'en': 'List', 'ar': 'قائمة'},
+    'taskNoEditSupervisorTask': {
+      'fr': 'Tâche créée par votre encadrant — non modifiable',
+      'en': 'Task created by your supervisor — read-only',
+      'ar': 'مهمة أنشأها المشرف — غير قابلة للتعديل'},
+    // --- T03 task classification (student-defined categories + AI) ---
+    'catOrganize': {'fr': 'Organiser', 'en': 'Organize', 'ar': 'تنظيم'},
+    'catTitle': {
+      'fr': 'Mon organisation', 'en': 'My organization', 'ar': 'تنظيمي'},
+    'catNew': {
+      'fr': 'Nouvelle catégorie', 'en': 'New category', 'ar': 'فئة جديدة'},
+    'catNameLabel': {'fr': 'Nom', 'en': 'Name', 'ar': 'الاسم'},
+    'catNameHint': {
+      'fr': 'Ex. Frontend, Révisions…',
+      'en': 'E.g. Frontend, Reviews…',
+      'ar': 'مثال: الواجهة، المراجعات…'},
+    'catColorLabel': {'fr': 'Couleur', 'en': 'Color', 'ar': 'اللون'},
+    'catNoColor': {'fr': 'Aucune', 'en': 'None', 'ar': 'بدون'},
+    'catCreate': {'fr': 'Créer', 'en': 'Create', 'ar': 'إنشاء'},
+    'catSave': {'fr': 'Enregistrer', 'en': 'Save', 'ar': 'حفظ'},
+    'catRename': {'fr': 'Renommer', 'en': 'Rename', 'ar': 'إعادة تسمية'},
+    'catMoveUp': {
+      'fr': 'Monter', 'en': 'Move up', 'ar': 'تحريك لأعلى'},
+    'catMoveDown': {
+      'fr': 'Descendre', 'en': 'Move down', 'ar': 'تحريك لأسفل'},
+    'catDelete': {'fr': 'Supprimer', 'en': 'Delete', 'ar': 'حذف'},
+    'catDeleteTitle': {
+      'fr': 'Supprimer la catégorie ?',
+      'en': 'Delete the category?',
+      'ar': 'حذف الفئة؟'},
+    'catDeleteConfirm': {
+      'fr': 'Supprimer « {name} » ?',
+      'en': 'Delete "{name}"?',
+      'ar': 'حذف "{name}"؟'},
+    'catDeleteHint': {
+      'fr': 'Ses tâches redeviendront « sans catégorie ». Rien ne sera perdu.',
+      'en': 'Its tasks will become unclassified. Nothing will be lost.',
+      'ar': 'ستصبح مهامها بدون فئة. لن يُفقد أي شيء.'},
+    'catEmpty': {
+      'fr': 'Aucune catégorie pour le moment',
+      'en': 'No categories yet',
+      'ar': 'لا توجد فئات بعد'},
+    'catEmptyHint': {
+      'fr': 'Créez-en une (par ex. Frontend) pour organiser vos tâches.',
+      'en': 'Create one (e.g. Frontend) to organize your tasks.',
+      'ar': 'أنشئ واحدة (مثال: الواجهة) لتنظيم مهامك.'},
+    'catUnclassified': {
+      'fr': 'Sans catégorie', 'en': 'Unclassified', 'ar': 'بدون فئة'},
+    'catSuggest': {
+      'fr': 'Suggérer avec l’IA',
+      'en': 'Suggest with AI',
+      'ar': 'اقتراح بالذكاء الاصطناعي'},
+    'catSuggesting': {
+      'fr': 'L’IA analyse vos tâches…',
+      'en': 'AI is analyzing your tasks…',
+      'ar': 'يحلل الذكاء الاصطناعي مهامك…'},
+    'catSuggestEmpty': {
+      'fr': 'Toutes vos tâches sont déjà classées.',
+      'en': 'All your tasks are already classified.',
+      'ar': 'جميع مهامك مصنفة.'},
+    'catNoCategoriesHint': {
+      'fr': 'Créez d’abord au moins une catégorie — l’IA ne propose que vos propres catégories.',
+      'en': 'Create at least one category first — the AI only proposes your own categories.',
+      'ar': 'أنشئ فئة واحدة على الأقل أولاً — لا يقترح الذكاء الاصطناعي إلا فئاتك.'},
+    'catProposals': {
+      'fr': 'Propositions de l’IA',
+      'en': 'AI proposals',
+      'ar': 'مقترحات الذكاء الاصطناعي'},
+    'catProposalNote': {
+      'fr': 'Vérifiez chaque proposition : rien n’est enregistré sans votre accord.',
+      'en': 'Review each proposal: nothing is saved without your approval.',
+      'ar': 'راجع كل مقترح: لا يُحفظ أي شيء دون موافقتك.'},
+    'catAccept': {'fr': 'Accepter', 'en': 'Accept', 'ar': 'قبول'},
+    'catAcceptAll': {
+      'fr': 'Tout accepter', 'en': 'Accept all', 'ar': 'قبول الكل'},
+    'catNewBadge': {'fr': 'Nouveau', 'en': 'New', 'ar': 'جديد'},
+    'catUndo': {'fr': 'Annuler', 'en': 'Undo', 'ar': 'تراجع'},
+    'catUndone': {
+      'fr': 'Classifications annulées.',
+      'en': 'Classifications undone.',
+      'ar': 'تم التراجع عن التصنيفات.'},
+    'catApplied': {
+      'fr': '{n} tâche(s) classée(s).',
+      'en': '{n} task(s) classified.',
+      'ar': 'تم تصنيف {n} من المهام.'},
+    'catApplySkipped': {
+      'fr': '{n} ignorée(s) (déjà classées entre-temps).',
+      'en': '{n} skipped (classified meanwhile).',
+      'ar': 'تم تجاهل {n} (صُنفت في الأثناء).'},
+    'catAssigned': {
+      'fr': 'Tâche classée.', 'en': 'Task classified.', 'ar': 'تم تصنيف المهمة.'},
+    'catNeedsConnection': {
+      'fr': 'La suggestion IA nécessite une connexion.',
+      'en': 'AI suggestions need a connection.',
+      'ar': 'تحتاج الاقتراحات إلى اتصال.'},
+    'errCategoryInvalid': {
+      'fr': 'Cette catégorie est refusée : vérifiez le nom (1 à 40 caractères, sans doublon) et la couleur.',
+      'en': 'This category was refused: check the name (1–40 characters, no duplicate) and the color.',
+      'ar': 'تم رفض هذه الفئة: تحقق من الاسم (1 إلى 40 حرفاً، بدون تكرار) واللون.'},
+    'errCategoryChanged': {
+      'fr': 'Cette tâche a été classée entre-temps. Rechargez et réessayez.',
+      'en': 'This task was classified meanwhile. Reload and try again.',
+      'ar': 'تم تصنيف هذه المهمة في الأثناء. أعد التحميل وحاول مجدداً.'},
+    'errCategoryNoCategories': {
+      'fr': 'Créez d’abord une catégorie avant de demander une suggestion.',
+      'en': 'Create a category first before asking for a suggestion.',
+      'ar': 'أنشئ فئة أولاً قبل طلب الاقتراح.'},
     'jsDraft': {'fr': 'Brouillon', 'en': 'Draft', 'ar': 'مسودة'},
     'jsSubmitted': {'fr': 'Soumise', 'en': 'Submitted', 'ar': 'مرسلة'},
     'jsValidated': {'fr': 'Validée', 'en': 'Validated', 'ar': 'مصادق عليها'},
@@ -569,7 +715,7 @@ class AppLocalizations {
   String get staleData => _get('staleData');
   String get filterAll => _get('filterAll');
   String get filterDone => _get('filterDone');
-  String get taskMarkComplete => _get('taskMarkComplete');
+  String get taskSubmitForReview => _get('taskSubmitForReview');
   String get taskReopen => _get('taskReopen');
   String get taskSetInProgress => _get('taskSetInProgress');
   String get noDueDate => _get('noDueDate');
@@ -587,8 +733,66 @@ class AppLocalizations {
   String get stArchived => _get('stArchived');
   String get tsTodo => _get('tsTodo');
   String get tsInProgress => _get('tsInProgress');
-  String get tsCompleted => _get('tsCompleted');
+  String get tsAwaitingApproval => _get('tsAwaitingApproval');
+  String get tsApproved => _get('tsApproved');
+  String get tsDenied => _get('tsDenied');
+  String get tsUnknown => _get('tsUnknown');
   String get tsCancelled => _get('tsCancelled');
+  String get taskGroupAttention => _get('taskGroupAttention');
+  String get taskGroupEmpty => _get('taskGroupEmpty');
+  String get tasksEmptyHint => _get('tasksEmptyHint');
+  String get taskNoMatch => _get('taskNoMatch');
+  String get taskBackToProgress => _get('taskBackToProgress');
+  String get taskDenialReason => _get('taskDenialReason');
+  String get taskDeniedNoReason => _get('taskDeniedNoReason');
+  String taskReviewedOn(String d) =>
+      _get('taskReviewedOn').replaceAll('{d}', d);
+  String get taskWaitingReview => _get('taskWaitingReview');
+  String get taskSearchHint => _get('taskSearchHint');
+  String get taskSearchClear => _get('taskSearchClear');
+  String get taskViewBoard => _get('taskViewBoard');
+  String get taskViewList => _get('taskViewList');
+  String get taskNoEditSupervisorTask => _get('taskNoEditSupervisorTask');
+  String get catOrganize => _get('catOrganize');
+  String get catTitle => _get('catTitle');
+  String get catNew => _get('catNew');
+  String get catNameLabel => _get('catNameLabel');
+  String get catNameHint => _get('catNameHint');
+  String get catColorLabel => _get('catColorLabel');
+  String get catNoColor => _get('catNoColor');
+  String get catCreate => _get('catCreate');
+  String get catSave => _get('catSave');
+  String get catRename => _get('catRename');
+  String get catMoveUp => _get('catMoveUp');
+  String get catMoveDown => _get('catMoveDown');
+  String get catDelete => _get('catDelete');
+  String get catDeleteTitle => _get('catDeleteTitle');
+  String catDeleteConfirm(String name) =>
+      _get('catDeleteConfirm').replaceAll('{name}', name);
+  String get catDeleteHint => _get('catDeleteHint');
+  String get catEmpty => _get('catEmpty');
+  String get catEmptyHint => _get('catEmptyHint');
+  String get catUnclassified => _get('catUnclassified');
+  String get catSuggest => _get('catSuggest');
+  String get catSuggesting => _get('catSuggesting');
+  String get catSuggestEmpty => _get('catSuggestEmpty');
+  String get catNoCategoriesHint => _get('catNoCategoriesHint');
+  String get catProposals => _get('catProposals');
+  String get catProposalNote => _get('catProposalNote');
+  String get catAccept => _get('catAccept');
+  String get catAcceptAll => _get('catAcceptAll');
+  String get catNewBadge => _get('catNewBadge');
+  String get catUndo => _get('catUndo');
+  String get catUndone => _get('catUndone');
+  String catApplied(int n) =>
+      _get('catApplied').replaceAll('{n}', '$n');
+  String catApplySkipped(int n) =>
+      _get('catApplySkipped').replaceAll('{n}', '$n');
+  String get catAssigned => _get('catAssigned');
+  String get catNeedsConnection => _get('catNeedsConnection');
+  String get errCategoryInvalid => _get('errCategoryInvalid');
+  String get errCategoryChanged => _get('errCategoryChanged');
+  String get errCategoryNoCategories => _get('errCategoryNoCategories');
   String get jsDraft => _get('jsDraft');
   String get jsSubmitted => _get('jsSubmitted');
   String get jsValidated => _get('jsValidated');

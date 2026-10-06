@@ -5,6 +5,7 @@ import '../../../../core/storage/token_storage.dart';
 import '../../domain/entities/evaluation.dart';
 import '../../domain/entities/internship.dart';
 import '../../domain/entities/logbook.dart';
+import '../../domain/entities/task_classification.dart';
 import '../../domain/entities/work_items.dart';
 import '../../domain/repositories/internship_repository.dart';
 import '../../../../core/network/paged.dart';
@@ -370,8 +371,10 @@ class InternshipRepositoryImpl implements InternshipRepository {
         final assignments =
             await remote.getAssignments(id, bearer);
         final tasks = await remote.listTasks(id, bearer, size: 1);
+        // BR-11/A2: an intern's progress counts APPROVED tasks only — a
+        // completion still under review is not done.
         final done = await remote.listTasks(id, bearer,
-            size: 1, status: TaskStatus.completed);
+            size: 1, status: TaskStatus.approved);
         final drafts = await remote.listJournal(id, bearer,
             size: 1, status: JournalStatus.draft);
         final rejected = await remote.listJournal(id, bearer,
@@ -493,4 +496,56 @@ class InternshipRepositoryImpl implements InternshipRepository {
   @override
   Future<String> askAssistant(String question) async =>
       remote.askAssistant(question, await _bearer());
+
+  // --- T03 student task classification (thin delegation; server decides) ---
+
+  @override
+  Future<ClassificationBoard> classificationBoard(String internshipId) async =>
+      remote.getClassificationBoard(internshipId, await _bearer());
+
+  @override
+  Future<TaskCategory> createCategory(String internshipId,
+          {required String name, String? color}) async =>
+      remote.createCategory(internshipId, await _bearer(),
+          name: name, color: color);
+
+  @override
+  Future<TaskCategory> renameCategory(String categoryId,
+          {String? name, String? color}) async =>
+      remote.renameCategory(categoryId, await _bearer(),
+          name: name, color: color);
+
+  @override
+  Future<List<TaskCategory>> reorderCategories(List<String> orderedIds) async =>
+      remote.reorderCategories(await _bearer(), orderedIds);
+
+  @override
+  Future<void> deleteCategory(String categoryId) async =>
+      remote.deleteCategory(categoryId, await _bearer());
+
+  @override
+  Future<void> assignTaskCategory(String taskId,
+          {String? categoryId,
+          String? expectedCategoryId,
+          bool force = false}) async =>
+      remote.assignTaskCategory(taskId, await _bearer(),
+          categoryId: categoryId,
+          expectedCategoryId: expectedCategoryId,
+          force: force);
+
+  @override
+  Future<ClassificationSuggestion> suggestCategories(
+          String internshipId) async =>
+      remote.suggestCategories(internshipId, await _bearer());
+
+  @override
+  Future<ApplyCategoriesResult> applyCategories(String internshipId,
+          {required List<Map<String, dynamic>> items,
+          required String idempotencyKey}) async =>
+      remote.applyCategories(internshipId, await _bearer(),
+          items: items, idempotencyKey: idempotencyKey);
+
+  @override
+  Future<List<ApplyCategoryResult>> undoApplyBatch(String batchId) async =>
+      remote.undoApplyBatch(batchId, await _bearer());
 }

@@ -43,6 +43,7 @@ Future<void> pumpWorkspace(
   bool online = true,
   Locale locale = const Locale('fr'),
   List<Override> extra = const [],
+  Size? surfaceSize,
 }) async {
   final repo = fake ?? FakeInternshipRepository();
   await tester.pumpWidget(
@@ -67,6 +68,10 @@ Future<void> pumpWorkspace(
       ),
     ),
   );
+  if (surfaceSize != null) {
+    tester.view.physicalSize = surfaceSize;
+    tester.view.devicePixelRatio = 1.0;
+  }
   final ctx = tester.element(find.byType(Scaffold).first);
   await ProviderScope.containerOf(ctx)
       .read(authControllerProvider.notifier)
@@ -160,16 +165,31 @@ void main() {
       // 'À faire' labels both the filter chip and open-task status chips.
       expect(find.text('À faire'), findsWidgets);
       expect(find.text('En cours'), findsWidgets);
-      expect(find.text('Terminées'), findsOneWidget);
+      // 'Terminées' labels the filter chip AND the board's done-group header.
+      expect(find.text('Terminées'), findsWidgets);
       expect(find.text('Today task'), findsOneWidget);
     });
 
     testWidgets('filter chip queries the backend with status', (tester) async {
       final fake = FakeInternshipRepository();
-      await pumpWorkspace(tester, const TaskListScreen(), fake: fake);
-      await tester.tap(find.text('Terminées'));
+      // Board uses _columns mode at tablet width — no nested-scroll conflict in
+      // the CustomScrollView (the prior session's board view uses different scroll
+      // directions there).
+      await pumpWorkspace(
+        tester,
+        const TaskListScreen(),
+        fake: fake,
+        surfaceSize: const Size(800, 1200),
+      );
+      // Tap the filter chip specifically — the board's done-group header
+      // carries the same 'Terminées' label. It is off-screen at this surface
+      // size, so bring it into view first.
+      final chip = find.widgetWithText(ChoiceChip, 'Terminées');
+      await tester.ensureVisible(chip);
       await tester.pumpAndSettle();
-      expect(fake.lastStatusFilter?.name, 'completed');
+      await tester.tap(chip);
+      await tester.pumpAndSettle();
+      expect(fake.lastStatusFilter?.name, 'approved');
       expect(find.text('Done task'), findsOneWidget);
       expect(find.text('Today task'), findsNothing);
     });
@@ -178,15 +198,20 @@ void main() {
       tester,
     ) async {
       final fake = FakeInternshipRepository();
-      await pumpWorkspace(tester, const TaskListScreen(), fake: fake);
+      await pumpWorkspace(
+        tester,
+        const TaskListScreen(),
+        fake: fake,
+        surfaceSize: const Size(800, 1200),
+      );
       // Explicit details chevron next to 'Today task' (checkbox taps
       // must never open the sheet as a side effect).
       await tester.tap(find.byTooltip('Today task'));
       await tester.pumpAndSettle();
-      expect(find.text('Marquer comme terminée'), findsOneWidget);
-      await tester.tap(find.text('Marquer comme terminée'));
+      expect(find.text('Envoyer pour validation'), findsOneWidget);
+      await tester.tap(find.text('Envoyer pour validation'));
       await tester.pumpAndSettle();
-      expect(fake.statusUpdates, contains(('t-today', TaskStatus.completed)));
+      expect(fake.statusUpdates, contains(('t-today', TaskStatus.awaitingApproval)));
     });
   });
 }

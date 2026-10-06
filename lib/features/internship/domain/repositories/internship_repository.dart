@@ -4,6 +4,7 @@ import '../../../../core/network/paged.dart';
 import '../entities/evaluation.dart';
 import '../entities/internship.dart';
 import '../entities/logbook.dart';
+import '../entities/task_classification.dart';
 import '../entities/work_items.dart';
 
 /// Read + limited-write contract for the intern daily workspace.
@@ -141,6 +142,50 @@ abstract class InternshipRepository {
   /// Ask the role-scoped intern assistant (RAG over the controlled STEG base).
   /// Returns advisory text; throws on AI outage/rate-limit (degraded UI, no block).
   Future<String> askAssistant(String question);
+
+  // --- T03 student task classification (server-authoritative, intern only) ---
+  //
+  // Categories are student-defined and private; classification never changes
+  // task status. The backend is authoritative for ownership, validation,
+  // compare-and-set and AI context; the app only renders and sends intents.
+
+  /// Load my categories + the task→category map for one internship.
+  Future<ClassificationBoard> classificationBoard(String internshipId);
+
+  /// Create one of my categories (name unique per student, max 20).
+  Future<TaskCategory> createCategory(String internshipId,
+      {required String name, String? color});
+
+  /// Rename / recolor one of my categories (owner only, 404 otherwise).
+  Future<TaskCategory> renameCategory(String categoryId,
+      {String? name, String? color});
+
+  /// Reorder my categories (must contain exactly the current ones).
+  Future<List<TaskCategory>> reorderCategories(List<String> orderedIds);
+
+  /// Delete one of my categories (its tasks become unclassified).
+  Future<void> deleteCategory(String categoryId);
+
+  /// Assign or clear (null) my task's category with compare-and-set:
+  /// applies only when the task still carries [expectedCategoryId]
+  /// (null = still unclassified), unless [force] after an explicit confirm.
+  /// Never changes the task status.
+  Future<void> assignTaskCategory(String taskId,
+      {String? categoryId, String? expectedCategoryId, bool force = false});
+
+  /// AI proposals for my unclassified tasks. Advisory only — persists
+  /// nothing. Throws on AI outage/rate-limit (degraded UI, no block).
+  Future<ClassificationSuggestion> suggestCategories(String internshipId);
+
+  /// Accept classifications: per-item compare-and-set with per-item results
+  /// (never all-or-nothing, never overwrites a task classified meanwhile).
+  /// [idempotencyKey] makes a double submit replay without duplicating.
+  Future<ApplyCategoriesResult> applyCategories(String internshipId,
+      {required List<Map<String, dynamic>> items,
+      required String idempotencyKey});
+
+  /// Undo an accepted batch: restores only tasks unchanged since the batch.
+  Future<List<ApplyCategoryResult>> undoApplyBatch(String batchId);
 }
 
 /// One SUBMITTED deliverable awaiting supervisor review.

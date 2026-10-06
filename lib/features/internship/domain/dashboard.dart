@@ -37,7 +37,8 @@ class DashboardData {
   final List<InternTask> overdueTasks;
   final List<InternTask> weekTasks;
 
-  /// Completed/total across the WHOLE backend collection.
+  /// APPROVED/total across the WHOLE backend collection (BR-11/A2: a
+  /// completion awaiting review is not done, so it is never counted here).
   final int tasksCompleted;
   final int tasksTotal;
   final int extraTasks; // totalElements beyond the fetched page
@@ -60,7 +61,7 @@ class DashboardData {
   final int unreadMessages;
   final DateTime now;
 
-  /// Share of backend-reported tasks completed. Null when there is
+  /// Share of backend-reported tasks APPROVED. Null when there is
   /// nothing to measure (never fabricated).
   double? get tasksFraction =>
       tasksTotal == 0 ? null : tasksCompleted / tasksTotal;
@@ -95,6 +96,7 @@ class DashboardInput {
   final Internship internship;
   final List<InternshipAssignment> assignments;
   final List<InternTask> tasks;
+  /// Backend `totalElements` of `?status=APPROVED` (never of `COMPLETED`).
   final int tasksCompletedTotal;
   final int tasksGrandTotal;
   final List<JournalEntry> journal;

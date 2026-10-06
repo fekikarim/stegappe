@@ -8,12 +8,18 @@ import '../../../../core/theme/steg_spacing.dart';
 import '../../../../core/widgets/steg_button.dart';
 import '../../../../core/widgets/steg_dialog.dart';
 import '../../../../core/widgets/steg_fields.dart';
+import '../../../../features/auth/domain/entities/app_user.dart';
+import '../../../../features/auth/presentation/providers/auth_providers.dart';
 import '../../domain/entities/work_items.dart';
 import '../providers/workspace_providers.dart';
 import '../widgets/status_labels.dart';
 
-/// Task create/edit sheet. Backend owns validation; client pre-validates
-/// the title for immediate UX and maps server field errors inline.
+/// Task create/edit sheet.
+/// - Creation: a new task for the internship (status defaults to `todo`).
+/// - Edit: the author may edit any field; a student may only edit his *own*
+///   tasks (BR-14). The status chip set is scoped to what the current actor
+///   may legitimately write — students never see `APPROVED`/`DENIED`/`CANCELLED`
+///   (staff review decisions) and `unknown` is never part of the vocabulary.
 class TaskEditorSheet extends ConsumerStatefulWidget {
   const TaskEditorSheet({
     super.key,
@@ -62,6 +68,15 @@ class _TaskEditorSheetState extends ConsumerState<TaskEditorSheet> {
         TextEditingController(text: widget.existing?.description ?? '');
     _due = widget.existing?.dueDate;
     _status = widget.existing?.status;
+    // A student may only edit his own tasks (BR-14). A task whose
+    // authorship is unknown (legacy row, absent `createdById`) defaults to
+    // supervisor-authored — the safe answer is read-only.
+    _canEdit = _isEdit
+        ? studentOwnsTask(widget.existing!, _currentUser?.id)
+        : _isIntern;
+    // Status vocabulary is scoped to the current actor. Students never see
+    // staff-only review decisions; everyone excludes `unknown`.
+    // (_editableStatuses is a getter computed from the current actor.)
   }
 
   @override
@@ -82,6 +97,45 @@ class _TaskEditorSheetState extends ConsumerState<TaskEditorSheet> {
         _description.text != (e.description ?? '') ||
         _due != e.dueDate ||
         _status != e.status;
+  }
+
+  /// Current actor, if the auth controller has bootstrapped to an
+  /// authenticated state. `null` = not yet known (auth not ready) — in that
+  /// case authorship checks are conservative.
+  AppUser? get _currentUser {
+    final auth = ref.read(authControllerProvider);
+    return switch (auth) {
+      AuthAuthenticated(:final user) => user,
+      _ => null,
+    };
+  }
+
+  /// `true` when the cached user is an intern (student). Used to scope the
+  /// status vocabulary for the create flow and to gate edit of existing tasks.
+  bool get _isIntern =>
+      _currentUser?.roles.contains('INTERN') ?? false;
+
+  /// `true` when the current actor may change the status field at all. A
+  /// student editing his own task may still only pick from student statuses;
+  /// a supervisor/admin editing any task sees the full writable set.
+  late final bool _canEdit;
+
+
+
+  /// Student-scoped status vocabulary (BR-11/BR-14): the student's own
+  /// progress only. `APPROVED`/`DENIED`/`CANCELLED` are staff review/staff
+  /// actions and `unknown` is not part of the backend vocabulary.
+  static const _studentStatuses = [
+    TaskStatus.todo,
+    TaskStatus.inProgress,
+    TaskStatus.awaitingApproval,
+  ];
+
+  List<TaskStatus> get _editableStatuses {
+    // A student editing his own task still only sees student statuses;
+    // a supervisor/admin editing any task sees everything writable.
+    if (_isIntern) return _studentStatuses;
+    return TaskStatus.values.where((s) => s != TaskStatus.unknown).toList();
   }
 
   Future<bool> _confirmDiscard() => showStegConfirmDialog(
@@ -208,19 +262,29 @@ class _TaskEditorSheetState extends ConsumerState<TaskEditorSheet> {
                   child: Text(l10n.taskClearDate),
                 ),
             ],
-          ),
-          if (_isEdit) ...[
+          ),            if (_isEdit) ...[
             const SizedBox(height: StegSpacing.sm),
-            Wrap(
-              spacing: StegSpacing.xs,
-              children: TaskStatus.values.map((s) {
-                return ChoiceChip(
-                  label: Text(taskStatusLabel(s, l10n)),
-                  selected: _status == s,
-                  onSelected: (_) => setState(() => _status = s),
-                );
-              }).toList(),
-            ),
+            if (!_canEdit)
+              Semantics(
+                label: l10n.taskNoEditSupervisorTask,
+                child: Text(
+                  taskStatusLabel(widget.existing!.status, l10n),
+                  style: TextStyle(
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  ),
+                ),
+              )
+            else
+              Wrap(
+                spacing: StegSpacing.xs,
+                children: _editableStatuses.map((s) {
+                  return ChoiceChip(
+                    label: Text(taskStatusLabel(s, l10n)),
+                    selected: _status == s,
+                    onSelected: (_) => setState(() => _status = s),
+                  );
+                }).toList(),
+              ),
           ],
           if (_serverError != null) ...[
             const SizedBox(height: StegSpacing.sm),

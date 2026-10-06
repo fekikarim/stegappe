@@ -100,9 +100,11 @@ class ApiClient {
     String path, {
     String? bearer,
     Object? body,
+    Map<String, String>? headers,
     required T Function(dynamic json) decode,
   }) =>
-      _send<T>('POST', path, bearer: bearer, body: body, decode: decode);
+      _send<T>('POST', path,
+          bearer: bearer, body: body, headers: headers, decode: decode);
 
   Future<T> put<T>(
     String path, {
@@ -255,28 +257,30 @@ class ApiClient {
     String? bearer,
     Map<String, String>? query,
     Object? body,
+    Map<String, String>? headers,
     required T Function(dynamic json) decode,
     bool retried = false,
   }) async {
     final uri = Uri.parse('$_baseUrl$path').replace(
       queryParameters: query == null || query.isEmpty ? null : query,
     );
-    final headers = <String, String>{
+    final mergedHeaders = <String, String>{
       'Content-Type': 'application/json',
       'Accept': 'application/json',
       if (bearer != null && bearer.isNotEmpty)
         'Authorization': 'Bearer $bearer',
+      ...?headers,
     };
 
     http.Response response;
     try {
       final encoded = body == null ? null : jsonEncode(body);
       final future = switch (method) {
-        'GET' => _http.get(uri, headers: headers),
-        'POST' => _http.post(uri, headers: headers, body: encoded),
-        'PUT' => _http.put(uri, headers: headers, body: encoded),
-        'PATCH' => _http.patch(uri, headers: headers, body: encoded),
-        'DELETE' => _http.delete(uri, headers: headers),
+        'GET' => _http.get(uri, headers: mergedHeaders),
+        'POST' => _http.post(uri, headers: mergedHeaders, body: encoded),
+        'PUT' => _http.put(uri, headers: mergedHeaders, body: encoded),
+        'PATCH' => _http.patch(uri, headers: mergedHeaders, body: encoded),
+        'DELETE' => _http.delete(uri, headers: mergedHeaders),
         _ => throw ApiException.unknown('Unsupported method $method'),
       };
       response =

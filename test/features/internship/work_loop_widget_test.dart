@@ -15,6 +15,7 @@ import 'package:stegappe/features/internship/presentation/providers/workspace_pr
 import 'package:stegappe/features/internship/presentation/screens/journal_composer_screen.dart';
 import 'package:stegappe/features/internship/presentation/screens/journal_list_screen.dart';
 import 'package:stegappe/features/internship/presentation/screens/supervisor_validations_screen.dart';
+import 'package:stegappe/features/internship/presentation/screens/task_editor_sheet.dart';
 import 'package:stegappe/features/internship/presentation/screens/task_list_screen.dart';
 
 import '../../test_fixtures.dart';
@@ -52,6 +53,7 @@ Future<FakeInternshipRepository> pumpLoop(
   bool online = true,
   DateTime? selectedDay,
   List<Override> extra = const [],
+  Size? surfaceSize,
 }) async {
   final repo = fake ?? FakeInternshipRepository();
   await tester.pumpWidget(
@@ -80,6 +82,10 @@ Future<FakeInternshipRepository> pumpLoop(
       ),
     ),
   );
+  if (surfaceSize != null) {
+    tester.view.physicalSize = surfaceSize;
+    tester.view.devicePixelRatio = 1.0;
+  }
   // Drive auth to Authenticated (screens gate editing on the role).
   final ctx = tester.element(find.byType(Scaffold).first);
   await ProviderScope.containerOf(ctx)
@@ -95,12 +101,22 @@ void main() {
       tester,
     ) async {
       final fake = FakeInternshipRepository();
-      await pumpLoop(tester, const TaskListScreen(), fake: fake);
+      await pumpLoop(tester, const TaskListScreen(), fake: fake,
+          surfaceSize: const Size(800, 1200));
 
       await tester.tap(find.byTooltip('Nouvelle tâche'));
       await tester.pumpAndSettle();
       expect(find.text('Nouvelle tâche'), findsWidgets);
 
+      // The sheet's title field is the first TextField descendant of the sheet.
+      // (find.byType(TextField).first alone would match the toolbar search field.)
+      await tester.enterText(
+        find.descendant(
+          of: find.byType(TaskEditorSheet),
+          matching: find.byType(TextField),
+        ).first,
+        '',
+      );
       await tester.tap(find.text('Enregistrer'));
       await tester.pump();
       expect(find.text('Veuillez saisir un titre.'), findsOneWidget);
@@ -109,11 +125,18 @@ void main() {
 
     testWidgets('valid task is created on the server', (tester) async {
       final fake = FakeInternshipRepository();
-      await pumpLoop(tester, const TaskListScreen(), fake: fake);
+      await pumpLoop(tester, const TaskListScreen(), fake: fake,
+          surfaceSize: const Size(800, 1200));
 
       await tester.tap(find.byTooltip('Nouvelle tâche'));
       await tester.pumpAndSettle();
-      await tester.enterText(find.byType(TextField).first, 'Prep demo');
+      await tester.enterText(
+        find.descendant(
+          of: find.byType(TaskEditorSheet),
+          matching: find.byType(TextField),
+        ).first,
+        'Prep demo',
+      );
       await tester.tap(find.text('Enregistrer'));
       await tester.pumpAndSettle();
 
@@ -125,7 +148,8 @@ void main() {
       tester,
     ) async {
       final fake = FakeInternshipRepository()..failWrites = true;
-      await pumpLoop(tester, const TaskListScreen(), fake: fake);
+      await pumpLoop(tester, const TaskListScreen(), fake: fake,
+          surfaceSize: const Size(800, 1200));
 
       // Hold the server call so the optimistic frame is observable.
       fake.statusGate = Completer<void>();

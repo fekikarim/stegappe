@@ -17,8 +17,24 @@ abstract final class Endpoints {
       '/api/internships/$id/journal/entries';
   static String deliverables(String id) => '/api/internships/$id/deliverables';
   static String evaluations(String id) => '/api/internships/$id/evaluations';
-  static String classification(String id) =>
-      '/api/internships/$id/classification';
+  // --- T03 student task classification (student-defined categories) ---
+  // Note: the old `classification(id)` helper (GET .../classification, the
+  // internship-type explanation) was dead — no call site — and is deleted.
+  // The paths below serve the student's private categories (intern only).
+  static String taskCategories(String internshipId) =>
+      '/api/internships/$internshipId/task-categories';
+  static String taskCategory(String categoryId) =>
+      '/api/internships/task-categories/$categoryId';
+  static const String taskCategoriesOrder =
+      '/api/internships/task-categories/order';
+  static String taskCategoryAssign(String taskId) =>
+      '/api/internships/tasks/$taskId/category';
+  static String taskCategoriesSuggest(String internshipId) =>
+      '/api/internships/$internshipId/task-categories/suggest';
+  static String taskCategoriesApply(String internshipId) =>
+      '/api/internships/$internshipId/task-categories/apply';
+  static String taskCategoryUndo(String batchId) =>
+      '/api/internships/task-categories/apply-batches/$batchId/undo';
   static String assignments(String id) => '/api/internships/$id/assignments';
   static String task(String taskId) => '/api/internships/tasks/$taskId';
   static String taskStatus(String taskId) =>

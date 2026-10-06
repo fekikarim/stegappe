@@ -1,6 +1,7 @@
 import '../../domain/entities/evaluation.dart';
 import '../../domain/entities/internship.dart';
 import '../../domain/entities/logbook.dart';
+import '../../domain/entities/task_classification.dart';
 import '../../domain/entities/work_items.dart';
 
 DateTime? _date(dynamic v) {
@@ -40,6 +41,10 @@ InternshipAssignment assignmentFromJson(Map<String, dynamic> json) =>
       endDate: _date(json['endDate']),
     );
 
+/// `TaskResponse` → domain. Every field the board needs is read from the
+/// authoritative contract: status (all six values), the denial reason
+/// (`reviewReason`, BR-12), the review timestamp and the authorship ids that
+/// decide whether the student may edit the task (BR-14).
 InternTask taskFromJson(Map<String, dynamic> json) => InternTask(
       id: _str(json['id']),
       title: _str(json['title']),
@@ -47,6 +52,10 @@ InternTask taskFromJson(Map<String, dynamic> json) => InternTask(
       status: taskStatusFrom(json['status'] as String?),
       dueDate: _date(json['dueDate']),
       completedAt: _date(json['completedAt']),
+      createdById: json['createdById']?.toString(),
+      assignedToId: json['assignedToId']?.toString(),
+      reviewReason: json['reviewReason'] as String?,
+      reviewedAt: _date(json['reviewedAt']),
     );
 
 JournalEntry journalFromJson(Map<String, dynamic> json) => JournalEntry(
@@ -278,7 +287,11 @@ Map<String, dynamic> taskWriteJson({
   final map = <String, dynamic>{'title': title};
   if (description != null) map['description'] = description;
   if (dueDate != null) map['dueDate'] = _ymd(dueDate);
-  if (status != null) map['status'] = taskStatusToApi(status);
+  if (status != null) {
+    final api = taskStatusToApi(status);
+    // `unknown` is not a backend value: never send it.
+    if (api != null) map['status'] = api;
+  }
   return map;
 }
 
@@ -292,3 +305,118 @@ Map<String, dynamic> journalWriteJson({
       'description': description,
       'entryDate': _ymd(entryDate),
     };
+
+// --- T03 task classification (student-defined categories + AI proposals) ---
+
+TaskCategory taskCategoryFromJson(Map<String, dynamic> json) =>
+    TaskCategory(
+      id: _str(json['id']),
+      name: _str(json['name']),
+      // Unknown future colour tokens survive verbatim (tolerant parse);
+      // the chip renderer falls back to the default swatch.
+      colorToken: json['color'] as String?,
+      position: (json['position'] as num?)?.toInt() ?? 0,
+    );
+
+/// `TaskCategoryBoardResponse`: categories + task→category assignments.
+/// Malformed category rows are skipped (never a crash); malformed
+/// assignment pairs are ignored (never trusted blindly).
+ClassificationBoard classificationBoardFromJson(dynamic json) {
+  if (json is! Map<String, dynamic>) return ClassificationBoard.empty;
+  final rawCats = json['categories'];
+  final categories = <TaskCategory>[];
+  if (rawCats is List) {
+    for (final e in rawCats) {
+      if (e is! Map<String, dynamic>) continue;
+      final cat = taskCategoryFromJson(e);
+      if (cat.id.isEmpty || cat.name.trim().isEmpty) continue;
+      categories.add(cat);
+    }
+  }
+  final assignments = <String, String>{};
+  final rawAssign = json['assignments'];
+  if (rawAssign is Map) {
+    rawAssign.forEach((k, v) {
+      final taskId = k.toString();
+      final catId = v?.toString() ?? '';
+      if (taskId.isNotEmpty && catId.isNotEmpty) {
+        assignments[taskId] = catId;
+      }
+    });
+  }
+  return ClassificationBoard(categories: categories, assignments: assignments);
+}
+
+/// `CategoryProposalResponse`: tolerant — a proposal without a task id is
+/// dropped; confidence outside 0..1 is clamped.
+CategoryProposal? categoryProposalFromJson(dynamic json) {
+  if (json is! Map<String, dynamic>) return null;
+  final taskId = json['taskId']?.toString() ?? '';
+  if (taskId.isEmpty) return null;
+  final categoryId = json['categoryId']?.toString();
+  final newName = json['newCategoryName'] as String?;
+  final rawConfidence = json['confidence'];
+  double confidence = 0.5;
+  if (rawConfidence is num) {
+    confidence = rawConfidence.toDouble().clamp(0.0, 1.0);
+  }
+  return CategoryProposal(
+    taskId: taskId,
+    categoryId: (categoryId == null || categoryId.isEmpty) ? null : categoryId,
+    newCategoryName:
+        (newName == null || newName.trim().isEmpty) ? null : newName.trim(),
+    confidence: confidence,
+  );
+}
+
+List<CategoryProposal> categoryProposalsFromJson(dynamic json) {
+  final raw = json is Map<String, dynamic> ? json['proposals'] : null;
+  if (raw is! List) return const [];
+  final out = <CategoryProposal>[];
+  for (final e in raw) {
+    final p = categoryProposalFromJson(e);
+    if (p != null) out.add(p);
+  }
+  return out;
+}
+
+List<ApplyCategoryResult> applyResultsFromJson(dynamic json) {
+  final raw = json is Map<String, dynamic> ? json['items'] : null;
+  if (raw is! List) return const [];
+  return [
+    for (final e in raw)
+      if (e is Map<String, dynamic> &&
+          (e['taskId']?.toString() ?? '').isNotEmpty)
+        ApplyCategoryResult(
+          taskId: e['taskId'].toString(),
+          status: (e['status']?.toString() ?? 'UNKNOWN').toUpperCase(),
+          categoryId: e['categoryId']?.toString(),
+        ),
+  ];
+}
+
+Map<String, dynamic> assignCategoryJson({
+  String? categoryId,
+  String? expectedCategoryId,
+  bool force = false,
+}) =>
+    {
+      'categoryId': categoryId,
+      'expectedCategoryId': expectedCategoryId,
+      'force': force,
+    };
+
+Map<String, dynamic> applyItemJson({
+  required String taskId,
+  String? categoryId,
+  String? newCategoryName,
+  String? expectedCategoryId,
+}) {
+  final map = <String, dynamic>{
+    'taskId': taskId,
+    'expectedCategoryId': expectedCategoryId,
+  };
+  if (categoryId != null) map['categoryId'] = categoryId;
+  if (newCategoryName != null) map['newCategoryName'] = newCategoryName;
+  return map;
+}

@@ -62,8 +62,13 @@ class UserError {
 const String kCodeInvalidTransition = 'INVALID_STATUS_TRANSITION';
 const String kCodeMalwareScanFailed = 'MALWARE_SCAN_FAILED';
 const String kCodeAiGenerationFailed = 'AI_GENERATION_FAILED';
+const String kCodeAiUnavailable = 'AI_UNAVAILABLE';
+const String kCodeAiTemporarilyUnavailable = 'AI_TEMPORARILY_UNAVAILABLE';
+const String kCodeAiGenerationInvalid = 'AI_GENERATION_INVALID';
 const String kCodeRateLimitExceeded = 'RATE_LIMIT_EXCEEDED';
 const String kCodePasswordChangeRequired = 'PASSWORD_CHANGE_REQUIRED';
+const String kCodeCategoryChanged = 'CATEGORY_CHANGED';
+const String kCodeCategoryNoCategories = 'CATEGORY_SUGGESTION_NO_CATEGORIES';
 
 /// Maps one error to a [UserError]. Never returns a raw exception string.
 UserError userErrorOf(Object error, AppLocalizations l10n) {
@@ -89,6 +94,31 @@ UserError userErrorOf(Object error, AppLocalizations l10n) {
   }
 
   // Named business-rule codes get a precise sentence.
+  // T03: the two actionable category codes first; every other
+  // CATEGORY_*/APPLY_* validation (name, duplicate, colour, limit, reorder,
+  // apply shape) shares one honest sentence — the backend message is never
+  // rendered raw.
+  if (code == kCodeCategoryChanged) {
+    return UserError(
+      message: l10n.errCategoryChanged,
+      traceId: traceId,
+      retryable: false,
+    );
+  }
+  if (code == kCodeCategoryNoCategories) {
+    return UserError(
+      message: l10n.errCategoryNoCategories,
+      traceId: traceId,
+      retryable: false,
+    );
+  }
+  if (code.startsWith('CATEGORY_') || code.startsWith('APPLY_')) {
+    return UserError(
+      message: l10n.errCategoryInvalid,
+      traceId: traceId,
+      retryable: false,
+    );
+  }
   switch (code) {
     case kCodeInvalidTransition:
       return UserError(
@@ -103,6 +133,9 @@ UserError userErrorOf(Object error, AppLocalizations l10n) {
         retryable: false,
       );
     case kCodeAiGenerationFailed:
+    case kCodeAiUnavailable:
+    case kCodeAiTemporarilyUnavailable:
+    case kCodeAiGenerationInvalid:
       return UserError(
         message: l10n.errAiUnavailable,
         traceId: traceId,

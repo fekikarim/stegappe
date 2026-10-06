@@ -7,6 +7,7 @@ import '../../domain/entities/evaluation.dart';
 import '../../domain/entities/internship.dart';
 import '../../domain/entities/logbook.dart';
 import '../../domain/entities/work_items.dart';
+import '../../domain/task_board.dart';
 
 /// Localized labels for backend-owned enums. Centralized so no screen
 /// hard-codes status wording (UI_UX.md §8.1, §9.4).
@@ -43,24 +44,76 @@ StegStatusKind internshipStatusKind(InternshipStatus status) =>
       InternshipStatus.archived => StegStatusKind.neutral,
     };
 
+/// Localized status wording. `COMPLETED` reads "awaiting approval", never
+/// "done" (BR-11/D6); an unknown value says so instead of guessing.
 String taskStatusLabel(TaskStatus status, AppLocalizations l10n) =>
     switch (status) {
       TaskStatus.todo => l10n.tsTodo,
       TaskStatus.inProgress => l10n.tsInProgress,
-      TaskStatus.completed => l10n.tsCompleted,
+      TaskStatus.awaitingApproval => l10n.tsAwaitingApproval,
+      TaskStatus.approved => l10n.tsApproved,
+      TaskStatus.denied => l10n.tsDenied,
       TaskStatus.cancelled => l10n.tsCancelled,
+      TaskStatus.unknown => l10n.tsUnknown,
     };
 
+/// Semantic tone per status (the chip always carries the label too, so the
+/// meaning never depends on colour alone). Overdue only tints tasks that are
+/// still the student's to do.
 StegStatusKind taskStatusKind(TaskStatus status, {required bool overdue}) {
-  if (overdue && status != TaskStatus.completed) {
+  if (overdue &&
+      (status == TaskStatus.todo || status == TaskStatus.inProgress)) {
     return StegStatusKind.error;
   }
   return switch (status) {
     TaskStatus.todo => StegStatusKind.neutral,
     TaskStatus.inProgress => StegStatusKind.info,
-    TaskStatus.completed => StegStatusKind.success,
+    // Work is finished but not accepted: a decision is pending.
+    TaskStatus.awaitingApproval => StegStatusKind.warning,
+    TaskStatus.approved => StegStatusKind.success,
+    // Denied carries the supervisor's reason: the student must act.
+    TaskStatus.denied => StegStatusKind.error,
     TaskStatus.cancelled => StegStatusKind.neutral,
+    TaskStatus.unknown => StegStatusKind.warning,
   };
+}
+
+/// Board section wording (ST-TASK-01): the attention section is the one the
+/// app used to hide entirely.
+String taskGroupLabel(TaskGroup group, AppLocalizations l10n) =>
+    switch (group) {
+      TaskGroup.todo => l10n.tsTodo,
+      TaskGroup.inProgress => l10n.tsInProgress,
+      TaskGroup.attention => l10n.taskGroupAttention,
+      TaskGroup.done => l10n.filterDone,
+      TaskGroup.cancelled => l10n.tsCancelled,
+      TaskGroup.unknown => l10n.tsUnknown,
+    };
+
+StegStatusKind taskGroupKind(TaskGroup group) => switch (group) {
+      TaskGroup.todo => StegStatusKind.neutral,
+      TaskGroup.inProgress => StegStatusKind.info,
+      TaskGroup.attention => StegStatusKind.warning,
+      TaskGroup.done => StegStatusKind.success,
+      TaskGroup.cancelled => StegStatusKind.neutral,
+      TaskGroup.unknown => StegStatusKind.warning,
+    };
+
+/// Label of the button that applies [to] from [from] — the single place that
+/// says what a student action is called. Completion is offered as "submit for
+/// review", never as a final done (BR-11); withdrawing a completion, resuming a
+/// denied task and starting a to-do each have their own wording.
+String taskTransitionLabel(
+        TaskStatus from, TaskStatus to, AppLocalizations l10n) {
+  if (to == TaskStatus.awaitingApproval) return l10n.taskSubmitForReview;
+  if (to == TaskStatus.inProgress) {
+    return switch (from) {
+      TaskStatus.awaitingApproval => l10n.taskReopen,
+      TaskStatus.denied => l10n.taskBackToProgress,
+      _ => l10n.taskSetInProgress,
+    };
+  }
+  return taskStatusLabel(to, l10n);
 }
 
 String journalStatusLabel(JournalStatus status, AppLocalizations l10n) =>

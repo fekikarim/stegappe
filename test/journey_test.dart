@@ -77,11 +77,14 @@ void main() {
       dueDate: DateTime.now(),
     );
     expect(created.status, TaskStatus.todo);
+    // The student's "done" is a submit-for-review: the task enters
+    // `awaitingApproval` (`COMPLETED` on the wire) and only the supervisor's
+    // review can approve it (D6/BR-11).
     final done = await internshipRepo.updateTaskStatus(
       created.id,
-      TaskStatus.completed,
+      TaskStatus.awaitingApproval,
     );
-    expect(done.status, TaskStatus.completed);
+    expect(done.status, TaskStatus.awaitingApproval);
 
     // 4. Journal: record what actually happened, then submit.
     final entry = await internshipRepo.createJournal(

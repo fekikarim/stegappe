@@ -6,6 +6,7 @@ import 'package:stegappe/features/internship/domain/dashboard.dart';
 import 'package:stegappe/features/internship/domain/entities/evaluation.dart';
 import 'package:stegappe/features/internship/domain/entities/internship.dart';
 import 'package:stegappe/features/internship/domain/entities/logbook.dart';
+import 'package:stegappe/features/internship/domain/entities/task_classification.dart';
 import 'package:stegappe/features/internship/domain/entities/work_items.dart';
 import 'package:stegappe/features/internship/domain/repositories/internship_repository.dart';
 
@@ -35,7 +36,7 @@ List<InternTask> fixtureTasks(DateTime now) => [
       InternTask(
           id: 't-week', title: 'Week task', status: TaskStatus.todo, dueDate: day(now, 3)),
       InternTask(
-          id: 't-done', title: 'Done task', status: TaskStatus.completed, dueDate: day(now, -5)),
+          id: 't-done', title: 'Done task', status: TaskStatus.approved, dueDate: day(now, -5)),
     ];
 
 List<JournalEntry> fixtureJournal(DateTime now) => [
@@ -751,6 +752,150 @@ class FakeInternshipRepository implements InternshipRepository {
   Future<String> askAssistant(String question) async {
     if (failAi) throw Exception('AI unavailable');
     return 'Réponse de test (indicative) : $question';
+  }
+
+  // --- T03 classification fakes (server-authoritative behavior, scripted) ---
+
+  ClassificationBoard fakeBoard = ClassificationBoard.empty;
+  List<CategoryProposal> fakeProposals = [];
+  int fakeUnclassifiedCount = 0;
+  bool failClassificationWrites = false;
+  bool failSuggest = false;
+  Completer<void>? suggestGate;
+  int suggestCalls = 0;
+  int applyCalls = 0;
+  final List<Map<String, dynamic>> appliedItems = [];
+  final List<String> undoneBatches = [];
+
+  @override
+  Future<ClassificationBoard> classificationBoard(String internshipId) async {
+    if (noInternship) throw StateError('no-internship');
+    return fakeBoard;
+  }
+
+  @override
+  Future<TaskCategory> createCategory(String internshipId,
+      {required String name, String? color}) async {
+    if (failClassificationWrites) throw Exception('offline');
+    final created = TaskCategory(
+        id: 'cat-${fakeBoard.categories.length + 1}',
+        name: name,
+        colorToken: color,
+        position: fakeBoard.categories.length);
+    fakeBoard = ClassificationBoard(
+        categories: [...fakeBoard.categories, created],
+        assignments: fakeBoard.assignments);
+    return created;
+  }
+
+  @override
+  Future<TaskCategory> renameCategory(String categoryId,
+      {String? name, String? color}) async {
+    if (failClassificationWrites) throw Exception('offline');
+    final updated = [
+      for (final c in fakeBoard.categories)
+        if (c.id == categoryId)
+          TaskCategory(
+              id: c.id,
+              name: name ?? c.name,
+              colorToken: color ?? c.colorToken,
+              position: c.position)
+        else
+          c,
+    ];
+    fakeBoard =
+        ClassificationBoard(categories: updated, assignments: fakeBoard.assignments);
+    return updated.firstWhere((c) => c.id == categoryId,
+        orElse: () => TaskCategory(id: categoryId, name: name ?? categoryId));
+  }
+
+  @override
+  Future<List<TaskCategory>> reorderCategories(List<String> orderedIds) async {
+    if (failClassificationWrites) throw Exception('offline');
+    final byId = {for (final c in fakeBoard.categories) c.id: c};
+    final ordered = [
+      for (var i = 0; i < orderedIds.length; i++)
+        if (byId[orderedIds[i]] case final c?)
+          c.copyWith(position: i),
+    ];
+    fakeBoard =
+        ClassificationBoard(categories: ordered, assignments: fakeBoard.assignments);
+    return ordered;
+  }
+
+  @override
+  Future<void> deleteCategory(String categoryId) async {
+    if (failClassificationWrites) throw Exception('offline');
+    fakeBoard = ClassificationBoard(
+      categories: [
+        for (final c in fakeBoard.categories)
+          if (c.id != categoryId) c,
+      ],
+      assignments: Map.fromEntries(fakeBoard.assignments.entries
+          .where((e) => e.value != categoryId)),
+    );
+  }
+
+  @override
+  Future<void> assignTaskCategory(String taskId,
+      {String? categoryId,
+      String? expectedCategoryId,
+      bool force = false}) async {
+    if (failClassificationWrites) throw Exception('offline');
+    final assignments = Map<String, String>.of(fakeBoard.assignments);
+    if (categoryId == null) {
+      assignments.remove(taskId);
+    } else {
+      assignments[taskId] = categoryId;
+    }
+    fakeBoard =
+        ClassificationBoard(categories: fakeBoard.categories, assignments: assignments);
+  }
+
+  @override
+  Future<ClassificationSuggestion> suggestCategories(
+      String internshipId) async {
+    suggestCalls++;
+    final gate = suggestGate;
+    if (gate != null) await gate.future;
+    if (failSuggest) throw Exception('AI unavailable');
+    return ClassificationSuggestion(
+        proposals: fakeProposals,
+        unclassifiedCount: fakeUnclassifiedCount,
+        capped: false);
+  }
+
+  @override
+  Future<ApplyCategoriesResult> applyCategories(String internshipId,
+      {required List<Map<String, dynamic>> items,
+      required String idempotencyKey}) async {
+    applyCalls++;
+    if (failClassificationWrites) throw Exception('offline');
+    appliedItems.addAll(items);
+    final assignments = Map<String, String>.of(fakeBoard.assignments);
+    final results = <ApplyCategoryResult>[];
+    for (final item in items) {
+      final taskId = item['taskId'] as String;
+      final categoryId = item['categoryId'] as String?;
+      if (categoryId == null) {
+        results.add(ApplyCategoryResult(
+            taskId: taskId, status: 'INVALID_CATEGORY'));
+        continue;
+      }
+      assignments[taskId] = categoryId;
+      results.add(ApplyCategoryResult(
+          taskId: taskId, status: 'APPLIED', categoryId: categoryId));
+    }
+    fakeBoard =
+        ClassificationBoard(categories: fakeBoard.categories, assignments: assignments);
+    return ApplyCategoriesResult(batchId: 'batch-1', items: results);
+  }
+
+  @override
+  Future<List<ApplyCategoryResult>> undoApplyBatch(String batchId) async {
+    if (failClassificationWrites) throw Exception('offline');
+    undoneBatches.add(batchId);
+    return const [];
   }
 }
 
