@@ -6,6 +6,8 @@ import '../../../../core/network/paged.dart';
 import '../../domain/entities/evaluation.dart';
 import '../../domain/entities/internship.dart';
 import '../../domain/entities/logbook.dart';
+import '../../domain/entities/supervisor_tasks.dart';
+import '../../domain/entities/task_drafts.dart';
 import '../../domain/entities/task_classification.dart';
 import '../../domain/entities/work_items.dart';
 import '../models/internship_dtos.dart';
@@ -50,7 +52,8 @@ class InternshipRemoteDataSource {
   }
 
   Future<InternTask> updateTaskStatus(
-      String taskId, TaskStatus status, String? bearer) {
+      String taskId, TaskStatus status, String? bearer,
+      {String? idempotencyKey}) {
     final api = taskStatusToApi(status);
     if (api == null) {
       // T02/BR-10: `unknown` is not part of the backend vocabulary and is
@@ -60,6 +63,9 @@ class InternshipRemoteDataSource {
     return _client.patch(Endpoints.taskStatus(taskId),
         bearer: bearer,
         query: {'status': api},
+        headers: idempotencyKey == null
+            ? null
+            : {'X-Idempotency-Key': idempotencyKey},
         decode: (j) => taskFromJson(_map(j)));
   }
 
@@ -71,11 +77,15 @@ class InternshipRemoteDataSource {
     required String title,
     String? description,
     DateTime? dueDate,
+    DateTime? visibleFrom,
   }) =>
       _client.post(Endpoints.internshipTasks(internshipId),
           bearer: bearer,
           body: taskWriteJson(
-              title: title, description: description, dueDate: dueDate),
+              title: title,
+              description: description,
+              dueDate: dueDate,
+              visibleFrom: visibleFrom),
           decode: (j) => taskFromJson(_map(j)));
 
   Future<InternTask> updateTask(
@@ -85,6 +95,7 @@ class InternshipRemoteDataSource {
     String? description,
     DateTime? dueDate,
     TaskStatus? status,
+    DateTime? visibleFrom,
   }) =>
       _client.put(Endpoints.task(taskId),
           bearer: bearer,
@@ -92,7 +103,8 @@ class InternshipRemoteDataSource {
               title: title,
               description: description,
               dueDate: dueDate,
-              status: status),
+              status: status,
+              visibleFrom: visibleFrom),
           decode: (j) => taskFromJson(_map(j)));
 
   // --- D2 writes: journal (intern: create + submit) ---
@@ -628,4 +640,163 @@ extension TaskClassificationDataSource on InternshipRemoteDataSource {
           bearer: bearer,
           decode: (j) => applyResultsFromJson(
               InternshipRemoteDataSource._map(j)));
+}
+
+extension SupervisorTaskDataSource on InternshipRemoteDataSource {
+  // --- T04 supervisor lifecycle (staff, scoped + validated server-side) ---
+
+  Future<void> deleteTask(String taskId, String? bearer) =>
+      _client.delete<void>(Endpoints.task(taskId),
+          bearer: bearer, decode: (_) {});
+
+  /// Review a COMPLETED task: approve (→ APPROVED) or deny with a required
+  /// reason (→ DENIED). The backend refuses anything else.
+  Future<InternTask> reviewTask(
+    String taskId,
+    String? bearer, {
+    required bool approve,
+    String? comment,
+  }) =>
+      _client.post(Endpoints.taskReview(taskId),
+          bearer: bearer,
+          body: taskReviewJson(approve: approve, comment: comment),
+          decode: (j) => taskFromJson(InternshipRemoteDataSource._map(j)));
+
+  /// Atomic bulk (all-or-nothing server-side) with a client idempotency key
+  /// so a double submit replays instead of duplicating.
+  Future<SupervisorBulkResult> bulkTasks(
+    String? bearer, {
+    required List<Map<String, dynamic>> mutations,
+    required String idempotencyKey,
+  }) =>
+      _client.post(Endpoints.tasksBulk,
+          bearer: bearer,
+          headers: {'X-Idempotency-Key': idempotencyKey},
+          body: mutations,
+          decode: (j) => supervisorBulkResultFromJson(j));
+}
+
+extension TaskDraftDataSource on InternshipRemoteDataSource {
+  // --- T05 supervisor AI task drafts (staff, scoped server-side) ---
+
+  /// Generate drafts from a specifications PDF (multipart). Progress
+  /// reports upload bytes; the server caps (25 MB, 50 pages, magic bytes).
+  Future<List<TaskDraft>> generateDraftsFromPdf(
+    String internshipId,
+    String? bearer, {
+    required String fileName,
+    required Uint8List bytes,
+    void Function(int sent, int total)? onProgress,
+  }) =>
+      _client.uploadMultipart(Endpoints.taskDraftsGenerate,
+          bearer: bearer,
+          fields: {'internshipId': internshipId},
+          fileField: 'file',
+          fileName: fileName,
+          contentType: 'application/pdf',
+          bytes: bytes,
+          onProgress: onProgress,
+          decode: (j) => taskDraftListFromJson(j));
+
+  /// Generate drafts from pasted specification text (same pipeline).
+  Future<List<TaskDraft>> generateDraftsFromText(
+    String internshipId,
+    String? bearer, {
+    required String specText,
+  }) =>
+      _client.post(Endpoints.taskDraftsGenerateFromText,
+          bearer: bearer,
+          body: {'internshipId': internshipId, 'specText': specText},
+          decode: (j) => taskDraftListFromJson(j));
+
+  /// My drafts, optionally for one reference internship.
+  Future<List<TaskDraft>> listDrafts(
+    String? bearer, {
+    String? internshipId,
+  }) =>
+      _client.get(Endpoints.taskDrafts,
+          bearer: bearer,
+          query: internshipId == null ? null : {'internshipId': internshipId},
+          decode: (j) {
+        if (j is List) return taskDraftListFromJson(j);
+        return const <TaskDraft>[];
+      });
+
+  /// Manual draft (works even when AI is unavailable).
+  Future<TaskDraft> addDraftManual(
+    String? bearer, {
+    required String referenceInternshipId,
+    required String title,
+    String? description,
+    DateTime? dueDate,
+  }) =>
+      _client.post(Endpoints.taskDrafts,
+          bearer: bearer,
+          body: manualDraftJson(
+              referenceInternshipId: referenceInternshipId,
+              title: title,
+              description: description,
+              dueDate: dueDate),
+          decode: (j) {
+        final draft =
+            taskDraftFromJson(InternshipRemoteDataSource._map(j));
+        if (draft == null) throw StateError('draft-malformed');
+        return draft;
+      });
+
+  Future<TaskDraft> updateDraft(
+    String draftId,
+    String? bearer, {
+    String? title,
+    String? description,
+    DateTime? dueDate,
+  }) =>
+      _client.put(Endpoints.taskDraft(draftId),
+          bearer: bearer,
+          body: updateDraftJson(
+              title: title, description: description, dueDate: dueDate),
+          decode: (j) {
+        final draft =
+            taskDraftFromJson(InternshipRemoteDataSource._map(j));
+        if (draft == null) throw StateError('draft-malformed');
+        return draft;
+      });
+
+  /// AI revision of one draft from a free-text instruction.
+  Future<TaskDraft> reviseDraft(
+    String draftId,
+    String? bearer, {
+    required String instruction,
+  }) =>
+      _client.post(Endpoints.taskDraftRevise(draftId),
+          bearer: bearer,
+          body: {'instruction': instruction},
+          decode: (j) {
+        final draft =
+            taskDraftFromJson(InternshipRemoteDataSource._map(j));
+        if (draft == null) throw StateError('draft-malformed');
+        return draft;
+      });
+
+  Future<void> deleteDraft(String draftId, String? bearer) =>
+      _client.delete<void>(Endpoints.taskDraft(draftId),
+          bearer: bearer, decode: (_) {});
+
+  /// Atomic bulk-add of approved drafts (all-or-nothing server-side) with
+  /// a client idempotency key. Optional batch schedule (T04 D8 rule).
+  Future<DraftBulkResult> bulkAddDrafts(
+    String? bearer, {
+    required List<String> draftIds,
+    required List<String> internshipIds,
+    required String idempotencyKey,
+    DateTime? visibleFrom,
+  }) =>
+      _client.post(Endpoints.taskDraftsBulkAdd,
+          bearer: bearer,
+          headers: {'X-Idempotency-Key': idempotencyKey},
+          body: bulkAddDraftsJson(
+              draftIds: draftIds,
+              internshipIds: internshipIds,
+              visibleFrom: visibleFrom),
+          decode: (j) => draftBulkResultFromJson(j));
 }

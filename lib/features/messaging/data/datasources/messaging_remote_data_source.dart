@@ -56,10 +56,14 @@ class MessagingRemoteDataSource {
     String? bearer,
     String content, {
     String? selfUserId,
+    String? idempotencyKey,
   }) =>
       _client.post(Endpoints.conversationMessages(conversationId),
           bearer: bearer,
           body: {'content': content},
+          headers: idempotencyKey == null
+              ? null
+              : {'X-Idempotency-Key': idempotencyKey},
           decode: (j) =>
               messageFromJson(_map(j), selfUserId: selfUserId));
 

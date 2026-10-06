@@ -47,6 +47,7 @@ NotificationRoute? resolveNotificationRoute(
     case NotificationType.taskUpdated:
     case NotificationType.taskDeleted:
     case NotificationType.taskStatusChanged:
+    case NotificationType.scheduledTaskVisible:
       return switch (role) {
         // The student lands on his task board; the supervisor on his interns
         // (the per-intern task list is reachable from there).

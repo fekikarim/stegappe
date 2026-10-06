@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../core/connectivity/connectivity_service.dart';
 import '../../../../core/l10n/app_localizations.dart';
+import '../../../../core/network/api_exception.dart';
 import '../../../../core/network/error_messages.dart';
+import '../../../../core/offline/pending_writes.dart';
 import '../../../../core/theme/steg_spacing.dart';
 import '../../../../core/widgets/steg_status_chip.dart';
 import '../../domain/entities/task_classification.dart';
@@ -71,6 +74,22 @@ class _TaskRowState extends ConsumerState<TaskRow> {
     if (_syncing) return;
     final target = studentToggleTarget(_shown);
     if (target == null) return;
+    // T06/D12 offline path: accept into the visible persisted queue instead
+    // of failing — the flush applies it exactly once with its own key.
+    if (!ref.read(isOnlineProvider)) {
+      final ok = await ref
+          .read(pendingWritesProvider.notifier)
+          .enqueueStatus(taskId: widget.task.id, status: target);
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(ok
+              ? AppLocalizations.of(context).offlineQueued
+              : AppLocalizations.of(context).queueFull),
+        ),
+      );
+      return;
+    }
     setState(() {
       _optimistic = target;
       _syncing = true;
@@ -82,8 +101,32 @@ class _TaskRowState extends ConsumerState<TaskRow> {
       ref
         ..invalidate(taskListProvider)
         ..invalidate(dashboardProvider);
-    } on Exception catch (e) {
+    } on ApiException catch (e) {
       // Roll back: never display an unconfirmed state.
+      if (mounted) {
+        setState(() => _optimistic = null);
+        if (e.kind == ApiErrorKind.network) {
+          // Lost connectivity mid-write: queue it instead of dropping it.
+          final ok = await ref
+              .read(pendingWritesProvider.notifier)
+              .enqueueStatus(taskId: widget.task.id, status: target);
+          if (!mounted) return;
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(ok
+                  ? AppLocalizations.of(context).offlineQueued
+                  : AppLocalizations.of(context).queueFull),
+            ),
+          );
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(context.userError(e).message),
+            ),
+          );
+        }
+      }
+    } on Exception catch (e) {
       if (mounted) {
         setState(() => _optimistic = null);
         ScaffoldMessenger.of(context).showSnackBar(
@@ -189,9 +232,27 @@ class _TaskRowState extends ConsumerState<TaskRow> {
                 ),
                 const SizedBox(width: StegSpacing.xs),
                 Flexible(
-                  child: StegStatusChip(
-                    label: taskStatusLabel(shown, l10n),
-                    kind: taskStatusKind(shown, overdue: overdue),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      StegStatusChip(
+                        label: taskStatusLabel(shown, l10n),
+                        kind: taskStatusKind(shown, overdue: overdue),
+                      ),
+                      // T06/D12: a visibly pending queued write — never shown
+                      // as sent. The chip disappears when the flush lands.
+                      if (ref.watch(pendingWritesProvider.select(
+                          (s) => s.hasQueuedStatus(widget.task.id))))
+                        Padding(
+                          padding:
+                              const EdgeInsets.only(top: 2),
+                          child: StegStatusChip(
+                            label: l10n.pendingLabel,
+                            kind: StegStatusKind.info,
+                          ),
+                        ),
+                    ],
                   ),
                 ),
                 if (widget.onOpen != null)

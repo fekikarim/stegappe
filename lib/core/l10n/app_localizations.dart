@@ -288,6 +288,230 @@ class AppLocalizations {
       'fr': 'Créez d’abord une catégorie avant de demander une suggestion.',
       'en': 'Create a category first before asking for a suggestion.',
       'ar': 'أنشئ فئة أولاً قبل طلب الاقتراح.'},
+    // --- T04 supervisor task management ---
+    'supTasksTitle': {
+      'fr': 'Tâches des stagiaires',
+      'en': 'Interns’ tasks',
+      'ar': 'مهام المتربصين'},
+    'supNoStudents': {
+      'fr': 'Aucun stagiaire suivi',
+      'en': 'No supervised interns',
+      'ar': 'لا يوجد متربصون تحت إشرافك'},
+    'supNoStudentsHint': {
+      'fr': 'Les stagiaires qui vous sont confiés apparaîtront ici.',
+      'en': 'Interns assigned to you will appear here.',
+      'ar': 'سيظهر هنا المتربصون المسندون إليك.'},
+    'supTaskNew': {
+      'fr': 'Nouvelle tâche', 'en': 'New task', 'ar': 'مهمة جديدة'},
+    'supTaskEdit': {
+      'fr': 'Modifier la tâche', 'en': 'Edit task', 'ar': 'تعديل المهمة'},
+    'supTaskDelete': {
+      'fr': 'Supprimer', 'en': 'Delete', 'ar': 'حذف'},
+    'supTaskDeleteTitle': {
+      'fr': 'Supprimer la tâche ?',
+      'en': 'Delete the task?',
+      'ar': 'حذف المهمة؟'},
+    'supTaskDeleteConfirm': {
+      'fr': 'Supprimer « {title} » pour {name} ? L’étudiant en sera notifié.',
+      'en': 'Delete "{title}" for {name}? The student will be notified.',
+      'ar': 'حذف "{title}" لـ {name}؟ سيتم إشعار الطالب.'},
+    'supTaskCreated': {
+      'fr': 'Tâche créée. L’étudiant en a été notifié.',
+      'en': 'Task created. The student was notified.',
+      'ar': 'تم إنشاء المهمة. تم إشعار الطالب.'},
+    'supTaskUpdated': {
+      'fr': 'Tâche mise à jour.', 'en': 'Task updated.', 'ar': 'تم تحديث المهمة.'},
+    'supTaskDeleted': {
+      'fr': 'Tâche supprimée.', 'en': 'Task deleted.', 'ar': 'تم حذف المهمة.'},
+    'supReviewApprove': {
+      'fr': 'Approuver', 'en': 'Approve', 'ar': 'مصادقة'},
+    'supReviewDeny': {
+      'fr': 'Refuser', 'en': 'Deny', 'ar': 'رفض'},
+    'supReviewTitle': {
+      'fr': 'Examiner le travail',
+      'en': 'Review the work',
+      'ar': 'مراجعة العمل'},
+    'supReviewApproved': {
+      'fr': 'Travail approuvé.', 'en': 'Work approved.', 'ar': 'تمت المصادقة على العمل.'},
+    'supReviewDenied': {
+      'fr': 'Travail refusé avec motif.',
+      'en': 'Work denied with a reason.',
+      'ar': 'تم رفض العمل مع ذكر السبب.'},
+    'supDenyReasonLabel': {
+      'fr': 'Motif du refus', 'en': 'Reason for denial', 'ar': 'سبب الرفض'},
+    'supDenyReasonHint': {
+      'fr': 'Expliquez ce qu’il faut reprendre…',
+      'en': 'Explain what needs rework…',
+      'ar': 'اشرح ما يجب إعادة العمل عليه…'},
+    'supNeedsReview': {
+      'fr': 'À examiner', 'en': 'Needs review', 'ar': 'يحتاج إلى مراجعة'},
+    'supScheduled': {
+      'fr': 'Planifiée', 'en': 'Scheduled', 'ar': 'مجدولة'},
+    'supAppearsOn': {
+      'fr': 'Visible le {d}', 'en': 'Appears {d}', 'ar': 'تظهر بتاريخ {d}'},
+    'supScheduleLabel': {
+      'fr': 'Apparaît le', 'en': 'Appears on', 'ar': 'تظهر بتاريخ'},
+    'supScheduleNone': {
+      'fr': 'Immédiatement', 'en': 'Immediately', 'ar': 'فوراً'},
+    'supSchedulePickDate': {
+      'fr': 'Choisir la date', 'en': 'Pick a date', 'ar': 'اختيار التاريخ'},
+    'supSchedulePickTime': {
+      'fr': 'Choisir l’heure', 'en': 'Pick a time', 'ar': 'اختيار الوقت'},
+    'supScheduleClear': {
+      'fr': 'Rendre visible immédiatement',
+      'en': 'Make visible immediately',
+      'ar': 'جعلها ظاهرة فوراً'},
+    'supScheduleOutsideNote': {
+      'fr': 'La date doit se situer pendant le stage (heure de Tunis).',
+      'en': 'The date must fall within the internship (Tunis time).',
+      'ar': 'يجب أن يكون التاريخ خلال فترة التربص (توقيت تونس).'},
+    'supBulkTitle': {
+      'fr': 'Ajouter à plusieurs stagiaires',
+      'en': 'Add to several interns',
+      'ar': 'إضافة لعدة متربصين'},
+    'supBulkStudents': {
+      'fr': '{n} stagiaire(s)', 'en': '{n} intern(s)', 'ar': '{n} من المتربصين'},
+    'supBulkPlan': {
+      'fr': '{t} tâche(s) × {s} stagiaire(s)',
+      'en': '{t} task(s) × {s} intern(s)',
+      'ar': '{t} من المهام × {s} من المتربصين'},
+    'supBulkSubmit': {
+      'fr': 'Ajouter les tâches', 'en': 'Add the tasks', 'ar': 'إضافة المهام'},
+    'supBulkDone': {
+      'fr': '{n} tâche(s) créée(s).',
+      'en': '{n} task(s) created.',
+      'ar': 'تم إنشاء {n} من المهام.'},
+    'supBulkAddTask': {
+      'fr': 'Ajouter une tâche au lot',
+      'en': 'Add a task to the batch',
+      'ar': 'إضافة مهمة إلى الدفعة'},
+    'supBulkEmpty': {
+      'fr': 'Composez au moins une tâche pour au moins un stagiaire.',
+      'en': 'Compose at least one task for at least one intern.',
+      'ar': 'أنشئ مهمة واحدة على الأقل لمتربص واحد على الأقل.'},
+    'supNeedsConnection': {
+      'fr': 'La connexion est nécessaire pour envoyer le lot.',
+      'en': 'A connection is required to send the batch.',
+      'ar': 'الاتصال ضروري لإرسال الدفعة.'},
+    'supManageTasks': {
+      'fr': 'Gérer les tâches', 'en': 'Manage tasks', 'ar': 'إدارة المهام'},
+    'supAddTaskFor': {
+      'fr': 'Ajouter une tâche', 'en': 'Add a task', 'ar': 'إضافة مهمة'},
+    'errReviewReason': {
+      'fr': 'Un motif est obligatoire pour refuser un travail.',
+      'en': 'A reason is required to deny work.',
+      'ar': 'السبب مطلوب لرفض العمل.'},
+    'errTaskNotCompleted': {
+      'fr': 'Seul un travail terminé peut être examiné.',
+      'en': 'Only completed work can be reviewed.',
+      'ar': 'لا يمكن مراجعة إلا العمل المنجز.'},
+    'errScheduleOutsidePeriod': {
+      'fr': 'La date planifiée doit se situer pendant le stage.',
+      'en': 'The scheduled date must fall within the internship.',
+      'ar': 'يجب أن يكون التاريخ المجدول خلال فترة التربص.'},
+    'errBulkInvalid': {
+      'fr': 'Le lot est refusé : rien n’a été appliqué. Corrigez et renvoyez.',
+      'en': 'The batch was refused: nothing was applied. Fix and resend.',
+      'ar': 'تم رفض الدفعة: لم يُطبق أي شيء. صحح وأعد الإرسال.'},
+    // --- T05 supervisor AI task drafts (proposals, never real tasks) ---
+    'aiDraftTitle': {
+      'fr': 'Générer des tâches avec l’IA',
+      'en': 'Generate tasks with AI',
+      'ar': 'إنشاء مهام بالذكاء الاصطناعي'},
+    'aiDraftProposalNote': {
+      'fr': 'L’IA propose des brouillons : rien ne devient une tâche sans votre validation.',
+      'en': 'AI proposes drafts: nothing becomes a task without your approval.',
+      'ar': 'يقترح الذكاء الاصطناعي مسودات: لا شيء يصبح مهمة دون موافقتك.'},
+    'aiDraftAiNote': {
+      'fr': 'Le contenu sert uniquement à proposer des tâches.',
+      'en': 'The content is only used to propose tasks.',
+      'ar': 'يُستخدم المحتوى فقط لاقتراح المهام.'},
+    'aiDraftPdfTab': {'fr': 'Document PDF', 'en': 'PDF document', 'ar': 'مستند PDF'},
+    'aiDraftTextTab': {'fr': 'Décrire', 'en': 'Describe', 'ar': 'الوصف'},
+    'aiDraftTextLabel': {
+      'fr': 'Description du travail à découper en tâches',
+      'en': 'Description of the work to split into tasks',
+      'ar': 'وصف العمل المطلوب تقسيمه إلى مهام'},
+    'aiDraftTextHint': {
+      'fr': 'Ex. Préparer le banc d’essai, rédiger la procédure…',
+      'en': 'E.g. Set up the test bench, write the procedure…',
+      'ar': 'مثال: تجهيز منصة الاختبار، كتابة الإجراء…'},
+    'aiDraftPickPdf': {
+      'fr': 'Choisir un PDF', 'en': 'Pick a PDF', 'ar': 'اختيار ملف PDF'},
+    'aiDraftChangePdf': {
+      'fr': 'Changer de PDF', 'en': 'Change PDF', 'ar': 'تغيير ملف PDF'},
+    'aiDraftGenerate': {
+      'fr': 'Générer', 'en': 'Generate', 'ar': 'إنشاء'},
+    'aiDraftGenerating': {
+      'fr': 'L’IA analyse le contenu…',
+      'en': 'AI is analyzing the content…',
+      'ar': 'يحلل الذكاء الاصطناعي المحتوى…'},
+    'aiDraftCancel': {
+      'fr': 'Arrêter d’attendre', 'en': 'Stop waiting', 'ar': 'التوقف عن الانتظار'},
+    'aiDraftEmpty': {
+      'fr': 'Aucun brouillon pour le moment',
+      'en': 'No drafts yet',
+      'ar': 'لا توجد مسودات بعد'},
+    'aiDraftEmptyHint': {
+      'fr': 'Fournissez un PDF ou une description, puis lancez la génération.',
+      'en': 'Provide a PDF or a description, then start generation.',
+      'ar': 'قدم ملف PDF أو وصفاً، ثم ابدأ الإنشاء.'},
+    'aiDraftManualAdd': {
+      'fr': 'Ajouter un brouillon à la main',
+      'en': 'Add a draft manually',
+      'ar': 'إضافة مسودة يدوياً'},
+    'aiDraftBadge': {
+      'fr': 'Brouillon', 'en': 'Draft', 'ar': 'مسودة'},
+    'aiDraftEdit': {
+      'fr': 'Modifier', 'en': 'Edit', 'ar': 'تعديل'},
+    'aiDraftRevise': {
+      'fr': 'Réviser avec l’IA', 'en': 'Revise with AI', 'ar': 'مراجعة بالذكاء الاصطناعي'},
+    'aiDraftReviseLabel': {
+      'fr': 'Consigne de révision',
+      'en': 'Revision instruction',
+      'ar': 'تعليمة المراجعة'},
+    'aiDraftReviseHint': {
+      'fr': 'Ex. Rends le titre plus concret…',
+      'en': 'E.g. Make the title more concrete…',
+      'ar': 'مثال: اجعل العنوان أكثر تحديداً…'},
+    'aiDraftDelete': {
+      'fr': 'Supprimer le brouillon', 'en': 'Delete draft', 'ar': 'حذف المسودة'},
+    'aiDraftDeleteTitle': {
+      'fr': 'Supprimer ce brouillon ?',
+      'en': 'Delete this draft?',
+      'ar': 'حذف هذه المسودة؟'},
+    'aiDraftTargets': {
+      'fr': 'Stagiaires destinataires',
+      'en': 'Target interns',
+      'ar': 'المتربصون المستهدفون'},
+    'aiDraftBulkAdd': {
+      'fr': 'Créer les tâches',
+      'en': 'Create the tasks',
+      'ar': 'إنشاء المهام'},
+    'aiDraftBulkDone': {
+      'fr': '{n} tâche(s) créée(s).',
+      'en': '{n} task(s) created.',
+      'ar': 'تم إنشاء {n} من المهام.'},
+    'aiDraftManualHint': {
+      'fr': 'L’IA est indisponible : vous pouvez toujours créer des brouillons à la main.',
+      'en': 'AI is unavailable: you can still create drafts manually.',
+      'ar': 'الذكاء الاصطناعي غير متاح: لا يزال بإمكانك إنشاء مسودات يدوياً.'},
+    'aiDraftNeedsConnection': {
+      'fr': 'La génération IA nécessite une connexion.',
+      'en': 'AI generation needs a connection.',
+      'ar': 'يحتاج الإنشاء بالذكاء الاصطناعي إلى اتصال.'},
+    'aiDraftNoTargets': {
+      'fr': 'Choisissez au moins un stagiaire.',
+      'en': 'Choose at least one intern.',
+      'ar': 'اختر متربصاً واحداً على الأقل.'},
+    'aiDraftNoDrafts': {
+      'fr': 'Aucun brouillon à envoyer.',
+      'en': 'No drafts to send.',
+      'ar': 'لا توجد مسودات للإرسال.'},
+    'errDraftInvalid': {
+      'fr': 'Ce brouillon est refusé : vérifiez les titres (3 à 150 caractères), les dates dans la période du stage et la taille du texte.',
+      'en': 'This draft was refused: check titles (3–150 characters), dates within the internship period, and text size.',
+      'ar': 'تم رفض هذه المسودة: تحقق من العناوين (3 إلى 150 حرفاً)، والتواريخ ضمن فترة التربص، وحجم النص.'},
     'jsDraft': {'fr': 'Brouillon', 'en': 'Draft', 'ar': 'مسودة'},
     'jsSubmitted': {'fr': 'Soumise', 'en': 'Submitted', 'ar': 'مرسلة'},
     'jsValidated': {'fr': 'Validée', 'en': 'Validated', 'ar': 'مصادق عليها'},
@@ -359,6 +583,8 @@ class AppLocalizations {
     'unsavedMessage': {'fr': 'Vos modifications non enregistrées seront perdues.', 'en': 'Your unsaved changes will be lost.', 'ar': 'ستفقد تغييراتك غير المحفوظة.'},
     'discardAction': {'fr': 'Abandonner', 'en': 'Discard', 'ar': 'تجاهل'},
     'keepEditingAction': {'fr': 'Continuer', 'en': 'Keep editing', 'ar': 'مواصلة التحرير'},
+    'cancelAction': {'fr': 'Annuler', 'en': 'Cancel', 'ar': 'إلغاء'},
+    'closeAction': {'fr': 'Fermer', 'en': 'Close', 'ar': 'إغلاق'},
     // --- D3: deliverables ---
     'deliverablesSubtitle': {'fr': 'PDF uniquement · 25 Mo max · versions conservées', 'en': 'PDF only · 25 MB max · versions kept', 'ar': 'PDF فقط · 25 م.ب كحد أقصى · تُحفظ النسخ'},
     'deliverableNew': {'fr': 'Nouveau livrable', 'en': 'New deliverable', 'ar': 'مُخرَج جديد'},
@@ -445,6 +671,19 @@ class AppLocalizations {
     'msgFailed': {'fr': 'Non envoyé. Touchez pour réessayer.', 'en': 'Not sent. Tap to retry.', 'ar': 'لم تُرسل. انقر لإعادة المحاولة.'},
     'msgRetry': {'fr': 'Réessayer', 'en': 'Retry', 'ar': 'إعادة المحاولة'},
     'msgDiscard': {'fr': 'Supprimer', 'en': 'Delete', 'ar': 'حذف'},
+    'offlineQueued': {
+      'fr': 'Enregistré — sera envoyé à la reconnexion.',
+      'en': 'Saved — will send on reconnect.',
+      'ar': 'تم الحفظ — سيُرسل عند إعادة الاتصال.'},
+    'pendingLabel': {'fr': 'En attente', 'en': 'Pending', 'ar': 'قيد الانتظار'},
+    'queueFull': {
+      'fr': 'File pleine — réessayez une fois en ligne.',
+      'en': 'Queue is full — retry once online.',
+      'ar': 'القائمة ممتلئة — أعد المحاولة عند الاتصال.'},
+    'queueAuthDiscarded': {
+      'fr': 'Session expirée : les éléments non envoyés ont été supprimés.',
+      'en': 'Session expired: unsent items were discarded.',
+      'ar': 'انتهت الجلسة: تم تجاهل العناصر غير المرسلة.'},
     'msgDeleted': {'fr': 'Message supprimé', 'en': 'Message deleted', 'ar': 'رسالة محذوفة'},
     'msgEdited': {'fr': 'modifié', 'en': 'edited', 'ar': 'معدلة'},
     'msgDelivered': {'fr': 'Reçu', 'en': 'Delivered', 'ar': 'تم الاستلام'},
@@ -476,6 +715,8 @@ class AppLocalizations {
       'fr': 'Tâche supprimée', 'en': 'Task deleted', 'ar': 'تم حذف المهمة'},
     'notifTypeTaskStatusChanged': {
       'fr': 'Tâche mise à jour', 'en': 'Task status changed', 'ar': 'تغيرت حالة المهمة'},
+    'notifTypeScheduledTaskVisible': {
+      'fr': 'Nouvelle tâche disponible', 'en': 'New task available', 'ar': 'مهمة جديدة متاحة'},
     'notifTypeDocumentRejected': {
       'fr': 'Document refusé', 'en': 'Document rejected', 'ar': 'تم رفض المستند'},
     'notifTypeDocumentVerified': {
@@ -793,6 +1034,85 @@ class AppLocalizations {
   String get errCategoryInvalid => _get('errCategoryInvalid');
   String get errCategoryChanged => _get('errCategoryChanged');
   String get errCategoryNoCategories => _get('errCategoryNoCategories');
+  String get supTasksTitle => _get('supTasksTitle');
+  String get supNoStudents => _get('supNoStudents');
+  String get supNoStudentsHint => _get('supNoStudentsHint');
+  String get supTaskNew => _get('supTaskNew');
+  String get supTaskEdit => _get('supTaskEdit');
+  String get supTaskDelete => _get('supTaskDelete');
+  String get supTaskDeleteTitle => _get('supTaskDeleteTitle');
+  String supTaskDeleteConfirm(String title, String name) => _get('supTaskDeleteConfirm')
+      .replaceAll('{title}', title)
+      .replaceAll('{name}', name);
+  String get supTaskCreated => _get('supTaskCreated');
+  String get supTaskUpdated => _get('supTaskUpdated');
+  String get supTaskDeleted => _get('supTaskDeleted');
+  String get supReviewApprove => _get('supReviewApprove');
+  String get supReviewDeny => _get('supReviewDeny');
+  String get supReviewTitle => _get('supReviewTitle');
+  String get supReviewApproved => _get('supReviewApproved');
+  String get supReviewDenied => _get('supReviewDenied');
+  String get supDenyReasonLabel => _get('supDenyReasonLabel');
+  String get supDenyReasonHint => _get('supDenyReasonHint');
+  String get supNeedsReview => _get('supNeedsReview');
+  String get supScheduled => _get('supScheduled');
+  String supAppearsOn(String d) =>
+      _get('supAppearsOn').replaceAll('{d}', d);
+  String get supScheduleLabel => _get('supScheduleLabel');
+  String get supScheduleNone => _get('supScheduleNone');
+  String get supSchedulePickDate => _get('supSchedulePickDate');
+  String get supSchedulePickTime => _get('supSchedulePickTime');
+  String get supScheduleClear => _get('supScheduleClear');
+  String get supScheduleOutsideNote => _get('supScheduleOutsideNote');
+  String get supBulkTitle => _get('supBulkTitle');
+  String supBulkStudents(int n) =>
+      _get('supBulkStudents').replaceAll('{n}', '$n');
+  String supBulkPlan(int t, int s) => _get('supBulkPlan')
+      .replaceAll('{t}', '$t')
+      .replaceAll('{s}', '$s');
+  String get supBulkSubmit => _get('supBulkSubmit');
+  String supBulkDone(int n) =>
+      _get('supBulkDone').replaceAll('{n}', '$n');
+  String get supBulkAddTask => _get('supBulkAddTask');
+  String get supBulkEmpty => _get('supBulkEmpty');
+  String get supNeedsConnection => _get('supNeedsConnection');
+  String get supManageTasks => _get('supManageTasks');
+  String get supAddTaskFor => _get('supAddTaskFor');
+  String get errReviewReason => _get('errReviewReason');
+  String get errTaskNotCompleted => _get('errTaskNotCompleted');
+  String get errScheduleOutsidePeriod => _get('errScheduleOutsidePeriod');
+  String get errBulkInvalid => _get('errBulkInvalid');
+  String get aiDraftTitle => _get('aiDraftTitle');
+  String get aiDraftProposalNote => _get('aiDraftProposalNote');
+  String get aiDraftAiNote => _get('aiDraftAiNote');
+  String get aiDraftPdfTab => _get('aiDraftPdfTab');
+  String get aiDraftTextTab => _get('aiDraftTextTab');
+  String get aiDraftTextLabel => _get('aiDraftTextLabel');
+  String get aiDraftTextHint => _get('aiDraftTextHint');
+  String get aiDraftPickPdf => _get('aiDraftPickPdf');
+  String get aiDraftChangePdf => _get('aiDraftChangePdf');
+  String get aiDraftGenerate => _get('aiDraftGenerate');
+  String get aiDraftGenerating => _get('aiDraftGenerating');
+  String get aiDraftCancel => _get('aiDraftCancel');
+  String get aiDraftEmpty => _get('aiDraftEmpty');
+  String get aiDraftEmptyHint => _get('aiDraftEmptyHint');
+  String get aiDraftManualAdd => _get('aiDraftManualAdd');
+  String get aiDraftBadge => _get('aiDraftBadge');
+  String get aiDraftEdit => _get('aiDraftEdit');
+  String get aiDraftRevise => _get('aiDraftRevise');
+  String get aiDraftReviseLabel => _get('aiDraftReviseLabel');
+  String get aiDraftReviseHint => _get('aiDraftReviseHint');
+  String get aiDraftDelete => _get('aiDraftDelete');
+  String get aiDraftDeleteTitle => _get('aiDraftDeleteTitle');
+  String get aiDraftTargets => _get('aiDraftTargets');
+  String get aiDraftBulkAdd => _get('aiDraftBulkAdd');
+  String aiDraftBulkDone(int n) =>
+      _get('aiDraftBulkDone').replaceAll('{n}', '$n');
+  String get aiDraftManualHint => _get('aiDraftManualHint');
+  String get aiDraftNeedsConnection => _get('aiDraftNeedsConnection');
+  String get aiDraftNoTargets => _get('aiDraftNoTargets');
+  String get aiDraftNoDrafts => _get('aiDraftNoDrafts');
+  String get errDraftInvalid => _get('errDraftInvalid');
   String get jsDraft => _get('jsDraft');
   String get jsSubmitted => _get('jsSubmitted');
   String get jsValidated => _get('jsValidated');
@@ -869,6 +1189,8 @@ class AppLocalizations {
   String get unsavedMessage => _get('unsavedMessage');
   String get discardAction => _get('discardAction');
   String get keepEditingAction => _get('keepEditingAction');
+  String get cancelAction => _get('cancelAction');
+  String get closeAction => _get('closeAction');
 
   // D3 deliverables
   String get deliverablesSubtitle => _get('deliverablesSubtitle');
@@ -966,6 +1288,10 @@ class AppLocalizations {
   String get msgFailed => _get('msgFailed');
   String get msgRetry => _get('msgRetry');
   String get msgDiscard => _get('msgDiscard');
+  String get offlineQueued => _get('offlineQueued');
+  String get pendingLabel => _get('pendingLabel');
+  String get queueFull => _get('queueFull');
+  String get queueAuthDiscarded => _get('queueAuthDiscarded');
   String get msgDeleted => _get('msgDeleted');
   String get msgEdited => _get('msgEdited');
   String get msgDelivered => _get('msgDelivered');
@@ -988,6 +1314,8 @@ class AppLocalizations {
   String get notifTypeTaskUpdated => _get('notifTypeTaskUpdated');
   String get notifTypeTaskDeleted => _get('notifTypeTaskDeleted');
   String get notifTypeTaskStatusChanged => _get('notifTypeTaskStatusChanged');
+  String get notifTypeScheduledTaskVisible =>
+      _get('notifTypeScheduledTaskVisible');
   String get notifTypeDocumentRejected => _get('notifTypeDocumentRejected');
   String get notifTypeDocumentVerified => _get('notifTypeDocumentVerified');
   String get notifTypeApplicationSubmitted =>

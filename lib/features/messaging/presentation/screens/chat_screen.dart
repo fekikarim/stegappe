@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/connectivity/connectivity_service.dart';
 import '../../../../core/l10n/app_localizations.dart';
 import '../../../../core/network/error_messages.dart';
+import '../../../../core/offline/pending_writes.dart';
 import '../../../../core/theme/steg_spacing.dart';
 import '../../data/services/stomp_chat_service.dart';
 import '../providers/messaging_providers.dart';
@@ -198,7 +199,13 @@ class _ChatScreenState extends ConsumerState<ChatScreen>
                                             1 -
                                             pi];
                                     return _PendingBubble(
-                                        pending: p);
+                                      pending: p,
+                                      queued: ref.watch(
+                                          pendingWritesProvider.select(
+                                              (s) => s.items.any((w) =>
+                                                  w.localId ==
+                                                  p.localId))),
+                                    );
                                   }
                                   final mi = pi -
                                       chat.pending.length;
@@ -336,12 +343,17 @@ class _ChatError extends StatelessWidget {
 }
 
 class _PendingBubble extends StatelessWidget {
-  const _PendingBubble({required this.pending});
+  const _PendingBubble({required this.pending, this.queued = false});
 
   final PendingMessage pending;
 
+  /// True while the message waits in the persisted offline queue (T06):
+  /// visibly pending, never shown as sent.
+  final bool queued;
+
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     return Align(
       alignment: AlignmentDirectional.centerEnd,
       child: Opacity(
@@ -364,12 +376,17 @@ class _PendingBubble extends StatelessWidget {
             children: [
               Flexible(child: Text(pending.content)),
               const SizedBox(width: StegSpacing.xs),
-              const SizedBox(
-                width: 12,
-                height: 12,
-                child:
-                    CircularProgressIndicator(strokeWidth: 2),
-              ),
+              if (queued)
+                Text(l10n.pendingLabel,
+                    style:
+                        Theme.of(context).textTheme.labelSmall)
+              else
+                const SizedBox(
+                  width: 12,
+                  height: 12,
+                  child:
+                      CircularProgressIndicator(strokeWidth: 2),
+                ),
             ],
           ),
         ),

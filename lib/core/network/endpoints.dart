@@ -39,6 +39,21 @@ abstract final class Endpoints {
   static String task(String taskId) => '/api/internships/tasks/$taskId';
   static String taskStatus(String taskId) =>
       '/api/internships/tasks/$taskId/status';
+  // --- T04 supervisor review + bulk (staff, scoped server-side) ---
+  static String taskReview(String taskId) =>
+      '/api/internships/tasks/$taskId/review';
+  static const String tasksBulk = '/api/internships/tasks/bulk';
+  // --- T05 supervisor AI task drafts (staff, scoped server-side) ---
+  static const String taskDraftsGenerate = '/api/internships/tasks/drafts/generate';
+  static const String taskDraftsGenerateFromText =
+      '/api/internships/tasks/drafts/generate-from-text';
+  static const String taskDrafts = '/api/internships/tasks/drafts';
+  static String taskDraft(String id) =>
+      '/api/internships/tasks/drafts/$id';
+  static String taskDraftRevise(String id) =>
+      '/api/internships/tasks/drafts/$id/revise';
+  static const String taskDraftsBulkAdd =
+      '/api/internships/tasks/drafts/bulk-add';
   static String journalSubmit(String entryId) =>
       '/api/internships/journal/entries/$entryId/submit';
   static String journalValidate(String entryId) =>

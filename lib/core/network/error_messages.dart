@@ -69,6 +69,12 @@ const String kCodeRateLimitExceeded = 'RATE_LIMIT_EXCEEDED';
 const String kCodePasswordChangeRequired = 'PASSWORD_CHANGE_REQUIRED';
 const String kCodeCategoryChanged = 'CATEGORY_CHANGED';
 const String kCodeCategoryNoCategories = 'CATEGORY_SUGGESTION_NO_CATEGORIES';
+const String kCodeReviewReasonRequired = 'REVIEW_REASON_REQUIRED';
+const String kCodeTaskNotCompleted = 'TASK_NOT_COMPLETED';
+const String kCodeVisibleFromOutsidePeriod = 'VISIBLE_FROM_OUTSIDE_PERIOD';
+const String kCodeTaskScheduleStaffOnly = 'TASK_SCHEDULE_STAFF_ONLY';
+const String kCodeSpecTextInvalid = 'SPEC_TEXT_INVALID';
+const String kCodeSpecTextTooLong = 'SPEC_TEXT_TOO_LONG';
 
 /// Maps one error to a [UserError]. Never returns a raw exception string.
 UserError userErrorOf(Object error, AppLocalizations l10n) {
@@ -108,6 +114,54 @@ UserError userErrorOf(Object error, AppLocalizations l10n) {
   if (code == kCodeCategoryNoCategories) {
     return UserError(
       message: l10n.errCategoryNoCategories,
+      traceId: traceId,
+      retryable: false,
+    );
+  }
+  // T04 supervisor review + scheduling codes get precise sentences.
+  if (code == kCodeReviewReasonRequired) {
+    return UserError(
+      message: l10n.errReviewReason,
+      traceId: traceId,
+      retryable: false,
+    );
+  }
+  if (code == kCodeTaskNotCompleted) {
+    return UserError(
+      message: l10n.errTaskNotCompleted,
+      traceId: traceId,
+      retryable: false,
+    );
+  }
+  if (code == kCodeVisibleFromOutsidePeriod) {
+    return UserError(
+      message: l10n.errScheduleOutsidePeriod,
+      traceId: traceId,
+      retryable: false,
+    );
+  }
+  if (code == kCodeTaskScheduleStaffOnly) {
+    return UserError(
+      message: l10n.errForbidden,
+      traceId: traceId,
+      retryable: false,
+      forbidden: true,
+    );
+  }
+  if (code.startsWith('BULK_') || code.startsWith('BULK_DRAFTS_')) {
+    return UserError(
+      message: l10n.errBulkInvalid,
+      traceId: traceId,
+      retryable: false,
+    );
+  }
+  // T05 draft/spec validation (titles, lengths, dates, instructions, text
+  // size) shares one actionable sentence — the backend message is never raw.
+  if (code.startsWith('DRAFT_') ||
+      code == kCodeSpecTextInvalid ||
+      code == kCodeSpecTextTooLong) {
+    return UserError(
+      message: l10n.errDraftInvalid,
       traceId: traceId,
       retryable: false,
     );

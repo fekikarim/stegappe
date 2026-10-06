@@ -12,6 +12,8 @@ enum NotificationType {
   taskUpdated,
   taskDeleted,
   taskStatusChanged,
+  // T04/D8: a scheduled task became visible to the student.
+  scheduledTaskVisible,
   documentRejected,
   documentVerified,
   applicationSubmitted,

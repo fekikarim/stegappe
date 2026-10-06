@@ -4,7 +4,9 @@ import '../../../../core/network/paged.dart';
 import '../entities/evaluation.dart';
 import '../entities/internship.dart';
 import '../entities/logbook.dart';
+import '../entities/supervisor_tasks.dart';
 import '../entities/task_classification.dart';
+import '../entities/task_drafts.dart';
 import '../entities/work_items.dart';
 
 /// Read + limited-write contract for the intern daily workspace.
@@ -21,14 +23,19 @@ abstract class InternshipRepository {
 
   Future<Paged<InternTask>> listTasks(String internshipId,
       {int page = 0, int size = 50, TaskStatus? status});
-  Future<InternTask> updateTaskStatus(String taskId, TaskStatus status);
+  Future<InternTask> updateTaskStatus(String taskId, TaskStatus status,
+      {String? idempotencyKey});
   Future<InternTask> createTask(String internshipId,
-      {required String title, String? description, DateTime? dueDate});
+      {required String title,
+      String? description,
+      DateTime? dueDate,
+      DateTime? visibleFrom});
   Future<InternTask> updateTask(String taskId,
       {required String title,
       String? description,
       DateTime? dueDate,
-      TaskStatus? status});
+      TaskStatus? status,
+      DateTime? visibleFrom});
 
   Future<Paged<JournalEntry>> listJournal(String internshipId,
       {int page = 0,
@@ -186,6 +193,72 @@ abstract class InternshipRepository {
 
   /// Undo an accepted batch: restores only tasks unchanged since the batch.
   Future<List<ApplyCategoryResult>> undoApplyBatch(String batchId);
+
+  // --- T04 supervisor lifecycle (staff, scoped + validated server-side) ---
+  //
+  // The backend owns scope (out-of-scope → 404), transitions and validation;
+  // the app only renders state and sends intents. Bulk is atomic with a
+  // client idempotency key; review decides COMPLETED tasks only.
+
+  /// Delete one task (supervisor/Admin). Confirm in UI; the intern is
+  /// notified by the backend (TASK_DELETED).
+  Future<void> deleteTask(String taskId);
+
+  /// Review a COMPLETED task: approve (→ APPROVED, counts as done) or deny
+  /// with a required reason (→ DENIED, back to the student with the reason).
+  /// Throws on anything else (TASK_NOT_COMPLETED / REVIEW_REASON_REQUIRED).
+  Future<InternTask> reviewTask(String taskId,
+      {required bool approve, String? comment});
+
+  /// Atomic bulk mutations in request order with per-item results.
+  /// [idempotencyKey] makes a double submit replay without duplicating;
+  /// regenerate it when the payload is corrected after a failure.
+  Future<SupervisorBulkResult> bulkTasks(
+      {required List<Map<String, dynamic>> mutations,
+      required String idempotencyKey});
+
+  // --- T05 supervisor AI task drafts (proposals, never real tasks) ---
+  //
+  // The backend owns scope (out-of-scope → 404), the strict schema, rate
+  // limits and validation; the app renders drafts and sends intents. Only
+  // bulk-add creates real tasks (atomic, idempotent, per-pair validated).
+
+  /// Generate drafts from a specifications PDF for one reference student.
+  /// Throws on AI outage/rate-limit (degraded UI, manual path stays open).
+  Future<List<TaskDraft>> generateDraftsFromPdf(String internshipId,
+      {required String fileName,
+      required Uint8List bytes,
+      void Function(int sent, int total)? onProgress});
+
+  /// Generate drafts from pasted specification text (same pipeline).
+  Future<List<TaskDraft>> generateDraftsFromText(String internshipId,
+      {required String specText});
+
+  /// My drafts, optionally for one reference internship.
+  Future<List<TaskDraft>> listDrafts({String? internshipId});
+
+  /// Manual draft (works even when AI is unavailable).
+  Future<TaskDraft> addDraftManual(String internshipId,
+      {required String title, String? description, DateTime? dueDate});
+
+  /// Manual draft edit (lengths and period re-validated server-side).
+  Future<TaskDraft> updateDraft(String draftId,
+      {String? title, String? description, DateTime? dueDate});
+
+  /// AI revision of one draft from a free-text instruction.
+  Future<TaskDraft> reviseDraft(String draftId, {required String instruction});
+
+  /// Delete one draft (owner only, 404 otherwise).
+  Future<void> deleteDraft(String draftId);
+
+  /// Atomically bulk-add approved drafts to one or more students.
+  /// [idempotencyKey] makes a double submit replay without duplicating.
+  /// Optional batch schedule ([visibleFrom], T04 D8 rule per target).
+  Future<DraftBulkResult> bulkAddDrafts(
+      {required List<String> draftIds,
+      required List<String> internshipIds,
+      required String idempotencyKey,
+      DateTime? visibleFrom});
 }
 
 /// One SUBMITTED deliverable awaiting supervisor review.

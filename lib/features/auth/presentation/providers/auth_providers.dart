@@ -128,6 +128,13 @@ class AuthController extends StateNotifier<AuthState> {
     state = const AuthUnauthenticated();
   }
 
+  /// T06 §10: sign out after an auth failure during a background flush.
+  /// Carries a stable code (not a raw backend string); the login screen
+  /// maps it to a localized notice, anything else renders raw as before.
+  void signOutExpired() {
+    state = const AuthUnauthenticated(message: 'queue-auth-discarded');
+  }
+
   void requirePasswordChange() {
     final current = state;
     if (current is AuthAuthenticated) {

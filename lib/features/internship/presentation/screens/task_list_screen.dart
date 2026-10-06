@@ -3,8 +3,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/connectivity/connectivity_service.dart';
 import '../../../../core/l10n/app_localizations.dart';
+import '../../../../core/network/api_exception.dart';
 import '../../../../core/network/error_messages.dart';
 import '../../../../core/network/paged.dart';
+import '../../../../core/offline/pending_writes.dart';
+import '../../../../core/realtime/realtime_sync.dart';
 import '../../../../core/theme/steg_spacing.dart';
 import '../../../../core/widgets/steg_button.dart';
 import '../../../../core/widgets/steg_dialog.dart';
@@ -41,16 +44,46 @@ class TaskListScreen extends ConsumerStatefulWidget {
   ConsumerState<TaskListScreen> createState() => _TaskListScreenState();
 }
 
-class _TaskListScreenState extends ConsumerState<TaskListScreen> {
+class _TaskListScreenState extends ConsumerState<TaskListScreen>
+    with WidgetsBindingObserver {
   final TextEditingController _search = TextEditingController();
 
   /// Board is the default surface; the flat list stays one tap away.
   bool _boardView = true;
 
   @override
+  void initState() {
+    super.initState();
+    // Sockets die in background; resync the authoritative lists on resume
+    // (plus the socket's own reconnect → resyncRequested path, T06 §10).
+    WidgetsBinding.instance.addObserver(this);
+  }
+
+  @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _search.dispose();
     super.dispose();
+  }
+
+  /// Sockets die in background; resync the authoritative lists on resume
+  /// (plus the socket's own reconnect → resyncRequested path, T06 §10).
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      ref.read(realtimeSyncProvider).invalidate(RealtimeCategory.tasks);
+      _flushQueued();
+    }
+  }
+
+  /// Best-effort flush; failures stay queued for the next trigger and the
+  /// lists already invalidated above reconcile on read.
+  Future<void> _flushQueued() async {
+    try {
+      await ref.read(pendingWritesProvider.notifier).flushAll();
+    } on Exception {
+      // Next trigger retries; the queue persists.
+    }
   }
 
   Future<void> _refresh() async {
@@ -656,6 +689,23 @@ class _TaskDetailBodyState extends ConsumerState<_TaskDetailBody> {
         !widget.task.studentTransitions.contains(status)) {
       return;
     }
+    // T06/D12 offline path: queue visibly instead of failing (same rule as
+    // the board toggle; the flush applies it exactly once).
+    if (!ref.read(isOnlineProvider)) {
+      final ok = await ref
+          .read(pendingWritesProvider.notifier)
+          .enqueueStatus(taskId: widget.task.id, status: status);
+      if (!mounted) return;
+      final l10n = AppLocalizations.of(context);
+      Navigator.of(context).pop();
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content:
+              Text(ok ? l10n.offlineQueued : l10n.queueFull),
+        ),
+      );
+      return;
+    }
     setState(() => _busy = true);
     try {
       await ref
@@ -672,6 +722,29 @@ class _TaskDetailBodyState extends ConsumerState<_TaskDetailBody> {
                 AppLocalizations.of(context))),
           ),
         );
+      }
+    } on ApiException catch (e) {
+      if (mounted) {
+        setState(() => _busy = false);
+        if (e.kind == ApiErrorKind.network) {
+          final ok = await ref
+              .read(pendingWritesProvider.notifier)
+              .enqueueStatus(
+                  taskId: widget.task.id, status: status);
+          if (!mounted) return;
+          final l10n = AppLocalizations.of(context);
+          Navigator.of(context).pop();
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                  ok ? l10n.offlineQueued : l10n.queueFull),
+            ),
+          );
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(context.userError(e).message)),
+          );
+        }
       }
     } on Exception catch (e) {
       if (mounted) {

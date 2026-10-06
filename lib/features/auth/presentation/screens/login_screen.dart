@@ -71,8 +71,13 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     final state = ref.watch(authControllerProvider);
-    final topError =
+    final rawError =
         state is AuthUnauthenticated ? state.message : null;
+    // T06 §10: a stable sign-out code maps to a localized notice; any
+    // other message renders raw exactly as before (no behavior change).
+    final topError = rawError == 'queue-auth-discarded'
+        ? l10n.queueAuthDiscarded
+        : rawError;
 
     return Scaffold(
       appBar: AppBar(title: Text(l10n.loginTitle)),

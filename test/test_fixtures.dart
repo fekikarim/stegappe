@@ -6,7 +6,9 @@ import 'package:stegappe/features/internship/domain/dashboard.dart';
 import 'package:stegappe/features/internship/domain/entities/evaluation.dart';
 import 'package:stegappe/features/internship/domain/entities/internship.dart';
 import 'package:stegappe/features/internship/domain/entities/logbook.dart';
+import 'package:stegappe/features/internship/domain/entities/supervisor_tasks.dart';
 import 'package:stegappe/features/internship/domain/entities/task_classification.dart';
+import 'package:stegappe/features/internship/domain/entities/task_drafts.dart';
 import 'package:stegappe/features/internship/domain/entities/work_items.dart';
 import 'package:stegappe/features/internship/domain/repositories/internship_repository.dart';
 
@@ -105,6 +107,7 @@ class FakeInternshipRepository implements InternshipRepository {
   final DateTime now;
   TaskStatus? lastStatusFilter;
   final List<(String, TaskStatus)> statusUpdates = [];
+  final List<String?> statusKeys = [];
   final List<(String, String?, String?)> decisions = [];
   final List<String> submitted = [];
   final List<Map<String, dynamic>> createdTasks = [];
@@ -139,13 +142,15 @@ class FakeInternshipRepository implements InternshipRepository {
 
   @override
   Future<InternTask> updateTaskStatus(
-      String taskId, TaskStatus status) async {
+      String taskId, TaskStatus status,
+      {String? idempotencyKey}) async {
     final gate = statusGate;
     if (gate != null) await gate.future;
     if (failWrites) {
       throw Exception('offline');
     }
     statusUpdates.add((taskId, status));
+    statusKeys.add(idempotencyKey);
     final existing = fixtureTasks(now).where((e) => e.id == taskId);
     final t = existing.isEmpty
         ? InternTask(id: taskId, title: taskId, status: status)
@@ -183,12 +188,23 @@ class FakeInternshipRepository implements InternshipRepository {
   Future<InternTask> createTask(String internshipId,
       {required String title,
       String? description,
-      DateTime? dueDate}) async {
+      DateTime? dueDate,
+      DateTime? visibleFrom}) async {
     if (failWrites) throw Exception('offline');
-    createdTasks.add(
-        {'title': title, 'description': description, 'dueDate': dueDate});
+    createdTasks.add({
+      'title': title,
+      'description': description,
+      'dueDate': dueDate,
+      'visibleFrom': visibleFrom,
+      'internshipId': internshipId,
+    });
     return InternTask(
-        id: 't-new', title: title, status: TaskStatus.todo, dueDate: dueDate, description: description);
+        id: 't-new',
+        title: title,
+        status: TaskStatus.todo,
+        dueDate: dueDate,
+        description: description,
+        visibleFrom: visibleFrom);
   }
 
   @override
@@ -196,14 +212,21 @@ class FakeInternshipRepository implements InternshipRepository {
       {required String title,
       String? description,
       DateTime? dueDate,
-      TaskStatus? status}) async {
+      TaskStatus? status,
+      DateTime? visibleFrom}) async {
     if (failWrites) throw Exception('offline');
+    updatedTasks.add({
+      'taskId': taskId,
+      'title': title,
+      'visibleFrom': visibleFrom,
+    });
     return InternTask(
         id: taskId,
         title: title,
         status: status ?? TaskStatus.todo,
         dueDate: dueDate,
-        description: description);
+        description: description,
+        visibleFrom: visibleFrom);
   }
 
   @override
@@ -896,6 +919,220 @@ class FakeInternshipRepository implements InternshipRepository {
     if (failClassificationWrites) throw Exception('offline');
     undoneBatches.add(batchId);
     return const [];
+  }
+
+  // --- T04 supervisor lifecycle fakes (server-authoritative, scripted) ---
+
+  final List<String> deletedTasks = [];
+  final List<Map<String, dynamic>> reviewedTasks = [];
+  final List<Map<String, dynamic>> updatedTasks = [];
+  int bulkCalls = 0;
+  Completer<void>? bulkGate;
+  final List<String> bulkKeys = [];
+  final List<Map<String, dynamic>> bulkMutations = [];
+  bool failReviewReason = false;
+
+  @override
+  Future<void> deleteTask(String taskId) async {
+    if (failWrites) throw Exception('offline');
+    deletedTasks.add(taskId);
+  }
+
+  @override
+  Future<InternTask> reviewTask(String taskId,
+      {required bool approve, String? comment}) async {
+    if (failWrites) throw Exception('offline');
+    if (!approve && (comment == null || comment.trim().isEmpty)) {
+      if (failReviewReason) throw Exception('review-reason-required');
+    }
+    reviewedTasks.add({'taskId': taskId, 'approve': approve, 'comment': comment});
+    final existing = fixtureTasks(now).where((e) => e.id == taskId);
+    final t = existing.isEmpty
+        ? InternTask(id: taskId, title: taskId, status: TaskStatus.todo)
+        : existing.first;
+    return InternTask(
+        id: t.id,
+        title: t.title,
+        status: approve ? TaskStatus.approved : TaskStatus.denied,
+        dueDate: t.dueDate,
+        description: t.description,
+        reviewReason: approve ? null : comment);
+  }
+
+  @override
+  Future<SupervisorBulkResult> bulkTasks(
+      {required List<Map<String, dynamic>> mutations,
+      required String idempotencyKey}) async {
+    bulkCalls++;
+    final gate = bulkGate;
+    if (gate != null) await gate.future;
+    bulkKeys.add(idempotencyKey);
+    bulkMutations.addAll(mutations);
+    if (failWrites) throw Exception('offline');
+    return SupervisorBulkResult(
+      items: [
+        for (var i = 0; i < mutations.length; i++)
+          SupervisorBulkItem(
+              index: i,
+              action: (mutations[i]['action'] as String?) ?? 'CREATE',
+              taskId: 'bulk-t-$i',
+              internshipId: mutations[i]['internshipId'] as String?,
+              status: 'OK'),
+      ],
+    );
+  }
+
+  // --- T05 AI draft fakes (server-authoritative, scripted) ---
+
+  List<TaskDraft> fakeDrafts = [];
+  List<TaskDraft> generatedDrafts = [];
+  bool failDrafts = false;
+  Completer<void>? draftGate;
+  int generateCalls = 0;
+  int bulkDraftCalls = 0;
+  final List<String> bulkDraftKeys = [];
+  final List<String> deletedDrafts = [];
+  final List<Map<String, String>> revisedDrafts = [];
+  DateTime? lastBulkVisibleFrom;
+
+  List<TaskDraft> get _seedDrafts => generatedDrafts.isNotEmpty
+      ? generatedDrafts
+      : [
+          TaskDraft(
+              id: 'd1',
+              referenceInternshipId: 'internship-1',
+              title: 'Draft one',
+              description: 'First',
+              dueDate: DateTime.utc(2026, 3, 1)),
+          TaskDraft(
+              id: 'd2',
+              referenceInternshipId: 'internship-1',
+              title: 'Draft two',
+              dueDate: DateTime.utc(2026, 3, 10)),
+        ];
+
+  List<TaskDraft> _seedFor(String internshipId) => _seedDrafts
+      .map((d) => TaskDraft(
+          id: d.id,
+          referenceInternshipId: internshipId,
+          title: d.title,
+          description: d.description,
+          dueDate: d.dueDate,
+          createdAt: d.createdAt))
+      .toList();
+
+  @override
+  Future<List<TaskDraft>> generateDraftsFromPdf(String internshipId,
+      {required String fileName,
+      required Uint8List bytes,
+      void Function(int sent, int total)? onProgress}) async {
+    generateCalls++;
+    final gate = draftGate;
+    if (gate != null) await gate.future;
+    if (failDrafts) throw Exception('AI unavailable');
+    onProgress?.call(bytes.length, bytes.length);
+    fakeDrafts = _seedFor(internshipId);
+    return fakeDrafts;
+  }
+
+  @override
+  Future<List<TaskDraft>> generateDraftsFromText(String internshipId,
+      {required String specText}) async {
+    generateCalls++;
+    final gate = draftGate;
+    if (gate != null) await gate.future;
+    if (failDrafts) throw Exception('AI unavailable');
+    if (specText.trim().isEmpty) throw Exception('spec-empty');
+    fakeDrafts = _seedFor(internshipId);
+    return fakeDrafts;
+  }
+
+  @override
+  Future<List<TaskDraft>> listDrafts({String? internshipId}) async =>
+      internshipId == null
+          ? fakeDrafts
+          : fakeDrafts
+              .where((d) => d.referenceInternshipId == internshipId)
+              .toList();
+
+  @override
+  Future<TaskDraft> addDraftManual(String internshipId,
+      {required String title,
+      String? description,
+      DateTime? dueDate}) async {
+    if (failWrites) throw Exception('offline');
+    final created = TaskDraft(
+        id: 'd-manual-${fakeDrafts.length + 1}',
+        referenceInternshipId: internshipId,
+        title: title,
+        description: description,
+        dueDate: dueDate);
+    fakeDrafts = [...fakeDrafts, created];
+    return created;
+  }
+
+  @override
+  Future<TaskDraft> updateDraft(String draftId,
+      {String? title, String? description, DateTime? dueDate}) async {
+    if (failWrites) throw Exception('offline');
+    TaskDraft? updated;
+    fakeDrafts = [
+      for (final d in fakeDrafts)
+        if (d.id == draftId)
+          updated = TaskDraft(
+              id: d.id,
+              referenceInternshipId: d.referenceInternshipId,
+              title: title ?? d.title,
+              description: description ?? d.description,
+              dueDate: dueDate ?? d.dueDate,
+              createdAt: d.createdAt)
+        else
+          d,
+    ];
+    return updated ??
+        TaskDraft(
+            id: draftId,
+            referenceInternshipId: 'internship-1',
+            title: title ?? draftId);
+  }
+
+  @override
+  Future<TaskDraft> reviseDraft(String draftId,
+      {required String instruction}) async {
+    if (failWrites) throw Exception('offline');
+    revisedDrafts.add({'draftId': draftId, 'instruction': instruction});
+    return updateDraft(draftId,
+        title: 'Revised: $instruction', description: null);
+  }
+
+  @override
+  Future<void> deleteDraft(String draftId) async {
+    if (failWrites) throw Exception('offline');
+    deletedDrafts.add(draftId);
+    fakeDrafts = [for (final d in fakeDrafts) if (d.id != draftId) d];
+  }
+
+  @override
+  Future<DraftBulkResult> bulkAddDrafts(
+      {required List<String> draftIds,
+      required List<String> internshipIds,
+      required String idempotencyKey,
+      DateTime? visibleFrom}) async {
+    bulkDraftCalls++;
+    bulkDraftKeys.add(idempotencyKey);
+    lastBulkVisibleFrom = visibleFrom;
+    if (failWrites) throw Exception('offline');
+    var index = 0;
+    return DraftBulkResult(items: [
+      for (final draftId in draftIds)
+        for (final internshipId in internshipIds)
+          DraftBulkItem(
+              index: index++,
+              draftId: draftId,
+              internshipId: internshipId,
+              taskId: 't-$draftId-$internshipId',
+              status: 'OK'),
+    ]);
   }
 }
 

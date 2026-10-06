@@ -5,7 +5,9 @@ import '../../../../core/storage/token_storage.dart';
 import '../../domain/entities/evaluation.dart';
 import '../../domain/entities/internship.dart';
 import '../../domain/entities/logbook.dart';
+import '../../domain/entities/supervisor_tasks.dart';
 import '../../domain/entities/task_classification.dart';
+import '../../domain/entities/task_drafts.dart';
 import '../../domain/entities/work_items.dart';
 import '../../domain/repositories/internship_repository.dart';
 import '../../../../core/network/paged.dart';
@@ -90,28 +92,36 @@ class InternshipRepositoryImpl implements InternshipRepository {
 
   @override
   Future<InternTask> updateTaskStatus(
-          String taskId, TaskStatus status) async =>
-      remote.updateTaskStatus(taskId, status, await _bearer());
+          String taskId, TaskStatus status,
+          {String? idempotencyKey}) async =>
+      remote.updateTaskStatus(taskId, status, await _bearer(),
+          idempotencyKey: idempotencyKey);
 
   @override
   Future<InternTask> createTask(String internshipId,
           {required String title,
           String? description,
-          DateTime? dueDate}) async =>
+          DateTime? dueDate,
+          DateTime? visibleFrom}) async =>
       remote.createTask(internshipId, await _bearer(),
-          title: title, description: description, dueDate: dueDate);
+          title: title,
+          description: description,
+          dueDate: dueDate,
+          visibleFrom: visibleFrom);
 
   @override
   Future<InternTask> updateTask(String taskId,
           {required String title,
           String? description,
           DateTime? dueDate,
-          TaskStatus? status}) async =>
+          TaskStatus? status,
+          DateTime? visibleFrom}) async =>
       remote.updateTask(taskId, await _bearer(),
           title: title,
           description: description,
           dueDate: dueDate,
-          status: status);
+          status: status,
+          visibleFrom: visibleFrom);
 
   @override
   Future<Paged<JournalEntry>> listJournal(String internshipId,
@@ -548,4 +558,81 @@ class InternshipRepositoryImpl implements InternshipRepository {
   @override
   Future<List<ApplyCategoryResult>> undoApplyBatch(String batchId) async =>
       remote.undoApplyBatch(batchId, await _bearer());
+
+  // --- T04 supervisor lifecycle (thin delegation; server decides) ---
+
+  @override
+  Future<void> deleteTask(String taskId) async =>
+      remote.deleteTask(taskId, await _bearer());
+
+  @override
+  Future<InternTask> reviewTask(String taskId,
+      {required bool approve, String? comment}) async =>
+      remote.reviewTask(taskId, await _bearer(),
+          approve: approve, comment: comment);
+
+  @override
+  Future<SupervisorBulkResult> bulkTasks(
+      {required List<Map<String, dynamic>> mutations,
+      required String idempotencyKey}) async =>
+      remote.bulkTasks(await _bearer(),
+          mutations: mutations, idempotencyKey: idempotencyKey);
+
+  // --- T05 supervisor AI task drafts (thin delegation; server decides) ---
+
+  @override
+  Future<List<TaskDraft>> generateDraftsFromPdf(String internshipId,
+      {required String fileName,
+      required Uint8List bytes,
+      void Function(int sent, int total)? onProgress}) async =>
+      remote.generateDraftsFromPdf(internshipId, await _bearer(),
+          fileName: fileName, bytes: bytes, onProgress: onProgress);
+
+  @override
+  Future<List<TaskDraft>> generateDraftsFromText(String internshipId,
+      {required String specText}) async =>
+      remote.generateDraftsFromText(internshipId, await _bearer(),
+          specText: specText);
+
+  @override
+  Future<List<TaskDraft>> listDrafts({String? internshipId}) async =>
+      remote.listDrafts(await _bearer(), internshipId: internshipId);
+
+  @override
+  Future<TaskDraft> addDraftManual(String internshipId,
+      {required String title,
+      String? description,
+      DateTime? dueDate}) async =>
+      remote.addDraftManual(await _bearer(),
+          referenceInternshipId: internshipId,
+          title: title,
+          description: description,
+          dueDate: dueDate);
+
+  @override
+  Future<TaskDraft> updateDraft(String draftId,
+      {String? title, String? description, DateTime? dueDate}) async =>
+      remote.updateDraft(draftId, await _bearer(),
+          title: title, description: description, dueDate: dueDate);
+
+  @override
+  Future<TaskDraft> reviseDraft(String draftId,
+      {required String instruction}) async =>
+      remote.reviseDraft(draftId, await _bearer(), instruction: instruction);
+
+  @override
+  Future<void> deleteDraft(String draftId) async =>
+      remote.deleteDraft(draftId, await _bearer());
+
+  @override
+  Future<DraftBulkResult> bulkAddDrafts(
+      {required List<String> draftIds,
+      required List<String> internshipIds,
+      required String idempotencyKey,
+      DateTime? visibleFrom}) async =>
+      remote.bulkAddDrafts(await _bearer(),
+          draftIds: draftIds,
+          internshipIds: internshipIds,
+          idempotencyKey: idempotencyKey,
+          visibleFrom: visibleFrom);
 }

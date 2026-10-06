@@ -9,6 +9,7 @@ import '../../../../core/widgets/steg_states.dart';
 import '../providers/workspace_providers.dart';
 import '../widgets/dashboard_sections.dart';
 import '../widgets/intern_card.dart';
+import 'supervisor_tasks_screen.dart';
 
 /// Supervisor overview: queue totals + interns needing attention.
 /// Formal, concise, actionable (UI_UX.md §12.4).
@@ -91,6 +92,11 @@ class SupervisorHomeScreen extends ConsumerWidget {
                             pendingDeliverables: pendingDeliv,
                             onOpenTab: onOpenTab,
                           ),
+                          const SizedBox(
+                              height: StegSpacing.sm),
+                          // T04/SU-HOME-01: entry point to supervisor task
+                          // management (per-student tasks + bulk-add).
+                          _ManageTasksCard(isOnline: isOnline),
                         ],
                       ),
                     ),
@@ -229,6 +235,44 @@ class _QueueCard extends StatelessWidget {
               Text(label,
                   style:
                       Theme.of(context).textTheme.bodySmall),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// T04 entry point: full-width action opening the supervisor task
+/// management screen (per-student tasks, review, bulk-add).
+class _ManageTasksCard extends StatelessWidget {
+  const _ManageTasksCard({required this.isOnline});
+
+  final bool isOnline;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    return Card(
+      child: InkWell(
+        onTap: !isOnline
+            ? null
+            : () => Navigator.of(context).push(
+                  MaterialPageRoute(
+                      builder: (_) => const SupervisorTasksScreen()),
+                ),
+        borderRadius: BorderRadius.circular(12),
+        child: Padding(
+          padding: const EdgeInsets.all(StegSpacing.md),
+          child: Row(
+            children: [
+              const Icon(Icons.checklist_outlined),
+              const SizedBox(width: StegSpacing.sm),
+              Expanded(
+                child: Text(l10n.supManageTasks,
+                    style: Theme.of(context).textTheme.titleSmall),
+              ),
+              const Icon(Icons.chevron_right),
             ],
           ),
         ),

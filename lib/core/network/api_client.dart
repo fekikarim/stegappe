@@ -119,10 +119,15 @@ class ApiClient {
     String? bearer,
     Map<String, String>? query,
     Object? body,
+    Map<String, String>? headers,
     required T Function(dynamic json) decode,
   }) =>
       _send<T>('PATCH', path,
-          bearer: bearer, query: query, body: body, decode: decode);
+          bearer: bearer,
+          query: query,
+          body: body,
+          headers: headers,
+          decode: decode);
 
   Future<T> delete<T>(
     String path, {

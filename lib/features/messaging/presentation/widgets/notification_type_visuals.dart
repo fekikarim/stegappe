@@ -22,6 +22,8 @@ String notificationTypeLabel(NotificationType type, AppLocalizations l10n) =>
       NotificationType.taskUpdated => l10n.notifTypeTaskUpdated,
       NotificationType.taskDeleted => l10n.notifTypeTaskDeleted,
       NotificationType.taskStatusChanged => l10n.notifTypeTaskStatusChanged,
+      NotificationType.scheduledTaskVisible =>
+        l10n.notifTypeScheduledTaskVisible,
       NotificationType.documentRejected => l10n.notifTypeDocumentRejected,
       NotificationType.documentVerified => l10n.notifTypeDocumentVerified,
       NotificationType.applicationSubmitted =>
@@ -58,6 +60,7 @@ IconData notificationTypeIcon(NotificationType type) => switch (type) {
       NotificationType.taskUpdated => Icons.edit_note,
       NotificationType.taskDeleted => Icons.delete_outline,
       NotificationType.taskStatusChanged => Icons.sync_alt,
+      NotificationType.scheduledTaskVisible => Icons.schedule_outlined,
       NotificationType.documentRejected => Icons.cancel_outlined,
       NotificationType.documentVerified => Icons.verified_outlined,
       NotificationType.applicationSubmitted => Icons.send_outlined,
@@ -100,6 +103,7 @@ StegStatusKind notificationTypeKind(NotificationType type) => switch (type) {
         StegStatusKind.success,
       NotificationType.taskAssigned ||
       NotificationType.taskUpdated ||
+      NotificationType.scheduledTaskVisible ||
       NotificationType.applicationSubmitted ||
       NotificationType.applicationResubmitted ||
       NotificationType.internshipAssigned ||

@@ -16,6 +16,7 @@ class StegTextField extends StatelessWidget {
     this.keyboardType,
     this.textInputAction,
     this.onSubmitted,
+    this.onChanged,
     this.suffix,
     this.semanticsLabel,
   });
@@ -30,6 +31,10 @@ class StegTextField extends StatelessWidget {
   final TextInputType? keyboardType;
   final TextInputAction? textInputAction;
   final ValueChanged<String>? onSubmitted;
+
+  /// Live text notifications (e.g. enabling a submit button as the user
+  /// types). Optional; existing callers without it are unaffected.
+  final ValueChanged<String>? onChanged;
   final Widget? suffix;
   final String? semanticsLabel;
 
@@ -61,6 +66,7 @@ class StegTextField extends StatelessWidget {
             textInputAction:
                 textInputAction ?? TextInputAction.next,
             onSubmitted: onSubmitted,
+            onChanged: onChanged,
             decoration: InputDecoration(
               hintText: hint,
               helperText: helper,

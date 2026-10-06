@@ -3,8 +3,11 @@ import 'dart:convert';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../core/network/api_exception.dart';
 import '../../../../core/network/paged.dart';
+import '../../../../core/offline/pending_writes.dart';
 import '../../../../core/realtime/realtime_sync.dart';
+import '../../../../core/realtime/task_sync.dart';
 import '../../../auth/presentation/providers/auth_providers.dart';
 import '../../data/datasources/messaging_remote_data_source.dart';
 import '../../data/repositories/messaging_repository_impl.dart';
@@ -405,16 +408,19 @@ final chatControllerProvider = StateNotifierProvider.family<
     ref.watch(messagingRepositoryProvider),
     ref.watch(stompChatServiceProvider),
     conversationId,
+    ref.watch(pendingWritesProvider.notifier),
   )..init(),
 );
 
 class ChatController extends StateNotifier<ChatState> {
-  ChatController(this._repo, this._stomp, this._conversationId)
+  ChatController(
+      this._repo, this._stomp, this._conversationId, this._queue)
       : super(const ChatState());
 
   final MessagingRepository _repo;
   final StompChatService _stomp;
   final String _conversationId;
+  final PendingWritesController _queue;
 
   void Function()? _cancelSub;
   StreamSubscription<void>? _resyncSub;
@@ -430,6 +436,9 @@ class ChatController extends StateNotifier<ChatState> {
     if (_disposed) return;
     _resyncSub =
         _stomp.resyncRequested.listen((_) => resync());
+    // T06/D12: messages queued while the app was dead flush on open.
+    await flushQueued();
+    if (_disposed) return;
     try {
       await loadInitial();
       if (!_disposed) {
@@ -528,6 +537,7 @@ class ChatController extends StateNotifier<ChatState> {
 
   /// Resync after reconnect: fetch everything newer than the local max.
   Future<void> resync() async {
+    await flushQueued();
     try {
       final page = await _repo.history(_conversationId, size: 30);
       if (_disposed) return;
@@ -538,6 +548,27 @@ class ChatController extends StateNotifier<ChatState> {
     } on Exception {
       // Next resync or pull-to-refresh recovers.
     }
+  }
+
+  /// T06/D12: flush this conversation's persisted queue (same keys make
+  /// overlapping flushers replay instead of duplicating), merge what the
+  /// server persisted, and drop exactly the delivered bubbles.
+  Future<void> flushQueued() async {
+    final delivered = await _queue.flushConversation(_conversationId);
+    if (_disposed || delivered.isEmpty) return;
+    final ids = {
+      for (final d in delivered)
+        if (d.localId != null) d.localId!,
+    };
+    state = state.copyWith(
+      pending: [
+        for (final p in state.pending)
+          if (!ids.contains(p.localId)) p,
+      ],
+      messages: mergeMessages(
+          state.messages, [for (final d in delivered) d.message]),
+    );
+    _ackUpTo(state.maxSequence);
   }
 
   void _ackUpTo(int? seq) {
@@ -571,6 +602,30 @@ class ChatController extends StateNotifier<ChatState> {
         _ackUpTo(sent.message.sequenceNumber);
       }
       // STOMP path: the broadcast echo reconciles + acks.
+    } on ApiException catch (e) {
+      if (_disposed) return;
+      if (e.kind == ApiErrorKind.network) {
+        // T06/D12 offline path: keep the bubble visibly queued in the
+        // persisted store; the flush applies it exactly once on reconnect.
+        await _queue.enqueueMessage(
+          conversationId: _conversationId,
+          content: content,
+          localId: pending.localId,
+        );
+        return;
+      }
+      state = state.copyWith(
+        pending: state.pending
+            .where((p) => p.localId != pending.localId)
+            .toList(),
+        failed: [
+          ...state.failed,
+          FailedMessage(
+              content: content,
+              at: DateTime.now(),
+              error: e),
+        ],
+      );
     } on Exception catch (e) {
       if (_disposed) return;
       state = state.copyWith(
@@ -677,11 +732,39 @@ final foregroundSyncProvider = Provider<void>((ref) {
         // in-app sink (the open center merges it with dedupe) and refresh the
         // authoritative counts the shell renders.
         frames.add(body);
+        // T06 task sync (W10 option (a)): task-class frames invalidate the
+        // task providers so lists converge without a manual refresh. The
+        // frame is never applied as state — REST refetch wins by
+        // construction, so duplicates/stale frames are harmless.
+        final item = notificationItemFromFrame(body);
+        final taskCategory =
+            item == null ? null : taskSyncCategoryFor(item);
+        if (taskCategory != null) {
+          ref.read(realtimeSyncProvider).invalidate(taskCategory);
+        }
         ref.invalidate(unreadNotificationsProvider);
         ref.invalidate(totalUnreadMessagesProvider);
         ref.invalidate(notificationsProvider);
       });
       await stomp.subscribeErrors((_, _) {});
+      // T06 §11: flush writes queued while the app was dead or offline.
+      try {
+        await ref.read(pendingWritesProvider.notifier).flushAll();
+      } on Exception {
+        // Next resync retries; the queue persists.
+      }
+      // T06 §10: every reconnect resyncs REST state (a missed frame can
+      // never leave stale lists) and flushes the offline queue.
+      stomp.resyncRequested.listen((_) async {
+        ref.read(realtimeSyncProvider).invalidateAll();
+        try {
+          await ref
+              .read(pendingWritesProvider.notifier)
+              .flushAll();
+        } on Exception {
+          // Next resync retries; the queue persists.
+        }
+      });
     } on Exception {
       // Offline at login: socket connects later on demand.
     }

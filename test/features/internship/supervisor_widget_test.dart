@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import '../../support/queue_harness.dart';
 import 'package:stegappe/core/connectivity/connectivity_service.dart';
 import 'package:stegappe/core/l10n/app_localizations.dart';
 import 'package:stegappe/core/theme/steg_theme.dart';
@@ -54,6 +55,7 @@ Future<FakeInternshipRepository> pumpSup(
         authRepositoryProvider.overrideWithValue(_FakeAuth(user)),
         internshipRepositoryProvider.overrideWithValue(repo),
         isOnlineProvider.overrideWith((ref) => true),
+        await queueOverride(),
       ],
       child: MaterialApp(
         locale: const Locale('fr'),
@@ -107,12 +109,21 @@ void main() {
       expect(find.text('Dossier stagiaire'), findsOneWidget);
       expect(find.text('Amira Ben Salah'), findsOneWidget);
       expect(find.textContaining('Tâches prévues'), findsOneWidget);
+      // T04: the planned-tasks card now carries the "add task" header
+      // action, so the journal section starts below the fold on small
+      // viewports — scroll it into view before asserting (same pattern as
+      // below for Livrables/Évaluations; no assertion removed).
+      final list = find.byType(ListView).first;
+      await tester.dragUntilVisible(
+        find.textContaining('Journal à valider'),
+        list,
+        const Offset(0, -300),
+      );
       expect(find.textContaining('Journal à valider'), findsOneWidget);
       // Planned work visible, recorded work visible, assessment visible
       // (below the fold: scroll the detail list into view).
       expect(find.text('Today task'), findsOneWidget);
       expect(find.text('Submitted entry'), findsOneWidget);
-      final list = find.byType(ListView).first;
       await tester.dragUntilVisible(
         find.text('Livrables'),
         list,

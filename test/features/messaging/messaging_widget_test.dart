@@ -6,9 +6,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import '../../support/queue_harness.dart';
 import 'package:stegappe/core/connectivity/connectivity_service.dart';
 import 'package:stegappe/core/l10n/app_localizations.dart';
 import 'package:stegappe/core/network/paged.dart';
+import 'package:stegappe/features/internship/presentation/providers/workspace_providers.dart';
 import 'package:stegappe/features/auth/domain/entities/app_user.dart';
 import 'package:stegappe/features/auth/domain/repositories/auth_repository.dart';
 import 'package:stegappe/features/auth/presentation/providers/auth_providers.dart';
@@ -18,6 +20,7 @@ import 'package:stegappe/features/messaging/domain/entities/notification_item.da
 import 'package:stegappe/features/messaging/domain/repositories/messaging_repository.dart';
 import 'package:stegappe/features/messaging/domain/repositories/notification_repository.dart';
 import 'package:stegappe/features/messaging/presentation/providers/messaging_providers.dart';
+import '../../test_fixtures.dart';
 import 'package:stegappe/features/messaging/presentation/screens/chat_screen.dart';
 import 'package:stegappe/features/messaging/presentation/screens/conversations_screen.dart';
 import 'package:stegappe/features/messaging/presentation/screens/notifications_screen.dart';
@@ -136,6 +139,7 @@ class FakeMessagingRepo implements MessagingRepository {
   bool failHistory = false;
   bool failSends = false;
   final readMarks = <int>[];
+  final sentKeys = <String?>[];
 
   List<Conversation> convos = const [
     Conversation(
@@ -218,6 +222,14 @@ class FakeMessagingRepo implements MessagingRepository {
   }) async {
     onProgress?.call(bytes.length, bytes.length);
     return _m(100, sender: 'me');
+  }
+
+  @override
+  Future<ChatMessage> sendRest(String conversationId, String content,
+      {String? idempotencyKey}) async {
+    if (failSends) throw Exception('send failed');
+    sentKeys.add(idempotencyKey);
+    return _m(101, sender: 'me');
   }
 
   @override
@@ -334,6 +346,9 @@ Future<void> pumpMsg(
     ProviderScope(
       overrides: [
         authRepositoryProvider.overrideWithValue(_FakeAuth()),
+        internshipRepositoryProvider.overrideWithValue(
+          FakeInternshipRepository(),
+        ),
         messagingRepositoryProvider.overrideWithValue(
           repo ?? FakeMessagingRepo(stomp: s),
         ),
@@ -342,6 +357,7 @@ Future<void> pumpMsg(
         ),
         stompChatServiceProvider.overrideWithValue(s),
         isOnlineProvider.overrideWith((ref) => true),
+        await queueOverride(),
       ],
       child: MaterialApp(
         locale: const Locale('fr'),

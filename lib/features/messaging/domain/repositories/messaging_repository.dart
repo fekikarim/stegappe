@@ -35,6 +35,11 @@ abstract class MessagingRepository {
   /// Returns null when sent over STOMP (echo pending via subscription).
   Future<SentMessage?> send(String conversationId, String content);
 
+  /// REST-only send with an idempotency key (T06 offline-queue flush:
+  /// retries of the same logical message replay instead of duplicating).
+  Future<ChatMessage> sendRest(String conversationId, String content,
+      {String? idempotencyKey});
+
   Future<ChatMessage> sendWithAttachment(
     String conversationId, {
     required String content,

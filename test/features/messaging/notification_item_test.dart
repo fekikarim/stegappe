@@ -11,6 +11,10 @@ const List<String> kBackendWireValues = [
   'TASK_UPDATED',
   'TASK_DELETED',
   'TASK_STATUS_CHANGED',
+  // T04/D8: the scheduled-visibility producer exists server-side
+  // (TaskVisibilityScheduler → SCHEDULED_TASK_VISIBLE), so the key is
+  // catalogue, not invented.
+  'SCHEDULED_TASK_VISIBLE',
   'DOCUMENT_REJECTED',
   'DOCUMENT_VERIFIED',
   'APPLICATION_SUBMITTED',

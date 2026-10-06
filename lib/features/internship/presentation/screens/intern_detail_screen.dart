@@ -16,6 +16,7 @@ import 'evaluation_detail_screen.dart';
 import 'evaluation_form_screen.dart';
 import 'journal_detail_sheet.dart';
 import 'logbook_detail_screen.dart';
+import 'task_editor_sheet.dart';
 
 /// Supervisor's intern file: timeline, planned tasks, journals awaiting
 /// validation, deliverables, evaluations + recent feedback — each kind
@@ -122,6 +123,10 @@ class InternDetailScreen extends ConsumerWidget {
               DashboardSection(
                 title:
                     '${l10n.evalTasksSection} (${d.tasksTotal})',
+                // T04/SU-CAL-04: add a task for this student.
+                actionLabel: l10n.supAddTaskFor,
+                onAction: () => TaskEditorSheet.show(context,
+                    internshipId: internshipId, staffMode: true),
                 child: d.tasks.isEmpty
                     ? Text(l10n.tasksEmpty,
                         style: Theme.of(context)

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/l10n/app_localizations.dart';
+import '../../../core/offline/pending_writes.dart';
 import '../../../core/widgets/steg_states.dart';
 import '../../auth/domain/entities/app_user.dart';
 import '../../auth/presentation/providers/auth_providers.dart';
@@ -39,6 +40,9 @@ class _AuthGateState extends ConsumerState<AuthGate> {
         // subscriptions) is created on next login.
         ref.read(stompChatServiceProvider).disconnect().catchError((_) {});
         ref.invalidate(stompChatServiceProvider);
+        // T06 §10/§11: the queue belongs to the signed-in user — wipe it so
+        // no write leaks into the next session (silent: leaving is no error).
+        ref.read(pendingWritesProvider.notifier).clear().catchError((_) {});
       }
     });
     if (state is AuthAuthenticated) {

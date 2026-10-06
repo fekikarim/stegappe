@@ -2,6 +2,8 @@ import '../../domain/entities/evaluation.dart';
 import '../../domain/entities/internship.dart';
 import '../../domain/entities/logbook.dart';
 import '../../domain/entities/task_classification.dart';
+import '../../domain/entities/supervisor_tasks.dart';
+import '../../domain/entities/task_drafts.dart';
 import '../../domain/entities/work_items.dart';
 
 DateTime? _date(dynamic v) {
@@ -56,6 +58,8 @@ InternTask taskFromJson(Map<String, dynamic> json) => InternTask(
       assignedToId: json['assignedToId']?.toString(),
       reviewReason: json['reviewReason'] as String?,
       reviewedAt: _date(json['reviewedAt']),
+      // T04/D8: absolute server instant (ISO-8601); absent/null = immediate.
+      visibleFrom: _date(json['visibleFrom']),
     );
 
 JournalEntry journalFromJson(Map<String, dynamic> json) => JournalEntry(
@@ -283,6 +287,7 @@ Map<String, dynamic> taskWriteJson({
   String? description,
   DateTime? dueDate,
   TaskStatus? status,
+  DateTime? visibleFrom,
 }) {
   final map = <String, dynamic>{'title': title};
   if (description != null) map['description'] = description;
@@ -291,6 +296,11 @@ Map<String, dynamic> taskWriteJson({
     final api = taskStatusToApi(status);
     // `unknown` is not a backend value: never send it.
     if (api != null) map['status'] = api;
+  }
+  // T04/D8: absolute UTC instant (ISO-8601); the server validates it against
+  // the internship period. Null on update = leave unchanged.
+  if (visibleFrom != null) {
+    map['visibleFrom'] = visibleFrom.toUtc().toIso8601String();
   }
   return map;
 }
@@ -418,5 +428,158 @@ Map<String, dynamic> applyItemJson({
   };
   if (categoryId != null) map['categoryId'] = categoryId;
   if (newCategoryName != null) map['newCategoryName'] = newCategoryName;
+  return map;
+}
+
+// --- T04 supervisor review + bulk ---
+
+/// `POST .../tasks/{id}/review` body: approve, or deny with a required
+/// comment (the backend refuses a blank denial with REVIEW_REASON_REQUIRED).
+Map<String, dynamic> taskReviewJson({required bool approve, String? comment}) {
+  final map = <String, dynamic>{'approve': approve};
+  if (comment != null) map['comment'] = comment;
+  return map;
+}
+
+/// One `BulkTaskMutation`: action + targets + the task payload. Only CREATE
+/// carries `internshipId`; UPDATE/DELETE carry `taskId`.
+Map<String, dynamic> bulkMutationJson({
+  required String action,
+  String? internshipId,
+  String? taskId,
+  Map<String, dynamic>? task,
+}) {
+  final map = <String, dynamic>{'action': action};
+  if (internshipId != null) map['internshipId'] = internshipId;
+  if (taskId != null) map['taskId'] = taskId;
+  if (task != null) map['task'] = task;
+  return map;
+}
+
+SupervisorBulkItem _bulkItemFromJson(Map<String, dynamic> json) =>
+    SupervisorBulkItem(
+      index: (json['index'] as num?)?.toInt() ?? 0,
+      action: (json['action']?.toString() ?? '').toUpperCase(),
+      taskId: json['taskId']?.toString(),
+      internshipId: json['internshipId']?.toString(),
+      status: (json['status']?.toString() ?? 'UNKNOWN').toUpperCase(),
+    );
+
+/// `BulkTaskResponse`: per-item entries in request order + deleted count.
+SupervisorBulkResult supervisorBulkResultFromJson(dynamic json) {
+  if (json is! Map<String, dynamic>) return const SupervisorBulkResult();
+  final raw = json['items'];
+  final items = <SupervisorBulkItem>[];
+  if (raw is List) {
+    for (final e in raw) {
+      if (e is Map<String, dynamic>) items.add(_bulkItemFromJson(e));
+    }
+  }
+  items.sort((a, b) => a.index.compareTo(b.index));
+  return SupervisorBulkResult(
+    items: items,
+    deletedCount: (json['deletedCount'] as num?)?.toInt() ?? 0,
+  );
+}
+
+// --- T05 supervisor AI task drafts (proposals, never real tasks) ---
+
+/// `TaskDraftResponse` → domain. Tolerant: a row without id/title is
+/// dropped by the list parser, never a crash.
+TaskDraft? taskDraftFromJson(dynamic json) {
+  if (json is! Map<String, dynamic>) return null;
+  final id = json['id']?.toString() ?? '';
+  final title = (json['title'] as String?)?.trim() ?? '';
+  if (id.isEmpty || title.isEmpty) return null;
+  final rawDue = json['dueDate'];
+  DateTime? due;
+  if (rawDue is String && rawDue.isNotEmpty) {
+    // Backend sends yyyy-MM-dd; DateTime parses it as UTC midnight.
+    due = DateTime.tryParse(rawDue);
+  }
+  return TaskDraft(
+    id: id,
+    referenceInternshipId: json['referenceInternshipId']?.toString() ?? '',
+    title: title,
+    description: json['description'] as String?,
+    dueDate: due,
+    createdAt: _date(json['createdAt']),
+  );
+}
+
+List<TaskDraft> taskDraftListFromJson(dynamic json) {
+  if (json is! List) return const [];
+  final out = <TaskDraft>[];
+  for (final e in json) {
+    final d = taskDraftFromJson(e);
+    if (d != null) out.add(d);
+  }
+  return out;
+}
+
+Map<String, dynamic> manualDraftJson({
+  required String referenceInternshipId,
+  required String title,
+  String? description,
+  DateTime? dueDate,
+}) {
+  final map = <String, dynamic>{
+    'referenceInternshipId': referenceInternshipId,
+    'title': title,
+  };
+  if (description != null) map['description'] = description;
+  if (dueDate != null) map['dueDate'] = _ymd(dueDate);
+  return map;
+}
+
+Map<String, dynamic> updateDraftJson({
+  String? title,
+  String? description,
+  DateTime? dueDate,
+}) {
+  final map = <String, dynamic>{};
+  if (title != null) map['title'] = title;
+  if (description != null) map['description'] = description;
+  if (dueDate != null) map['dueDate'] = _ymd(dueDate);
+  return map;
+}
+
+DraftBulkItem _draftBulkItemFromJson(Map<String, dynamic> json) =>
+    DraftBulkItem(
+      index: (json['index'] as num?)?.toInt() ?? 0,
+      draftId: json['draftId']?.toString() ?? '',
+      internshipId: json['internshipId']?.toString() ?? '',
+      taskId: json['taskId']?.toString(),
+      status: (json['status']?.toString() ?? 'UNKNOWN').toUpperCase(),
+    );
+
+/// `BulkAddDraftsResponse`: per-pair entries in request order.
+DraftBulkResult draftBulkResultFromJson(dynamic json) {
+  final raw = json is Map<String, dynamic> ? json['items'] : null;
+  if (raw is! List) return const DraftBulkResult();
+  final items = <DraftBulkItem>[];
+  for (final e in raw) {
+    if (e is Map<String, dynamic> &&
+        (e['draftId']?.toString() ?? '').isNotEmpty) {
+      items.add(_draftBulkItemFromJson(e));
+    }
+  }
+  items.sort((a, b) => a.index.compareTo(b.index));
+  return DraftBulkResult(items: items);
+}
+
+Map<String, dynamic> bulkAddDraftsJson({
+  required List<String> draftIds,
+  required List<String> internshipIds,
+  DateTime? visibleFrom,
+}) {
+  final map = <String, dynamic>{
+    'draftIds': draftIds,
+    'internshipIds': internshipIds,
+  };
+  // T05/D8 optional batch schedule (T04 rule, validated per target).
+  if (visibleFrom != null) {
+    map['visibleFrom'] = visibleFrom.toUtc().toIso8601String();
+  }
   return map;
 }

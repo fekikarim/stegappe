@@ -102,6 +102,7 @@ class InternTask extends Equatable {
     this.assignedToId,
     this.reviewReason,
     this.reviewedAt,
+    this.visibleFrom,
   });
 
   final String id;
@@ -122,6 +123,11 @@ class InternTask extends Equatable {
 
   /// `TaskResponse.reviewedAt` — when the supervisor decided.
   final DateTime? reviewedAt;
+
+  /// `TaskResponse.visibleFrom` — T04/D8 scheduled visibility (null =
+  /// immediate). A future instant hides the task from the student until it
+  /// passes; staff always sees it. Absolute server instant, never device-local.
+  final DateTime? visibleFrom;
 
   /// BR-11: only an approved task is done. A completion under review is
   /// [awaitsReview], never done.
@@ -160,6 +166,12 @@ class InternTask extends Equatable {
         dueDate!.day == now.day;
   }
 
+  /// T04/D8: still scheduled for the future from [now]'s point of view.
+  /// The server is authoritative (student reads never include such tasks);
+  /// this is display/invalidation logic only.
+  bool isScheduled(DateTime now) =>
+      visibleFrom != null && visibleFrom!.isAfter(now);
+
   InternTask copyWith({
     String? title,
     String? description,
@@ -170,6 +182,7 @@ class InternTask extends Equatable {
     String? assignedToId,
     String? reviewReason,
     DateTime? reviewedAt,
+    DateTime? visibleFrom,
   }) =>
       InternTask(
         id: id,
@@ -182,6 +195,7 @@ class InternTask extends Equatable {
         assignedToId: assignedToId ?? this.assignedToId,
         reviewReason: reviewReason ?? this.reviewReason,
         reviewedAt: reviewedAt ?? this.reviewedAt,
+        visibleFrom: visibleFrom ?? this.visibleFrom,
       );
 
   @override
@@ -196,6 +210,7 @@ class InternTask extends Equatable {
         assignedToId,
         reviewReason,
         reviewedAt,
+        visibleFrom,
       ];
 }
 

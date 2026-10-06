@@ -114,6 +114,15 @@ class MessagingRepositoryImpl implements MessagingRepository {
   }
 
   @override
+  Future<ChatMessage> sendRest(String conversationId, String content,
+      {String? idempotencyKey}) async {
+    final bearer = await _bearer();
+    final self = await _selfId();
+    return remote.sendMessageRest(conversationId, bearer, content,
+        selfUserId: self, idempotencyKey: idempotencyKey);
+  }
+
+  @override
   Future<ChatMessage> sendWithAttachment(
     String conversationId, {
     required String content,

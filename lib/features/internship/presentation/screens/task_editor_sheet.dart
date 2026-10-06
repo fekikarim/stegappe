@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:intl/intl.dart';
 
 import '../../../../core/l10n/app_localizations.dart';
 import '../../../../core/network/api_exception.dart';
@@ -11,7 +12,10 @@ import '../../../../core/widgets/steg_fields.dart';
 import '../../../../features/auth/domain/entities/app_user.dart';
 import '../../../../features/auth/presentation/providers/auth_providers.dart';
 import '../../domain/entities/work_items.dart';
+import '../../domain/schedule.dart';
+import '../providers/supervisor_tasks_providers.dart';
 import '../providers/workspace_providers.dart';
+import '../widgets/schedule_field.dart' show pickTunisMoment;
 import '../widgets/status_labels.dart';
 
 /// Task create/edit sheet.
@@ -20,15 +24,24 @@ import '../widgets/status_labels.dart';
 ///   tasks (BR-14). The status chip set is scoped to what the current actor
 ///   may legitimately write — students never see `APPROVED`/`DENIED`/`CANCELLED`
 ///   (staff review decisions) and `unknown` is never part of the vocabulary.
+/// - Staff mode (T04/SU-TASK-01/03/04): the supervisor creates/edits for the
+///   chosen student, with an optional schedule (D8): the task appears to the
+///   student at the picked Tunis moment, immediately when cleared. Status is
+///   never edited here in staff mode — review owns it (BR-11).
 class TaskEditorSheet extends ConsumerStatefulWidget {
   const TaskEditorSheet({
     super.key,
     required this.internshipId,
     this.existing,
+    this.staffMode = false,
   });
 
   final String internshipId;
   final InternTask? existing;
+
+  /// Supervisor editing/creating for a student (own scope enforced by the
+  /// backend; the UI gate is UX only).
+  final bool staffMode;
 
   @override
   ConsumerState<TaskEditorSheet> createState() => _TaskEditorSheetState();
@@ -37,14 +50,21 @@ class TaskEditorSheet extends ConsumerStatefulWidget {
     BuildContext context, {
     required String internshipId,
     InternTask? existing,
+    bool staffMode = false,
   }) =>
       showStegSheet(
         context,
         title: existing == null
-            ? AppLocalizations.of(context).taskNew
-            : AppLocalizations.of(context).taskEdit,
+            ? (staffMode
+                ? AppLocalizations.of(context).supTaskNew
+                : AppLocalizations.of(context).taskNew)
+            : (staffMode
+                ? AppLocalizations.of(context).supTaskEdit
+                : AppLocalizations.of(context).taskEdit),
         builder: (_) => TaskEditorSheet(
-            internshipId: internshipId, existing: existing),
+            internshipId: internshipId,
+            existing: existing,
+            staffMode: staffMode),
       );
 }
 
@@ -53,6 +73,9 @@ class _TaskEditorSheetState extends ConsumerState<TaskEditorSheet> {
   late final TextEditingController _description;
   DateTime? _due;
   TaskStatus? _status;
+  // T04/D8 schedule: absolute UTC instant (Tunis wall converted on pick).
+  // Null = immediate on create, unchanged on update.
+  DateTime? _scheduled;
   bool _saving = false;
   bool _allowPop = false;
   String? _titleError;
@@ -68,12 +91,15 @@ class _TaskEditorSheetState extends ConsumerState<TaskEditorSheet> {
         TextEditingController(text: widget.existing?.description ?? '');
     _due = widget.existing?.dueDate;
     _status = widget.existing?.status;
+    _scheduled = widget.existing?.visibleFrom;
     // A student may only edit his own tasks (BR-14). A task whose
     // authorship is unknown (legacy row, absent `createdById`) defaults to
-    // supervisor-authored — the safe answer is read-only.
-    _canEdit = _isEdit
-        ? studentOwnsTask(widget.existing!, _currentUser?.id)
-        : _isIntern;
+    // supervisor-authored — the safe answer is read-only. Staff mode always
+    // edits (scope is enforced server-side, 404 out of scope).
+    _canEdit = widget.staffMode ||
+        (_isEdit
+            ? studentOwnsTask(widget.existing!, _currentUser?.id)
+            : _isIntern);
     // Status vocabulary is scoped to the current actor. Students never see
     // staff-only review decisions; everyone excludes `unknown`.
     // (_editableStatuses is a getter computed from the current actor.)
@@ -91,12 +117,14 @@ class _TaskEditorSheetState extends ConsumerState<TaskEditorSheet> {
     if (e == null) {
       return _title.text.trim().isNotEmpty ||
           _description.text.trim().isNotEmpty ||
-          _due != null;
+          _due != null ||
+          _scheduled != null;
     }
     return _title.text != e.title ||
         _description.text != (e.description ?? '') ||
         _due != e.dueDate ||
-        _status != e.status;
+        _status != e.status ||
+        _scheduled != e.visibleFrom;
   }
 
   /// Current actor, if the auth controller has bootstrapped to an
@@ -166,21 +194,34 @@ class _TaskEditorSheetState extends ConsumerState<TaskEditorSheet> {
             description:
                 _description.text.trim().isEmpty ? null : _description.text.trim(),
             dueDate: _due,
-            status: _status);
+            status: widget.staffMode ? null : _status,
+            visibleFrom: widget.staffMode ? _scheduled : null);
       } else {
         await repo.createTask(widget.internshipId,
             title: _title.text.trim(),
             description:
                 _description.text.trim().isEmpty ? null : _description.text.trim(),
-            dueDate: _due);
+            dueDate: _due,
+            visibleFrom: widget.staffMode ? _scheduled : null);
       }
-      ref
-        ..invalidate(taskListProvider)
-        ..invalidate(dashboardProvider);
+      if (widget.staffMode) {
+        ref
+          ..invalidate(supervisorTasksProvider)
+          ..invalidate(supervisedInternsProvider)
+          ..invalidate(
+              supervisedInternDetailProvider(widget.internshipId));
+      } else {
+        ref
+          ..invalidate(taskListProvider)
+          ..invalidate(dashboardProvider);
+      }
       if (mounted) {
         Navigator.of(context).pop();
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(l10n.taskSaved)),
+          SnackBar(
+              content: Text(widget.staffMode
+                  ? (_isEdit ? l10n.supTaskUpdated : l10n.supTaskCreated)
+                  : l10n.taskSaved)),
         );
       }
     } on ApiException catch (e) {
@@ -209,6 +250,15 @@ class _TaskEditorSheetState extends ConsumerState<TaskEditorSheet> {
       lastDate: DateTime(now.year + 2),
     );
     if (picked != null) setState(() => _due = picked);
+  }
+
+  /// T04/D8 schedule pickers: Tunis wall date + time → absolute UTC instant.
+  /// Clearing means immediate on create; on edit it stamps "now" (a past
+  /// instant is immediate server-side, since null would mean "unchanged").
+  Future<void> _pickScheduleDate() async {
+    final picked =
+        await pickTunisMoment(context, initial: _scheduled);
+    if (picked != null && mounted) setState(() => _scheduled = picked);
   }
 
   @override
@@ -262,7 +312,17 @@ class _TaskEditorSheetState extends ConsumerState<TaskEditorSheet> {
                   child: Text(l10n.taskClearDate),
                 ),
             ],
-          ),            if (_isEdit) ...[
+          ),
+          if (widget.staffMode) ...[
+            const SizedBox(height: StegSpacing.sm),
+            _ScheduleRow(
+              scheduled: _scheduled,
+              onPick: _pickScheduleDate,
+              onClear: () => setState(() => _scheduled =
+                  _isEdit ? DateTime.now().toUtc() : null),
+            ),
+          ],
+          if (_isEdit && !widget.staffMode) ...[
             const SizedBox(height: StegSpacing.sm),
             if (!_canEdit)
               Semantics(
@@ -307,4 +367,65 @@ class _TaskEditorSheetState extends ConsumerState<TaskEditorSheet> {
       ),
     );
   }
+}
+
+/// T04/D8 schedule row (staff mode only): shows the Tunis moment the task
+/// appears to the student, or "immediately". Picking converts Tunis wall
+/// time to an absolute UTC instant (never a bare device-local string).
+class _ScheduleRow extends StatelessWidget {
+  const _ScheduleRow({
+    required this.scheduled,
+    required this.onPick,
+    required this.onClear,
+  });
+
+  final DateTime? scheduled;
+  final VoidCallback onPick;
+  final VoidCallback onClear;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    final locale = Localizations.localeOf(context);
+    final moment = scheduled == null
+        ? l10n.supScheduleNone
+        : _formatTunisMoment(scheduled!, locale);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Expanded(
+              child: Text('${l10n.supScheduleLabel} : $moment'),
+            ),
+            TextButton(
+              onPressed: onPick,
+              child: Text(scheduled == null
+                  ? l10n.supSchedulePickDate
+                  : l10n.supSchedulePickTime),
+            ),
+            if (scheduled != null)
+              TextButton(
+                onPressed: onClear,
+                child: Text(l10n.supScheduleClear),
+              ),
+          ],
+        ),
+        Text(
+          l10n.supScheduleOutsideNote,
+          style: Theme.of(context).textTheme.bodySmall,
+        ),
+      ],
+    );
+  }
+}
+
+/// Tunis wall rendering of an absolute instant (date + 24h time, locale
+/// digits via intl).
+String _formatTunisMoment(DateTime instant, Locale locale) {
+  final wall = tunisWallFromInstant(instant);
+  final tag = locale.toString();
+  final date = DateFormat.yMd(tag).format(wall);
+  final time = DateFormat.Hm(tag).format(wall);
+  return '$date $time';
 }
