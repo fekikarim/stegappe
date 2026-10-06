@@ -321,6 +321,65 @@ class AppLocalizations {
     'notifMarkRead': {'fr': 'Marquer comme lue', 'en': 'Mark as read', 'ar': 'تعليم كمقروءة'},
     'notifMarkAllRead': {'fr': 'Tout marquer comme lu', 'en': 'Mark all as read', 'ar': 'تعليم الكل كمقروء'},
     'notifOpen': {'fr': 'Ouvrir', 'en': 'Open', 'ar': 'فتح'},
+    // --- T01 notification catalogue (D11) + grouped-list labels ---
+    'notifTypeTaskAssigned': {
+      'fr': 'Nouvelle tâche', 'en': 'New task', 'ar': 'مهمة جديدة'},
+    'notifTypeTaskUpdated': {
+      'fr': 'Tâche modifiée', 'en': 'Task edited', 'ar': 'تم تعديل المهمة'},
+    'notifTypeTaskDeleted': {
+      'fr': 'Tâche supprimée', 'en': 'Task deleted', 'ar': 'تم حذف المهمة'},
+    'notifTypeTaskStatusChanged': {
+      'fr': 'Tâche mise à jour', 'en': 'Task status changed', 'ar': 'تغيرت حالة المهمة'},
+    'notifTypeDocumentRejected': {
+      'fr': 'Document refusé', 'en': 'Document rejected', 'ar': 'تم رفض المستند'},
+    'notifTypeDocumentVerified': {
+      'fr': 'Document vérifié', 'en': 'Document verified', 'ar': 'تم التحقق من المستند'},
+    'notifTypeApplicationSubmitted': {
+      'fr': 'Candidature envoyée', 'en': 'Application submitted', 'ar': 'تم إرسال الترشح'},
+    'notifTypeApplicationResubmitted': {
+      'fr': 'Candidature renvoyée', 'en': 'Application resubmitted', 'ar': 'تمت إعادة إرسال الترشح'},
+    'notifTypeApplicationAccepted': {
+      'fr': 'Candidature acceptée', 'en': 'Application accepted', 'ar': 'تم قبول الترشح'},
+    'notifTypeApplicationRejected': {
+      'fr': 'Candidature refusée', 'en': 'Application rejected', 'ar': 'تم رفض الترشح'},
+    'notifTypeApplicationModification': {
+      'fr': 'Modification demandée', 'en': 'Changes requested', 'ar': 'طلب تعديل'},
+    'notifTypeCandidateValidated': {
+      'fr': 'Profil validé', 'en': 'Profile validated', 'ar': 'تمت المصادقة على الملف'},
+    'notifTypeInternshipAssigned': {
+      'fr': 'Stage attribué', 'en': 'Internship assigned', 'ar': 'تم إسناد التربص'},
+    'notifTypeInternshipStatusChanged': {
+      'fr': 'Stage mis à jour', 'en': 'Internship updated', 'ar': 'تم تحديث التربص'},
+    'notifTypeInternshipReportSubmitted': {
+      'fr': 'Rapport soumis', 'en': 'Report submitted', 'ar': 'تم إرسال التقرير'},
+    'notifTypeFinalEvaluationRequired': {
+      'fr': 'Évaluation finale requise', 'en': 'Final evaluation required', 'ar': 'التقييم النهائي مطلوب'},
+    'notifTypeJournalValidated': {
+      'fr': 'Journal validé', 'en': 'Journal validated', 'ar': 'تم مصادقة الدفتر'},
+    'notifTypePaymentApproved': {
+      'fr': 'Paiement approuvé', 'en': 'Payment approved', 'ar': 'تمت المصادقة على الأداء'},
+    'notifTypeCertificateAvailable': {
+      'fr': 'Certificat disponible', 'en': 'Certificate available', 'ar': 'الشهادة متاحة'},
+    'notifTypeMessageReceived': {
+      'fr': 'Nouveau message', 'en': 'New message', 'ar': 'رسالة جديدة'},
+    'notifTypeWelcome': {
+      'fr': 'Bienvenue', 'en': 'Welcome', 'ar': 'مرحبا'},
+    'notifTypeGeneric': {
+      'fr': 'Notification', 'en': 'Notification', 'ar': 'إشعار'},
+    'notifToday': {
+      'fr': 'Aujourd’hui', 'en': 'Today', 'ar': 'اليوم'},
+    'notifWelcomeEmpty': {
+      'fr': 'Rien pour le moment — vos tâches et documents apparaîtront ici.',
+      'en': 'Nothing yet — your tasks and documents will appear here.',
+      'ar': 'لا شيء بعد — ستظهر مهامك ومستنداتك هنا.'},
+    'notifOfflineCached': {
+      'fr': 'Hors ligne — affichage du dernier état connu',
+      'en': 'Offline — showing the last known state',
+      'ar': 'غير متصل — عرض الحالة الأخيرة المعروفة'},
+    'notifUnavailable': {
+      'fr': 'Notification introuvable ou expirée.',
+      'en': 'Notification unavailable or expired.',
+      'ar': 'الإشعار غير متاح أو منتهي.'},
     // --- D6: progress overview + advisory logbook ---
     'progressTitle': {'fr': 'Progression globale', 'en': 'Overall progress', 'ar': 'التقدم العام'},
     'progressTasks': {'fr': 'Tâches accomplies', 'en': 'Tasks completed', 'ar': 'المهام المنجزة'},
@@ -720,6 +779,43 @@ class AppLocalizations {
   String get sockOffline => _get('sockOffline');
   String get sockLive => _get('sockLive');
   String get notifTitle => _get('notifTitle');
+  // --- T01 notification catalogue (D11) ---
+  String get notifTypeTaskAssigned => _get('notifTypeTaskAssigned');
+  String get notifTypeTaskUpdated => _get('notifTypeTaskUpdated');
+  String get notifTypeTaskDeleted => _get('notifTypeTaskDeleted');
+  String get notifTypeTaskStatusChanged => _get('notifTypeTaskStatusChanged');
+  String get notifTypeDocumentRejected => _get('notifTypeDocumentRejected');
+  String get notifTypeDocumentVerified => _get('notifTypeDocumentVerified');
+  String get notifTypeApplicationSubmitted =>
+      _get('notifTypeApplicationSubmitted');
+  String get notifTypeApplicationResubmitted =>
+      _get('notifTypeApplicationResubmitted');
+  String get notifTypeApplicationAccepted =>
+      _get('notifTypeApplicationAccepted');
+  String get notifTypeApplicationRejected =>
+      _get('notifTypeApplicationRejected');
+  String get notifTypeApplicationModification =>
+      _get('notifTypeApplicationModification');
+  String get notifTypeCandidateValidated =>
+      _get('notifTypeCandidateValidated');
+  String get notifTypeInternshipAssigned =>
+      _get('notifTypeInternshipAssigned');
+  String get notifTypeInternshipStatusChanged =>
+      _get('notifTypeInternshipStatusChanged');
+  String get notifTypeInternshipReportSubmitted =>
+      _get('notifTypeInternshipReportSubmitted');
+  String get notifTypeFinalEvaluationRequired =>
+      _get('notifTypeFinalEvaluationRequired');
+  String get notifTypeJournalValidated => _get('notifTypeJournalValidated');
+  String get notifTypePaymentApproved => _get('notifTypePaymentApproved');
+  String get notifTypeCertificateAvailable => _get('notifTypeCertificateAvailable');
+  String get notifTypeMessageReceived => _get('notifTypeMessageReceived');
+  String get notifTypeWelcome => _get('notifTypeWelcome');
+  String get notifTypeGeneric => _get('notifTypeGeneric');
+  String get notifToday => _get('notifToday');
+  String get notifWelcomeEmpty => _get('notifWelcomeEmpty');
+  String get notifOfflineCached => _get('notifOfflineCached');
+  String get notifUnavailable => _get('notifUnavailable');
   String get notifEmpty => _get('notifEmpty');
   String get notifUnreadOnly => _get('notifUnreadOnly');
   String get notifMarkRead => _get('notifMarkRead');

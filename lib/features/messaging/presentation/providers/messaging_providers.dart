@@ -1,8 +1,10 @@
 import 'dart:async';
+import 'dart:convert';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/network/paged.dart';
+import '../../../../core/realtime/realtime_sync.dart';
 import '../../../auth/presentation/providers/auth_providers.dart';
 import '../../data/datasources/messaging_remote_data_source.dart';
 import '../../data/repositories/messaging_repository_impl.dart';
@@ -12,6 +14,246 @@ import '../../domain/entities/conversation.dart';
 import '../../domain/entities/notification_item.dart';
 import '../../domain/repositories/messaging_repository.dart';
 import '../../domain/repositories/notification_repository.dart';
+
+/// Notification-center state (T01): REST-authoritative rows merged with
+/// deduplicated live frames, plus the last failure for honest error rendering.
+class NotificationsState {
+  const NotificationsState({
+    this.items = const [],
+    this.unreadCount = 0,
+    this.loading = false,
+    this.loaded = false,
+    this.offlineCache = false,
+    this.unreadOnly = false,
+    this.live = false,
+    this.error,
+  });
+
+  /// Newest-first (REST order; frames merge through [mergeNotificationFrame]).
+  final List<NotificationItem> items;
+  final int unreadCount;
+  final bool loading;
+  final bool loaded;
+
+  /// True when the current rows came from the last-good snapshot while
+  /// offline (degraded banner shows instead of a blank screen).
+  final bool offlineCache;
+
+  /// True while the "unread only" filter is active — the flag is sent to the
+  /// server (`GET /api/notifications?unreadOnly=true`) so the filtered view
+  /// covers the retained history, not only the loaded page.
+  final bool unreadOnly;
+
+  /// Socket streaming right now (drives the honest "live sync" hint).
+  final bool live;
+
+  /// Raw failure object; localized at the render edge (T00 error model).
+  final Object? error;
+
+  NotificationsState copyWith({
+    List<NotificationItem>? items,
+    int? unreadCount,
+    bool? loading,
+    bool? loaded,
+    bool? offlineCache,
+    bool? unreadOnly,
+    bool? live,
+    Object? error,
+    bool clearError = false,
+  }) =>
+      NotificationsState(
+        items: items ?? this.items,
+        unreadCount: unreadCount ?? this.unreadCount,
+        loading: loading ?? this.loading,
+        loaded: loaded ?? this.loaded,
+        offlineCache: offlineCache ?? this.offlineCache,
+        unreadOnly: unreadOnly ?? this.unreadOnly,
+        live: live ?? this.live,
+        error: clearError ? null : error ?? this.error,
+      );
+}
+
+/// Loads REST state, then applies live frames through the dedupe reducer.
+/// Resyncs on every socket reconnect (`resyncRequested`) and never marks a
+/// REST-known read row unread from a frame.
+class NotificationsController extends StateNotifier<NotificationsState> {
+  NotificationsController(this._repo, this._frames, this._stomp, this._sync)
+      : super(const NotificationsState()) {
+    _init();
+  }
+
+  final NotificationRepository _repo;
+  final NotificationFrames _frames;
+  final StompChatService _stomp;
+  final RealtimeSync _sync;
+  StreamSubscription<ChatConnectionState>? _stateSub;
+  StreamSubscription<void>? _resyncSub;
+  StreamSubscription<String>? _framesSub;
+  var _disposed = false;
+
+  Future<void> _init() async {
+    await refresh();
+    if (_disposed) return;
+    // Auth-aware lifecycle: every reconnect re-subscribes (service contract)
+    // and its resync signal triggers a REST refresh, so a missed frame can
+    // never leave stale state.
+    _stateSub = _stomp.state.listen(_onSocketState);
+    _resyncSub = _stomp.resyncRequested.listen((_) => refresh());
+    // Frames arrive through the session-wide sink: the STOMP service keeps ONE
+    // callback per destination (`_subs[dest] = cb`) and `foregroundSyncProvider`
+    // owns the notification slot for the whole session. Subscribing here would
+    // steal it and leave a disposed handler installed once this screen closes.
+    _framesSub = _frames.stream.listen(_onFrame);
+    try {
+      await _stomp.ensureConnected();
+    } on Exception {
+      // Offline at open: REST state is on screen; the socket connects later.
+    }
+  }
+
+  void _onSocketState(ChatConnectionState s) {
+    if (_disposed) return;
+    final live = s == ChatConnectionState.connected;
+    state = state.copyWith(
+      live: live,
+      // Reconnecting clears the degraded banner.
+      offlineCache: live ? false : state.offlineCache,
+    );
+  }
+
+  /// Applies the unread filter by re-querying the server (never by hiding rows
+  /// of the loaded page: unread history older than the first page stays
+  /// reachable).
+  Future<void> setUnreadOnly(bool unreadOnly) async {
+    if (state.unreadOnly == unreadOnly) return;
+    state = state.copyWith(unreadOnly: unreadOnly, items: const []);
+    await refresh();
+  }
+
+  void _onFrame(String body) {
+    if (_disposed) return;
+    final frame = notificationItemFromFrame(body);
+    if (frame == null) return; // malformed frame: keep REST state
+    // Dedupe by id + stable newest-first order; never un-read a read row.
+    final merged = mergeNotificationFrame(state.items, frame);
+    if (identical(merged, state.items)) return;
+    state = state.copyWith(items: merged);
+    // The live signal alone never computes the badge: refetch the
+    // authoritative count (and list) so REST stays the source of truth.
+    refreshUnread();
+  }
+
+  Future<void> refresh() async {
+    state = state.copyWith(loading: true, clearError: true);
+    try {
+      final page = await _repo.list(size: 20, unreadOnly: state.unreadOnly);
+      final unread = await _repo.unreadCount().catchError((_) => 0);
+      if (_disposed) return;
+      state = state.copyWith(
+        items: page.items,
+        unreadCount: unread,
+        loading: false,
+        loaded: true,
+        offlineCache: false,
+      );
+    } on Exception catch (e) {
+      if (_disposed) return;
+      // Degrade honestly: keep the last-good rows with the offline flag,
+      // only error when there is nothing to show.
+      if (state.items.isEmpty) {
+        state = state.copyWith(loading: false, loaded: true, error: e);
+      } else {
+        state = state.copyWith(loading: false, loaded: true, offlineCache: true);
+      }
+    }
+  }
+
+  Future<void> refreshUnread() async {
+    try {
+      final unread = await _repo.unreadCount();
+      if (!_disposed) state = state.copyWith(unreadCount: unread);
+    } on Exception {
+      // Badge refreshes on next successful sync; never alarms the user.
+    }
+  }
+
+  Future<void> markRead(NotificationItem n) async {
+    // Optimistic with rollback (in-flight protection lives in the screen).
+    final wasRead = n.isRead;
+    final previous = state.items;
+    final unreadBefore = state.unreadCount;
+    if (!wasRead) {
+      state = state.copyWith(
+        // Under the unread filter a read row leaves the list; the rollback
+        // below restores the exact previous snapshot.
+        items: [
+          for (final item in state.items)
+            if (item.id != n.id)
+              item
+            else if (!state.unreadOnly)
+              item.copyWith(isRead: true),
+        ],
+        unreadCount: unreadBefore > 0 ? unreadBefore - 1 : 0,
+      );
+    }
+    try {
+      await _repo.markRead(n.id);
+      await refreshUnread();
+    } on Exception {
+      if (_disposed) return;
+      // Roll back the optimistic change; the server keeps the authority.
+      state = state.copyWith(items: previous, unreadCount: unreadBefore);
+      rethrow;
+    }
+  }
+
+  Future<void> markAllRead() async {
+    final previous = state.items;
+    final unreadBefore = state.unreadCount;
+    state = state.copyWith(
+      // Under the unread filter "all read" empties the view.
+      items: state.unreadOnly
+          ? const []
+          : [for (final item in previous) item.copyWith(isRead: true)],
+      unreadCount: 0,
+    );
+    try {
+      await _repo.markAllRead();
+    } on Exception {
+      if (_disposed) return;
+      // Roll back; the next refresh reconciles with the server anyway.
+      state = state.copyWith(items: previous, unreadCount: unreadBefore);
+      rethrow;
+    }
+  }
+
+  /// Notification category → T00 RealtimeSync invalidation (other surfaces
+  /// that show notification-derived state, e.g. the home dashboard). Called
+  /// by the screen after explicit user actions so caches converge.
+  void invalidateRelatedCaches() {
+    _sync.invalidate(RealtimeCategory.notifications);
+  }
+
+  @override
+  void dispose() {
+    _disposed = true;
+    _stateSub?.cancel();
+    _resyncSub?.cancel();
+    _framesSub?.cancel();
+    super.dispose();
+  }
+}
+
+/// Parses a raw `/user/queue/notifications` frame tolerantly.
+NotificationItem? notificationItemFromFrame(String body) {
+  try {
+    final decoded = jsonDecode(body);
+    if (decoded is! Map<String, dynamic>) return null;
+    return notificationItemFromPayloadJson(decoded);
+  } on Exception {
+    return null;
+  }
+}
 
 final stompChatServiceProvider = Provider<StompChatService>((ref) {
   final service = StompChatServiceImpl(
@@ -364,32 +606,80 @@ class ChatController extends StateNotifier<ChatState> {
   }
 }
 
-/// Foreground notification feed: socket payloads refresh the center,
-/// plus explicit refresh on resume (no push provider configured).
+/// Fan-out sink for raw `/user/queue/notifications` payloads.
+///
+/// `StompChatServiceImpl` keeps a single callback per destination
+/// (`_subs[dest] = onPayload`), so exactly one session-scoped owner may hold
+/// that slot: [foregroundSyncProvider] does, for the whole authenticated
+/// session. Every frame it receives is pushed here and any number of in-app
+/// listeners consume it (the open notification center merges frames with
+/// dedupe today) without ever touching the socket — closing a screen can no
+/// longer leave a stale socket handler behind.
+class NotificationFrames {
+  final _controller = StreamController<String>.broadcast();
+
+  Stream<String> get stream => _controller.stream;
+
+  void add(String body) {
+    if (!_controller.isClosed) _controller.add(body);
+  }
+
+  Future<void> dispose() => _controller.close();
+}
+
+final notificationFramesProvider = Provider<NotificationFrames>((ref) {
+  final frames = NotificationFrames();
+  ref.onDispose(frames.dispose);
+  return frames;
+});
+
+/// T01 notification center controller (typed state + live dedupe + resync).
+/// Auto-disposes when the center closes; the frames subscription lives with it
+/// and the badge provider below keeps the shell honest.
+final notificationsControllerProvider = StateNotifierProvider.autoDispose<
+    NotificationsController, NotificationsState>((ref) {
+  return NotificationsController(
+    ref.watch(notificationRepositoryProvider),
+    ref.watch(notificationFramesProvider),
+    ref.watch(stompChatServiceProvider),
+    ref.watch(realtimeSyncProvider),
+  );
+});
+
+/// Unread badge for the shell bell — REST-authoritative, refreshed by the
+/// live frames through [notificationsControllerProvider.refreshUnread] while
+/// the center is open and by resume/pull-to-refresh otherwise.
+final unreadNotificationsProvider = FutureProvider<int>((ref) async {
+  final repo = ref.watch(notificationRepositoryProvider);
+  return repo.unreadCount();
+});
+
+/// Compatibility provider (existing tests/screens): the REST page behind the
+/// controller. Prefer [notificationsControllerProvider] for the center.
 final notificationsProvider =
     FutureProvider<Paged<NotificationItem>>((ref) async {
   final repo = ref.watch(notificationRepositoryProvider);
   return repo.list(size: 20);
 });
 
-final unreadNotificationsProvider = FutureProvider<int>((ref) async {
-  final repo = ref.watch(notificationRepositoryProvider);
-  return repo.unreadCount();
-});
-
 /// Subscribes once per login session: notification payloads + chat
 /// errors refresh the relevant providers. Called from AuthGate after
 /// authentication (idempotent per session via keepAlive guard).
 final foregroundSyncProvider = Provider<void>((ref) {
+  final frames = ref.read(notificationFramesProvider);
   // Fire-and-forget subscriptions; errors never break the session.
   Future<void> boot() async {
     final stomp = ref.read(stompChatServiceProvider);
     try {
       await stomp.ensureConnected();
-      await stomp.subscribeNotifications((_) {
-        ref.invalidate(notificationsProvider);
+      await stomp.subscribeNotifications((body) {
+        // Single session owner of the destination: hand the raw payload to the
+        // in-app sink (the open center merges it with dedupe) and refresh the
+        // authoritative counts the shell renders.
+        frames.add(body);
         ref.invalidate(unreadNotificationsProvider);
         ref.invalidate(totalUnreadMessagesProvider);
+        ref.invalidate(notificationsProvider);
       });
       await stomp.subscribeErrors((_, _) {});
     } on Exception {
