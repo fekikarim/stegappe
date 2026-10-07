@@ -28,13 +28,23 @@ Future<void> showJournalDetailSheet(
   );
 }
 
-class _JournalDetailBody extends ConsumerWidget {
+class _JournalDetailBody extends ConsumerStatefulWidget {
   const _JournalDetailBody({required this.entry});
 
   final JournalEntry entry;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<_JournalDetailBody> createState() =>
+      _JournalDetailBodyState();
+}
+
+class _JournalDetailBodyState extends ConsumerState<_JournalDetailBody> {
+  bool _submitting = false;
+
+  JournalEntry get entry => widget.entry;
+
+  @override
+  Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     final locale = Localizations.localeOf(context);
     final auth = ref.watch(authControllerProvider);
@@ -116,7 +126,8 @@ class _JournalDetailBody extends ConsumerWidget {
           StegButton(
             label: l10n.journalSubmitAction,
             icon: Icons.send_outlined,
-            onPressed: () => _submit(context, ref),
+            loading: _submitting,
+            onPressed: _submitting ? null : () => _submit(context, ref),
           ),
         if (role == UserRole.supervisor && entry.awaitsSupervisor)
           Row(
@@ -146,6 +157,8 @@ class _JournalDetailBody extends ConsumerWidget {
   }
 
   Future<void> _submit(BuildContext context, WidgetRef ref) async {
+    if (_submitting) return;
+    setState(() => _submitting = true);
     final l10n = AppLocalizations.of(context);
     try {
       await ref
@@ -162,6 +175,8 @@ class _JournalDetailBody extends ConsumerWidget {
         );
       }
     } on Exception catch (e) {
+      if (!mounted) return;
+      setState(() => _submitting = false);
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(

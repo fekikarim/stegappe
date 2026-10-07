@@ -11,6 +11,7 @@ import '../../../../core/theme/steg_spacing.dart';
 import '../../../../core/widgets/steg_button.dart';
 import '../../../../core/widgets/steg_fields.dart';
 import '../../data/cache/composer_draft_store.dart';
+import '../../domain/entities/work_items.dart';
 import '../providers/workspace_providers.dart';
 
 /// Journal composer: records what the intern ACTUALLY did on [day].
@@ -40,9 +41,11 @@ class _JournalComposerScreenState
   final _title = TextEditingController();
   final _description = TextEditingController();
   Timer? _debounce;
+  late final ComposerDraftStore _draftStore;
   DateTime? _draftSavedAt;
   bool _loaded = false;
   bool _working = false;
+  bool _persisted = false;
   String? _titleError;
   String? _descError;
   String? _serverError;
@@ -50,6 +53,9 @@ class _JournalComposerScreenState
   @override
   void initState() {
     super.initState();
+    // Captured here: `ref` must not be touched in dispose (the element is
+    // already unmounting by then).
+    _draftStore = ref.read(composerDraftStoreProvider);
     _title.addListener(_onChanged);
     _description.addListener(_onChanged);
     _loadDraft();
@@ -57,7 +63,25 @@ class _JournalComposerScreenState
 
   @override
   void dispose() {
+    // Flush keystrokes that arrived inside the 600 ms debounce window so a
+    // quick back-navigation never silently drops the tail of the input.
+    // Fire-and-forget: the store write is best-effort, and the next open
+    // reloads whatever landed. Skipped once the content reached the server
+    // (the store was cleared on success — re-saving would resurrect a
+    // stale draft over the authoritative server copy).
     _debounce?.cancel();
+    if (!_persisted &&
+        (_title.text.isNotEmpty || _description.text.isNotEmpty)) {
+      _draftStore.save(
+            widget.internshipId,
+            widget.day,
+            ComposerDraft(
+              title: _title.text,
+              description: _description.text,
+              updatedAt: DateTime.now(),
+            ),
+          );
+    }
     _title.dispose();
     _description.dispose();
     super.dispose();
@@ -104,6 +128,11 @@ class _JournalComposerScreenState
     if (_title.text.trim().isEmpty) {
       _titleError = l10n.journalFieldRequired;
       ok = false;
+    } else if (_title.text.trim().length > kJournalTitleMaxLength) {
+      // Mirrors the server column (`journal_entries.title VARCHAR(255)`):
+      // UX-only, the backend remains authoritative.
+      _titleError = l10n.journalTitleTooLong(kJournalTitleMaxLength);
+      ok = false;
     } else {
       _titleError = null;
     }
@@ -135,6 +164,7 @@ class _JournalComposerScreenState
           description: _description.text.trim(),
           entryDate: widget.day);
       await store.clear(widget.internshipId, widget.day);
+      if (mounted) setState(() => _persisted = true);
       if (submit) {
         try {
           await repo.submitJournal(entry.id);

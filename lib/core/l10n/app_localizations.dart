@@ -554,6 +554,7 @@ class AppLocalizations {
     'journalDescLabel': {'fr': 'Travail effectué', 'en': 'Work performed', 'ar': 'العمل المنجز'},
     'journalDescHint': {'fr': 'Activités, difficultés, apprentissages…', 'en': 'Activities, difficulties, learnings…', 'ar': 'الأنشطة والصعوبات والدروس…'},
     'journalFieldRequired': {'fr': 'Ce champ est requis.', 'en': 'This field is required.', 'ar': 'هذا الحقل مطلوب.'},
+    'journalTitleTooLong': {'fr': 'Titre trop long ({max} caractères maximum).', 'en': 'Title too long ({max} characters maximum).', 'ar': 'العنوان طويل جدا ({max} حرفا كحد أقصى).'},
     'journalSaveDraft': {'fr': 'Enregistrer le brouillon', 'en': 'Save draft', 'ar': 'حفظ المسودة'},
     'journalSubmitAction': {'fr': 'Soumettre pour validation', 'en': 'Submit for validation', 'ar': 'إرسال للمصادقة'},
     'journalDraftSavedAt': {'fr': 'Brouillon enregistré à {t}', 'en': 'Draft saved at {t}', 'ar': 'حُفظت المسودة في {t}'},
@@ -1240,6 +1241,8 @@ class AppLocalizations {
   String get journalDescLabel => _get('journalDescLabel');
   String get journalDescHint => _get('journalDescHint');
   String get journalFieldRequired => _get('journalFieldRequired');
+  String journalTitleTooLong(int max) =>
+      _get('journalTitleTooLong').replaceAll('{max}', '$max');
   String get journalSaveDraft => _get('journalSaveDraft');
   String get journalSubmitAction => _get('journalSubmitAction');
   String journalDraftSavedAt(String t) =>

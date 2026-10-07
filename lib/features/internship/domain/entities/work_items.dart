@@ -217,6 +217,11 @@ class InternTask extends Equatable {
 /// JournalEntry = record of what ACTUALLY happened (backend-owned status).
 enum JournalStatus { draft, submitted, validated, rejected }
 
+/// Client-side title cap mirroring the server column
+/// (`journal_entries.title VARCHAR(255)`). UX-only: the backend stays
+/// authoritative and a longer title fails server-side.
+const int kJournalTitleMaxLength = 255;
+
 JournalStatus journalStatusFrom(String? raw) =>
     switch (raw?.toUpperCase()) {
       'SUBMITTED' => JournalStatus.submitted,

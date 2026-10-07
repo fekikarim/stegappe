@@ -8,6 +8,7 @@ import '../../../../core/network/api_exception.dart';
 import '../../../../core/network/paged.dart';
 import '../../../../core/offline/pending_writes.dart';
 import '../../../../core/realtime/community_sync.dart';
+import '../../../../core/realtime/document_sync.dart';
 import '../../../../core/realtime/realtime_sync.dart';
 import '../../../../core/realtime/task_sync.dart';
 import '../../../auth/presentation/providers/auth_providers.dart';
@@ -788,6 +789,15 @@ final foregroundSyncProvider = Provider<void>((ref) {
             item == null ? null : taskSyncCategoryFor(item);
         if (taskCategory != null) {
           ref.read(realtimeSyncProvider).invalidate(taskCategory);
+        }
+        // T09 journal sync (same posture as tasks): a validated-entry
+        // frame invalidates the journal + supervisor queues so both sides
+        // converge without a manual refresh. No submit/reject notification
+        // exists server-side; those paths stay on REST + resume + pull.
+        final documentCategory =
+            item == null ? null : documentSyncCategoryFor(item);
+        if (documentCategory != null) {
+          ref.read(realtimeSyncProvider).invalidate(documentCategory);
         }
         ref.invalidate(unreadNotificationsProvider);
         ref.invalidate(totalUnreadMessagesProvider);
