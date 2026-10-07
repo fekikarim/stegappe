@@ -35,6 +35,7 @@ class DeliverableDetailScreen extends ConsumerStatefulWidget {
 class _DeliverableDetailScreenState
     extends ConsumerState<DeliverableDetailScreen> {
   bool _downloading = false;
+  bool _submitting = false;
 
   Future<void> _download({int? version, required String fileName}) async {
     setState(() => _downloading = true);
@@ -57,25 +58,30 @@ class _DeliverableDetailScreenState
   }
 
   Future<void> _submit() async {
+    if (_submitting) return;
+    setState(() => _submitting = true);
     final l10n = AppLocalizations.of(context);
     try {
       await ref
           .read(internshipRepositoryProvider)
           .submitDeliverable(widget.deliverableId);
       refreshDeliverables(ref, widget.deliverableId);
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(l10n.deliverableSubmittedOk)),
-        );
-      }
+      if (!mounted) return;
+      // The guard stays held: the refetched SUBMITTED state removes the
+      // action, so no spinner lingers and no second submit can start. A tap
+      // landing in the refetch window hits the server, which owns the
+      // transition (409 INVALID_STATUS_TRANSITION maps to an honest error).
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(l10n.deliverableSubmittedOk)),
+      );
     } on Exception catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(userMessageOf(e, l10n)),
-          ),
-        );
-      }
+      if (!mounted) return;
+      setState(() => _submitting = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(userMessageOf(e, l10n)),
+        ),
+      );
     }
   }
 
@@ -166,7 +172,8 @@ class _DeliverableDetailScreenState
                 StegButton(
                   label: l10n.deliverableSubmitAction,
                   icon: Icons.send_outlined,
-                  onPressed: _submit,
+                  loading: _submitting,
+                  onPressed: _submitting ? null : _submit,
                 ),
                 const SizedBox(height: StegSpacing.xs),
               ],
@@ -451,6 +458,13 @@ class _DeliverableReviewDialogState
             required: !widget.approve,
             error: _commentError,
           ),
+          // D2/BR-28 first-level framing: approving registers the document
+          // for the administration, which alone takes the final decision.
+          if (widget.approve) ...[
+            const SizedBox(height: StegSpacing.xs),
+            Text(l10n.reviewFirstLevelNote,
+                style: Theme.of(context).textTheme.bodySmall),
+          ],
           if (_error != null) ...[
             const SizedBox(height: StegSpacing.xs),
             Semantics(

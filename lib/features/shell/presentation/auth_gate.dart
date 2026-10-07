@@ -9,6 +9,7 @@ import '../../auth/presentation/providers/auth_providers.dart';
 import '../../auth/presentation/screens/login_screen.dart';
 import '../../auth/presentation/screens/splash_screen.dart';
 import '../../auth/presentation/screens/change_password_screen.dart';
+import '../../internship/presentation/providers/assistant_providers.dart';
 import '../../messaging/presentation/providers/messaging_providers.dart';
 import 'role_shells.dart';
 
@@ -43,6 +44,17 @@ class _AuthGateState extends ConsumerState<AuthGate> {
         // T06 §10/§11: the queue belongs to the signed-in user — wipe it so
         // no write leaks into the next session (silent: leaving is no error).
         ref.read(pendingWritesProvider.notifier).clear().catchError((_) {});
+        // T11: same rule for the local assistant history — one user's
+        // questions must never leak into the next session on a shared
+        // device. The controller is reset so its memory follows the store.
+        final signedOut = prev is AuthAuthenticated ? prev.user : null;
+        if (signedOut != null) {
+          ref
+              .read(assistantHistoryStoreProvider)
+              .clear(signedOut.id)
+              .catchError((_) {});
+        }
+        ref.invalidate(assistantControllerProvider);
       }
     });
     if (state is AuthAuthenticated) {

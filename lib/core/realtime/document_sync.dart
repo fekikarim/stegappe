@@ -12,14 +12,15 @@ import '../../../features/messaging/domain/entities/notification_item.dart';
 /// exactly as before). Nothing here applies payloads, so duplicates,
 /// reorderings and stale frames are harmless by construction.
 ///
-/// Deliberately narrow: only `journalEntryValidated` maps today — the one
-/// journal event the backend emits (`CompanionService.validateJournalEntry`
-/// → `JournalEntryValidatedEvent`). There is no submit/reject notification
-/// and no journal topic; the queues stay correct over REST + resume +
-/// pull-to-refresh.
+/// Deliberately narrow: `journalEntryValidated` (the one journal event the
+/// backend emits) and `documentRejected` (Admin validation rejections since
+/// T01, supervisor first-level rejections since T10) map today. There is no
+/// submit notification and no document topic; the queues stay correct over
+/// REST + resume + pull-to-refresh.
 RealtimeCategory? documentSyncCategoryFor(NotificationItem item) {
   switch (item.type) {
     case NotificationType.journalEntryValidated:
+    case NotificationType.documentRejected:
       return RealtimeCategory.documents;
     default:
       return null;

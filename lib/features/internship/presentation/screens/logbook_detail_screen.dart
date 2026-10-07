@@ -282,6 +282,12 @@ class _LogbookReviewDialogState extends ConsumerState<_LogbookReviewDialog> {
               error: _reasonError,
             ),
           ],
+          // D2/BR-28 first-level framing (see the deliverable dialog).
+          if (widget.approve) ...[
+            const SizedBox(height: StegSpacing.xs),
+            Text(l10n.reviewFirstLevelNote,
+                style: Theme.of(context).textTheme.bodySmall),
+          ],
           if (_error != null) ...[
             const SizedBox(height: StegSpacing.xs),
             Semantics(

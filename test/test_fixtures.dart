@@ -115,6 +115,8 @@ class FakeInternshipRepository implements InternshipRepository {
   bool failWrites = false;
   bool noInternship = false;
   Completer<void>? statusGate;
+  // T10: deliverable detail in DRAFT so the intern submit action renders.
+  bool draftDetail = false;
 
   DashboardData get dashboard => fixtureDashboard(now);
 
@@ -412,8 +414,21 @@ class FakeInternshipRepository implements InternshipRepository {
   }
 
   @override
-  Future<DeliverableDetail> getDeliverable(String deliverableId) async =>
-      fixtureDetail();
+  Future<DeliverableDetail> getDeliverable(String deliverableId) async {
+    final d = fixtureDetail();
+    // Models the server truth: a submitted deliverable reads back SUBMITTED
+    // (which hides the submit action), otherwise the T10 draft flag decides.
+    final isSubmitted =
+        submittedDeliverables.contains(deliverableId) || !draftDetail;
+    return DeliverableDetail(
+      id: d.id,
+      title: d.title,
+      description: d.description,
+      status: isSubmitted ? DeliverableStatus.submitted : DeliverableStatus.draft,
+      currentVersion: d.currentVersion,
+      versions: d.versions,
+    );
+  }
 
   @override
   Future<List<DeliverableVersionInfo>> deliverableVersions(
@@ -773,9 +788,17 @@ class FakeInternshipRepository implements InternshipRepository {
 
   @override
   Future<String> askAssistant(String question) async {
+    askedQuestions.add(question);
+    final failure = assistantError;
+    if (failure != null) throw failure;
     if (failAi) throw Exception('AI unavailable');
     return 'Réponse de test (indicative) : $question';
   }
+
+  /// T11: scripted assistant failure (e.g. an ApiException with a coded
+  /// kind); recorded questions prove dispatch identity for retry tests.
+  Object? assistantError;
+  final List<String> askedQuestions = [];
 
   // --- T03 classification fakes (server-authoritative behavior, scripted) ---
 

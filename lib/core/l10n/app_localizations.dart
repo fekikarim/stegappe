@@ -578,6 +578,7 @@ class AppLocalizations {
     'commentHintReject': {'fr': 'Expliquez ce qu’il faut corriger (requis)', 'en': 'Explain what to correct (required)', 'ar': 'اشرح ما يجب تصحيحه (مطلوب)'},
     'commentRequired': {'fr': 'Veuillez expliquer la correction demandée.', 'en': 'Please explain the requested correction.', 'ar': 'يرجى شرح التصحيح المطلوب.'},
     'validationDone': {'fr': 'Entrée validée.', 'en': 'Entry validated.', 'ar': 'تمت المصادقة على الإدخال.'},
+    'reviewFirstLevelNote': {'fr': 'L’approbation transmet le document à l’administration — la décision finale de validation lui appartient.', 'en': 'Approval forwards the document to the administration — the final validation decision is theirs.', 'ar': 'الموافقة تحيل الوثيقة إلى الإدارة — وقرار المصادقة النهائي لها.'},
     'rejectionDone': {'fr': 'Correction demandée.', 'en': 'Correction requested.', 'ar': 'تم طلب التصحيح.'},
     'validationPending': {'fr': 'Décision non confirmée par le serveur.', 'en': 'Decision not confirmed by the server.', 'ar': 'لم يؤكد الخادم القرار.'},
     'unsavedTitle': {'fr': 'Abandonner les modifications ?', 'en': 'Discard changes?', 'ar': 'تجاهل التغييرات؟'},
@@ -868,6 +869,11 @@ class AppLocalizations {
     'assistantEmpty': {'fr': 'Aucun message pour le moment.', 'en': 'No messages yet.', 'ar': 'لا رسائل بعد.'},
     'assistantThinking': {'fr': 'Réflexion…', 'en': 'Thinking…', 'ar': 'جارٍ التفكير…'},
     'assistantUnavailable': {'fr': 'Assistant indisponible pour le moment. Réessayez plus tard.', 'en': 'Assistant unavailable right now. Try again later.', 'ar': 'المساعد غير متاح حاليا. حاول لاحقا.'},
+    'assistantOffline': {'fr': 'L’assistant nécessite une connexion : votre texte est conservé.', 'en': 'The assistant needs connectivity — your text is kept.', 'ar': 'المساعد يحتاج إلى اتصال — تم الاحتفاظ بنصك.'},
+    'assistantNoInternship': {'fr': 'Aucun stage actif trouvé pour l’assistant. Revenez quand votre stage aura commencé.', 'en': 'No active internship found for the assistant. Come back once your internship has started.', 'ar': 'لم يتم العثور على تربص نشط للمساعد. عُد عندما يبدأ تربصك.'},
+    'assistantClearTitle': {'fr': 'Effacer la conversation ?', 'en': 'Clear the conversation?', 'ar': 'مسح المحادثة؟'},
+    'assistantClearMessage': {'fr': 'L’historique local sera supprimé de cet appareil.', 'en': 'The local history will be removed from this device.', 'ar': 'سيُحذف السجل المحلي من هذا الجهاز.'},
+    'assistantClearConfirm': {'fr': 'Effacer', 'en': 'Clear', 'ar': 'مسح'},
     'roleAdminSupervisor': {
       'fr': 'Encadrant (administrateur)',
       'en': 'Supervisor (administrator)',
@@ -1268,6 +1274,7 @@ class AppLocalizations {
   String get commentHintReject => _get('commentHintReject');
   String get commentRequired => _get('commentRequired');
   String get validationDone => _get('validationDone');
+  String get reviewFirstLevelNote => _get('reviewFirstLevelNote');
   String get rejectionDone => _get('rejectionDone');
   String get validationPending => _get('validationPending');
   String get unsavedTitle => _get('unsavedTitle');
@@ -1543,6 +1550,11 @@ class AppLocalizations {
   String get assistantEmpty => _get('assistantEmpty');
   String get assistantThinking => _get('assistantThinking');
   String get assistantUnavailable => _get('assistantUnavailable');
+  String get assistantOffline => _get('assistantOffline');
+  String get assistantNoInternship => _get('assistantNoInternship');
+  String get assistantClearTitle => _get('assistantClearTitle');
+  String get assistantClearMessage => _get('assistantClearMessage');
+  String get assistantClearConfirm => _get('assistantClearConfirm');
   String get roleAdminSupervisor => _get('roleAdminSupervisor');
   // --- Centralized user-facing error messages (T00 error model) ---
   String get errGeneric => _get('errGeneric');

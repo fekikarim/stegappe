@@ -504,17 +504,12 @@ class InternshipRemoteDataSource {
           bearer: bearer, decode: (j) => logbookFromJson(_map(j)));
 
   /// Intern assistant answer (role-scoped RAG; key stays on the backend).
-  /// Returns the advisory display text; throws ApiException on outage/rate-limit.
+  /// Returns the advisory answer text; throws ApiException on outage/rate-limit.
   Future<String> askAssistant(String question, String? bearer) =>
       _client.post(Endpoints.aiAssistant,
           bearer: bearer,
           body: {'question': question},
-          decode: (j) {
-            final m = _map(j);
-            final text = m['displayText'];
-            if (text is String && text.trim().isNotEmpty) return text;
-            throw const FormatException('empty assistant answer');
-          });
+          decode: (j) => assistantAnswerFromJson(_map(j)));
 
   static Map<String, dynamic> _map(dynamic j) =>
       j is Map<String, dynamic> ? j : <String, dynamic>{};

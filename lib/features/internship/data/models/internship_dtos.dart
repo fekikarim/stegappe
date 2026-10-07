@@ -150,6 +150,19 @@ LogbookState logbookFromJson(Map<String, dynamic> json) => LogbookState(
       updatedAt: _date(json['updatedAt']),
     );
 
+/// Parses the intern-assistant answer from AiAnalysisResultResponse.
+///
+/// The authoritative field is `responseText` (backend
+/// `AiAnalysisResultResponse.responseText`; the sibling logbook parser
+/// above reads the same key). There is no `displayText` in the contract —
+/// a body carrying only `displayText` is rejected so a renamed field can
+/// never silently render as "unavailable" again (T11 regression guard).
+String assistantAnswerFromJson(Map<String, dynamic> json) {
+  final text = json['responseText'];
+  if (text is String && text.trim().isNotEmpty) return text;
+  throw const FormatException('empty assistant answer');
+}
+
 /// Parses AiAnalysisResultResponse (LOGBOOK_GENERATION).
 LogbookDraft logbookDraftFromJson(Map<String, dynamic> json) {
   final analysis =
