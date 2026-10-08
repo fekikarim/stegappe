@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/config/app_config.dart';
@@ -18,12 +19,20 @@ final tokenStorageProvider = Provider<TokenStorage>(
 /// The explicit provider type breaks the static inference cycle with
 /// [authControllerProvider] (which transitively depends on this provider).
 final Provider<ApiClient> apiClientProvider = Provider<ApiClient>(
-  (ref) => ApiClient(
-    baseUrl: AppConfig.apiBaseUrl,
-    onPasswordChangeRequired: () {
-      ref.read(authControllerProvider.notifier).requirePasswordChange();
-    },
-  ),
+  (ref) {
+    var base = AppConfig.apiBaseUrl;
+    if (base.isEmpty && kDebugMode) {
+      base = defaultTargetPlatform == TargetPlatform.android
+          ? 'http://10.0.2.2:8080'
+          : 'http://localhost:8080';
+    }
+    return ApiClient(
+      baseUrl: base,
+      onPasswordChangeRequired: () {
+        ref.read(authControllerProvider.notifier).requirePasswordChange();
+      },
+    );
+  },
 );
 
 final authRemoteDataSourceProvider = Provider<AuthRemoteDataSource>(

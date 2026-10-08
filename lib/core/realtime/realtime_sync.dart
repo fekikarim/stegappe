@@ -107,4 +107,4 @@ class RiverpodRealtimeSync implements RealtimeSync {
 /// Session-scoped [RealtimeSync]. Not tied to the socket lifecycle: T06 wires
 /// socket frames to [RealtimeSync.invalidate] where the frames are received.
 final realtimeSyncProvider =
-    Provider<RealtimeSync>((ref) => RiverpodRealtimeSync(ref.invalidate));
+    Provider<RealtimeSync>((ref) => RiverpodRealtimeSync(ref.container.invalidate));

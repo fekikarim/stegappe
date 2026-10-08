@@ -4,6 +4,7 @@ import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../core/config/app_config.dart';
 import '../../../../core/network/api_exception.dart';
 import '../../../../core/network/paged.dart';
 import '../../../../core/offline/pending_writes.dart';
@@ -262,8 +263,16 @@ NotificationItem? notificationItemFromFrame(String body) {
 }
 
 final stompChatServiceProvider = Provider<StompChatService>((ref) {
+  var ws = AppConfig.wsBaseUrl;
+  if (ws.isEmpty && kDebugMode) {
+    ws = defaultTargetPlatform == TargetPlatform.android
+        ? 'ws://10.0.2.2:8080'
+        : 'ws://localhost:8080';
+  }
   final service = StompChatServiceImpl(
-      tokens: ref.watch(tokenStorageProvider));
+    tokens: ref.watch(tokenStorageProvider),
+    wsBaseUrl: ws.isNotEmpty ? ws : null,
+  );
   ref.onDispose(() => service.disconnect());
   return service;
 });

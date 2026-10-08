@@ -20,9 +20,17 @@ Future<void> main() async {
   await runZonedGuarded(
     () async {
       WidgetsFlutterBinding.ensureInitialized();
-      // Production-critical: refuse to start a build whose backend URL was
-      // never provided (no dev default exists by design — see AppConfig).
-      AppConfig.ensureConfigured();
+      // Production-critical: refuse to run an unconfigured release bundle.
+      // In debug mode, permit startup with local dev defaults so developers
+      // and simulators can launch the app smoothly without crashing.
+      if (kReleaseMode) {
+        AppConfig.ensureConfigured();
+      } else if (!AppConfig.isBackendConfigured) {
+        debugPrint(
+          'Notice: API_BASE_URL is not set via --dart-define. '
+          'Defaulting to local dev host in debug mode.',
+        );
+      }
       FlutterError.onError = (details) {
         if (kDebugMode) {
           FlutterError.presentError(details);
@@ -52,39 +60,75 @@ Future<void> main() async {
   );
 }
 
-/// Release-mode crash fallback: branded, localized-agnostic (l10n may
-/// itself be broken), with a restart affordance via re-run.
+/// Release-mode crash fallback: branded with STEG gradient, localized-agnostic
+/// (l10n may itself be broken), trilingual message.
 class _CrashFallback extends StatelessWidget {
   const _CrashFallback();
 
   @override
   Widget build(BuildContext context) {
-    return const MaterialApp(
+    return MaterialApp(
       debugShowCheckedModeBanner: false,
       home: Scaffold(
-        body: SafeArea(
-          child: Center(
-            child: Padding(
-              padding: EdgeInsets.all(24),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(Icons.error_outline, size: 48),
-                  SizedBox(height: 12),
-                  Text(
-                    'STEG',
-                    style: TextStyle(
-                        fontSize: 22,
-                        fontWeight: FontWeight.w700),
-                  ),
-                  SizedBox(height: 8),
-                  Text(
-                    'Une erreur inattendue est survenue.\n'
-                    'An unexpected error occurred.\n'
-                    'حدث خطأ غير متوقع.',
-                    textAlign: TextAlign.center,
-                  ),
-                ],
+        body: Container(
+          decoration: const BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+              colors: [
+                Color(0xFF042843),
+                Color(0xFF073858),
+                Color(0xFF0B61A0),
+              ],
+              stops: [0.0, 0.45, 1.0],
+            ),
+          ),
+          child: SafeArea(
+            child: Center(
+              child: Padding(
+                padding: const EdgeInsets.all(32),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    SizedBox(
+                      height: 64,
+                      width: 260,
+                      child: Image.asset(
+                        'assets/logo-steg-1200x327.png',
+                        fit: BoxFit.contain,
+                        color: Colors.white,
+                        colorBlendMode: BlendMode.srcIn,
+                        errorBuilder: (_, _, _) => const Text(
+                          'STEG',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 36,
+                            fontWeight: FontWeight.w800,
+                            letterSpacing: 4,
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 32),
+                    const Icon(
+                      Icons.error_outline,
+                      color: Colors.white54,
+                      size: 48,
+                    ),
+                    const SizedBox(height: 16),
+                    const Text(
+                      'Une erreur inattendue est survenue.\n'
+                      'An unexpected error occurred.\n'
+                      'حدث خطأ غير متوقع.',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        color: Colors.white70,
+                        fontSize: 15,
+                        height: 1.7,
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
           ),
