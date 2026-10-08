@@ -111,6 +111,40 @@ class DashboardInput {
   final DateTime now;
 }
 
+/// One-call home snapshot as returned by `GET /api/internships/{id}/summary
+/// (T13/B13): the same sections the lists return, parsed with the same item
+/// parsers, so home rows are byte-identical to list rows. Live unread badges
+/// stay separate (shell-global live state) and `now` stays a display clock.
+class InternshipSummary {
+  const InternshipSummary({
+    required this.internship,
+    required this.assignments,
+    required this.tasks,
+    required this.tasksCompletedTotal,
+    required this.tasksGrandTotal,
+    required this.journal,
+    required this.pendingJournalTotal,
+    required this.journalValidatedTotal,
+    required this.deliverables,
+    required this.deliverablesTotal,
+    required this.evaluations,
+    required this.notifications,
+  });
+
+  final Internship internship;
+  final List<InternshipAssignment> assignments;
+  final List<InternTask> tasks;
+  final int tasksCompletedTotal;
+  final int tasksGrandTotal;
+  final List<JournalEntry> journal;
+  final int pendingJournalTotal;
+  final int journalValidatedTotal;
+  final List<DeliverableSummary> deliverables;
+  final int deliverablesTotal;
+  final List<EvaluationSummary> evaluations;
+  final List<AppNotification> notifications;
+}
+
 bool _inWeek(DateTime d, DateTime now) {
   final start = now.subtract(Duration(days: now.weekday - 1));
   final s = DateTime(start.year, start.month, start.day);

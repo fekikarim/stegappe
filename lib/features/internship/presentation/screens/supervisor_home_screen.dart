@@ -6,25 +6,31 @@ import '../../../../core/l10n/app_localizations.dart';
 import '../../../../core/network/error_messages.dart';
 import '../../../../core/theme/steg_spacing.dart';
 import '../../../../core/widgets/steg_states.dart';
+import '../../../auth/domain/entities/app_user.dart';
+import '../../domain/calendar.dart';
+import '../../domain/entities/evaluation.dart';
+import '../providers/notify_providers.dart';
 import '../providers/workspace_providers.dart';
 import '../widgets/dashboard_sections.dart';
+import '../widgets/home_header.dart';
 import '../widgets/intern_card.dart';
 import 'supervisor_tasks_screen.dart';
 
-/// Supervisor overview: queue totals + interns needing attention.
-/// Formal, concise, actionable (UI_UX.md §12.4).
+/// Supervisor overview (T13): greeting + quick actions, queue totals from
+/// the T12 scoped rows (one call feeds the whole home), interns needing
+/// attention, then the full list. Formal, concise, actionable.
 class SupervisorHomeScreen extends ConsumerWidget {
-  const SupervisorHomeScreen({super.key, this.onOpenTab});
+  const SupervisorHomeScreen({super.key, required this.user, this.onOpenTab});
 
+  final AppUser user;
   final void Function(int tab)? onOpenTab;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context);
     final async = ref.watch(supervisedInternsProvider);
-    final validationsAsync = ref.watch(pendingValidationsProvider);
-    final delivAsync = ref.watch(pendingDeliverableReviewsProvider);
     final isOnline = ref.watch(isOnlineProvider);
+    final last = ref.watch(lastSupervisedProvider);
 
     return RefreshIndicator(
       onRefresh: () async {
@@ -41,124 +47,210 @@ class SupervisorHomeScreen extends ConsumerWidget {
           SliverPadding(
             padding: StegSpacing.screenPadding,
             sliver: async.when(
-              loading: () => const SliverFillRemaining(
-                hasScrollBody: false,
-                child: StegLoading(),
-              ),
-              error: (e, _) => SliverFillRemaining(
-                hasScrollBody: false,
-                child: StegErrorView(
-                  message: context.userError(e).message,
-                  onRetry: () => refreshSupervisor(ref),
-                ),
-              ),
-              data: (interns) {
-                final attention = interns
-                    .where((i) => i.needsAttention)
-                    .toList();
-                final pendingJournal = validationsAsync.valueOrNull
-                        ?.length ??
-                    0;
-                final pendingDeliv =
-                    delivAsync.valueOrNull?.length ?? 0;
-                return SliverMainAxisGroup(
-                  slivers: [
-                    if (!isOnline)
-                      const SliverToBoxAdapter(
-                        child: Padding(
-                          padding: EdgeInsets.only(
-                              bottom: StegSpacing.sm),
-                          child: StaleNotice(),
-                        ),
-                      ),
-                    SliverToBoxAdapter(
-                      child: Column(
-                        crossAxisAlignment:
-                            CrossAxisAlignment.stretch,
-                        children: [
-                          Semantics(
-                            header: true,
-                            label: l10n.supHomeTitle,
-                            excludeSemantics: true,
-                            child: Text(l10n.supHomeTitle,
-                                style: Theme.of(context)
-                                    .textTheme
-                                    .headlineSmall),
-                          ),
-                          const SizedBox(
-                              height: StegSpacing.sm),
-                          _QueueRow(
-                            pendingJournal: pendingJournal,
-                            pendingDeliverables: pendingDeliv,
-                            onOpenTab: onOpenTab,
-                          ),
-                          const SizedBox(
-                              height: StegSpacing.sm),
-                          // T04/SU-HOME-01: entry point to supervisor task
-                          // management (per-student tasks + bulk-add).
-                          _ManageTasksCard(isOnline: isOnline),
-                        ],
-                      ),
+              loading: () => (last != null && !isOnline)
+                  ? _HomeBody(
+                      interns: last,
+                      showStale: true,
+                      user: user,
+                      onOpenTab: onOpenTab)
+                  : const SliverFillRemaining(
+                      hasScrollBody: false,
+                      child: StegLoading(),
                     ),
-                    SliverToBoxAdapter(
-                      child: Padding(
-                        padding: const EdgeInsets.only(
-                            top: StegSpacing.md,
-                            bottom: StegSpacing.xs),
-                        child: Text(l10n.needsAttention,
-                            style: Theme.of(context)
-                                .textTheme
-                                .titleMedium),
-                      ),
-                    ),
-                    if (attention.isEmpty)
-                      SliverToBoxAdapter(
-                        child: _Hint(text: l10n.allCaughtUp),
-                      )
-                    else
-                    SliverList(
-                      delegate: SliverChildBuilderDelegate(
-                        (ctx, i) =>
-                            InternCard(intern: attention[i]),
-                        childCount: attention.length,
-                      ),
-                    ),
-                    SliverToBoxAdapter(
-                      child: Padding(
-                        padding: const EdgeInsets.only(
-                            top: StegSpacing.md,
-                            bottom: StegSpacing.xs),
-                        child: Row(
-                          children: [
-                            Expanded(
-                              child: Text(l10n.myInterns,
-                                  style: Theme.of(context)
-                                      .textTheme
-                                      .titleMedium),
-                            ),
-                            TextButton(
-                              onPressed: () =>
-                                  onOpenTab?.call(1),
-                              child: Text(l10n.viewAll),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                    SliverList(
-                      delegate: SliverChildBuilderDelegate(
-                        (ctx, i) =>
-                            InternCard(intern: interns[i]),
-                        childCount: interns.length,
-                      ),
-                    ),
-                  ],
+              error: (e, _) {
+                if (last != null && !isOnline) {
+                  return _HomeBody(
+                      interns: last,
+                      showStale: true,
+                      user: user,
+                      onOpenTab: onOpenTab);
+                }
+                return SliverFillRemaining(
+                  hasScrollBody: false,
+                  child: StegErrorView(
+                    message: context.userError(e).message,
+                    onRetry: () => refreshSupervisor(ref),
+                  ),
                 );
+              },
+              data: (interns) {
+                if (interns.isEmpty) {
+                  return SliverFillRemaining(
+                    hasScrollBody: false,
+                    child: StegEmptyView(
+                      title: l10n.noSupervised,
+                      hint: l10n.noSupervisedHint,
+                      icon: Icons.people_outline,
+                    ),
+                  );
+                }
+                return _HomeBody(
+                    interns: interns,
+                    showStale: !isOnline,
+                    user: user,
+                    onOpenTab: onOpenTab);
               },
             ),
           ),
         ],
       ),
+    );
+  }
+}
+
+class _HomeBody extends ConsumerWidget {
+  const _HomeBody(
+      {required this.interns,
+      required this.showStale,
+      required this.user,
+      this.onOpenTab});
+
+  final List<SupervisedIntern> interns;
+  final bool showStale;
+  final AppUser user;
+  final void Function(int tab)? onOpenTab;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context);
+    final attention = interns.where((i) => i.needsAttention).toList();
+    // Queue tiles read the server counts (T12 rows), not the separate
+    // queue providers: one scoped call feeds the whole home.
+    final totals = queueTotals(interns);
+    final submittedJournal = totals.submittedJournal;
+    final submittedDeliverables = totals.submittedDeliverables;
+    return SliverMainAxisGroup(
+      slivers: [
+        if (showStale)
+          const SliverToBoxAdapter(
+            child: Padding(
+              padding: EdgeInsets.only(bottom: StegSpacing.sm),
+              child: StaleNotice(),
+            ),
+          ),
+        SliverToBoxAdapter(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              HomeHeader(
+                displayName: user.email,
+                role: user.mobileRole,
+              ),
+              const SizedBox(height: StegSpacing.md),
+              QuickActionsGrid(actions: [
+                QuickAction(
+                  icon: Icons.checklist_outlined,
+                  label: l10n.supManageTasks,
+                  onTap: () => Navigator.of(context).push(
+                    MaterialPageRoute(
+                        builder: (_) => const SupervisorTasksScreen()),
+                  ),
+                ),
+                QuickAction(
+                  icon: Icons.fact_check_outlined,
+                  label: l10n.qaValidations,
+                  onTap:
+                      onOpenTab == null ? null : () => onOpenTab!(2),
+                ),
+                QuickAction(
+                  icon: Icons.calendar_month_outlined,
+                  label: l10n.qaCalendar,
+                  onTap: onOpenTab == null
+                      ? null
+                      : () {
+                          ref
+                              .read(supervisedViewProvider.notifier)
+                              .state = SupervisedView.calendar;
+                          onOpenTab!(1);
+                        },
+                ),
+                QuickAction(
+                  icon: Icons.people_outline,
+                  label: l10n.myInterns,
+                  onTap: onOpenTab == null
+                      ? null
+                      : () {
+                          ref
+                              .read(supervisedViewProvider.notifier)
+                              .state = SupervisedView.list;
+                          onOpenTab!(1);
+                        },
+                ),
+                // SU-HOME-02 (T14/D14): "notify for documents preparation".
+                // The action opens the scoped Interns list in multi-select
+                // mode — the picker *is* the students list, so the target set
+                // can never come from anywhere but the server-scoped rows
+                // (the endpoint re-checks scope anyway, BR-46/BR-03).
+                QuickAction(
+                  icon: Icons.campaign_outlined,
+                  label: l10n.notifyPrepareAsk,
+                  onTap: onOpenTab == null
+                      ? null
+                      : () {
+                          ref
+                              .read(supervisedViewProvider.notifier)
+                              .state = SupervisedView.list;
+                          ref
+                              .read(notifySelectModeProvider.notifier)
+                              .state = true;
+                          onOpenTab!(1);
+                        },
+                ),
+              ]),
+              const SizedBox(height: StegSpacing.sm),
+              _QueueRow(
+                pendingJournal: submittedJournal,
+                pendingDeliverables: submittedDeliverables,
+                onOpenTab: onOpenTab,
+              ),
+            ],
+          ),
+        ),
+        SliverToBoxAdapter(
+          child: Padding(
+            padding: const EdgeInsets.only(
+                top: StegSpacing.md, bottom: StegSpacing.xs),
+            child: Text(l10n.needsAttention,
+                style: Theme.of(context).textTheme.titleMedium),
+          ),
+        ),
+        if (attention.isEmpty)
+          SliverToBoxAdapter(
+            child: _Hint(text: l10n.allCaughtUp),
+          )
+        else
+          SliverList(
+            delegate: SliverChildBuilderDelegate(
+              (ctx, i) => InternCard(intern: attention[i]),
+              childCount: attention.length,
+            ),
+          ),
+        SliverToBoxAdapter(
+          child: Padding(
+            padding: const EdgeInsets.only(
+                top: StegSpacing.md, bottom: StegSpacing.xs),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Text(l10n.myInterns,
+                      style:
+                          Theme.of(context).textTheme.titleMedium),
+                ),
+                TextButton(
+                  onPressed: () => onOpenTab?.call(1),
+                  child: Text(l10n.viewAll),
+                ),
+              ],
+            ),
+          ),
+        ),
+        SliverList(
+          delegate: SliverChildBuilderDelegate(
+            (ctx, i) => InternCard(intern: interns[i]),
+            childCount: interns.length,
+          ),
+        ),
+      ],
     );
   }
 }
@@ -219,8 +311,7 @@ class _QueueCard extends StatelessWidget {
     return Card(
       child: InkWell(
         onTap: onTap,
-        borderRadius:
-            BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(12),
         child: Padding(
           padding: const EdgeInsets.all(StegSpacing.md),
           child: Column(
@@ -229,50 +320,9 @@ class _QueueCard extends StatelessWidget {
               Icon(icon),
               const SizedBox(height: StegSpacing.xs),
               Text('$count',
-                  style: Theme.of(context)
-                      .textTheme
-                      .headlineSmall),
+                  style: Theme.of(context).textTheme.headlineSmall),
               Text(label,
-                  style:
-                      Theme.of(context).textTheme.bodySmall),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-/// T04 entry point: full-width action opening the supervisor task
-/// management screen (per-student tasks, review, bulk-add).
-class _ManageTasksCard extends StatelessWidget {
-  const _ManageTasksCard({required this.isOnline});
-
-  final bool isOnline;
-
-  @override
-  Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context);
-    return Card(
-      child: InkWell(
-        onTap: !isOnline
-            ? null
-            : () => Navigator.of(context).push(
-                  MaterialPageRoute(
-                      builder: (_) => const SupervisorTasksScreen()),
-                ),
-        borderRadius: BorderRadius.circular(12),
-        child: Padding(
-          padding: const EdgeInsets.all(StegSpacing.md),
-          child: Row(
-            children: [
-              const Icon(Icons.checklist_outlined),
-              const SizedBox(width: StegSpacing.sm),
-              Expanded(
-                child: Text(l10n.supManageTasks,
-                    style: Theme.of(context).textTheme.titleSmall),
-              ),
-              const Icon(Icons.chevron_right),
+                  style: Theme.of(context).textTheme.bodySmall),
             ],
           ),
         ),

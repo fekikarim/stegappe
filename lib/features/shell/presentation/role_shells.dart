@@ -253,6 +253,7 @@ class _SupervisorShellState extends State<SupervisorShell> {
           label: l10n.navHome,
           icon: Icons.dashboard_outlined,
           page: SupervisorHomeScreen(
+            user: widget.user,
             onOpenTab: (i) => setState(() => _index = i),
           ),
         ),

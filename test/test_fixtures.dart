@@ -120,21 +120,65 @@ class FakeInternshipRepository implements InternshipRepository {
 
   DashboardData get dashboard => fixtureDashboard(now);
 
+  /// T13: per-section call counters proving the 13-call fan-out is gone
+  /// (the dashboard must read through `internshipSummary` only).
+  final Map<String, int> sectionCalls = {};
+
+  void _count(String section) =>
+      sectionCalls.update(section, (v) => v + 1, ifAbsent: () => 1);
+
   @override
   Future<String?> resolveMyInternshipId() async =>
       noInternship ? null : 'internship-1';
 
   @override
-  Future<Internship> getInternship(String id) async =>
-      fixtureInternship(now);
+  Future<Internship> getInternship(String id) async {
+    _count('internship');
+    return fixtureInternship(now);
+  }
+
+  /// T13: one-call home snapshot assembled from the same fixture pieces
+  /// the section lists use, so home rows are byte-identical to list rows.
+  int summaryCalls = 0;
 
   @override
-  Future<List<InternshipAssignment>> getAssignments(String id) async =>
-      dashboard.assignments;
+  Future<InternshipSummary> internshipSummary(String internshipId) async {
+    summaryCalls++;
+    final d = dashboard;
+    return InternshipSummary(
+      internship: d.internship,
+      assignments: d.assignments,
+      tasks: fixtureTasks(now),
+      tasksCompletedTotal: 1,
+      tasksGrandTotal: 4,
+      journal: fixtureJournal(now),
+      pendingJournalTotal: 1,
+      journalValidatedTotal: 1,
+      deliverables: const [
+        DeliverableSummary(
+            id: 'd1',
+            title: 'Rapport',
+            status: DeliverableStatus.submitted,
+            currentVersion: 2),
+      ],
+      deliverablesTotal: 1,
+      evaluations: [
+        if (d.latestEvaluation != null) d.latestEvaluation!,
+      ],
+      notifications: d.recentNotifications,
+    );
+  }
+
+  @override
+  Future<List<InternshipAssignment>> getAssignments(String id) async {
+    _count('assignments');
+    return dashboard.assignments;
+  }
 
   @override
   Future<Paged<InternTask>> listTasks(String internshipId,
       {int page = 0, int size = 50, TaskStatus? status}) async {
+    _count('tasks');
     lastStatusFilter = status;
     final all = fixtureTasks(now);
     final items =
@@ -165,12 +209,87 @@ class FakeInternshipRepository implements InternshipRepository {
         description: t.description);
   }
 
+  // --- T09 journal document (B5 window + B6 AI generation) ---
+
+  /// Server-shaped eligibility the tests override per scenario (window states,
+  /// warning thresholds). Default: eligible, everything approved.
+  JournalEligibility journalEligibilityFixture = const JournalEligibility(
+    eligible: true,
+    reason: 'ELIGIBLE_WINDOW',
+    daysUntilOpen: 0,
+    windowDays: 30,
+    taskCount: 4,
+    approvedTasks: 4,
+    belowThreshold: false,
+  );
+
+  /// Failures the fake must raise on the eligibility read / generation.
+  Object? eligibilityError;
+  Object? journalGenerationError;
+
+  /// Held-open generation (progress + cancel tests).
+  Completer<void>? journalGate;
+
+  /// `TASKS`, or `TEXT:<text>` for the text path.
+  final List<String> journalGenerations = [];
+  int eligibilityCalls = 0;
+  int journalRegenerations = 0;
+
+  /// What the next generation returns (null → a default DRAFT result).
+  JournalGenerationResult? journalResult;
+
+  @override
+  Future<JournalEligibility> journalEligibility(String internshipId) async {
+    eligibilityCalls++;
+    final failure = eligibilityError;
+    if (failure != null) throw failure;
+    return journalEligibilityFixture;
+  }
+
+  @override
+  Future<JournalGenerationResult> generateJournalFromTasks(
+      String internshipId) async {
+    final gate = journalGate;
+    if (gate != null) await gate.future;
+    final failure = journalGenerationError;
+    if (failure != null) throw failure;
+    journalGenerations.add('TASKS');
+    return journalResult ?? _defaultJournalResult('TASKS');
+  }
+
+  @override
+  Future<JournalGenerationResult> generateJournalFromText(
+      String internshipId, String text) async {
+    final gate = journalGate;
+    if (gate != null) await gate.future;
+    final failure = journalGenerationError;
+    if (failure != null) throw failure;
+    journalGenerations.add('TEXT:$text');
+    return journalResult ?? _defaultJournalResult('TEXT');
+  }
+
+  JournalGenerationResult _defaultJournalResult(String source) =>
+      JournalGenerationResult(
+        deliverableId: 'del-journal',
+        title: 'Journal de stage — INT-2026-00001',
+        status: DeliverableStatus.draft,
+        currentVersion: 1,
+        fileName: 'journal-de-stage-INT-2026-00001.pdf',
+        source: source,
+        taskCount: 4,
+        approvedTasks: 4,
+        belowThreshold: false,
+        replacedDraft: false,
+        previousSubmitted: false,
+      );
+
   @override
   Future<Paged<JournalEntry>> listJournal(String internshipId,
       {int page = 0,
       int size = 20,
       JournalStatus? status,
       DateTime? day}) async {
+    _count('journal');
     var all = fixtureJournal(now);
     if (status != null) {
       all = all.where((j) => j.status == status).toList();
@@ -300,12 +419,13 @@ class FakeInternshipRepository implements InternshipRepository {
 
   @override
   Future<List<String>> supervisedInternshipIds() async =>
-      const ['internship-1'];
+      (await supervisedInterns()).map((s) => s.internshipId).toList();
 
   @override
   Future<Paged<DeliverableSummary>> listDeliverables(String internshipId,
-          {int page = 0, int size = 20}) async =>
-      pageOf(const [
+          {int page = 0, int size = 20}) async {
+    _count('deliverables');
+    return pageOf(const [
         DeliverableSummary(
             id: 'd-draft',
             title: 'Brouillon rapport',
@@ -322,20 +442,25 @@ class FakeInternshipRepository implements InternshipRepository {
             status: DeliverableStatus.validated,
             currentVersion: 3),
       ]);
+  }
 
   @override
   Future<Paged<EvaluationSummary>> listEvaluations(String internshipId,
-          {int page = 0, int size = 20}) async =>
-      pageOf([
-        if (dashboard.latestEvaluation != null)
-          dashboard.latestEvaluation!,
-      ]);
+          {int page = 0, int size = 20}) async {
+    _count('evaluations');
+    return pageOf([
+      if (dashboard.latestEvaluation != null)
+        dashboard.latestEvaluation!,
+    ]);
+  }
 
   @override
   Future<Paged<AppNotification>> listNotifications(
-          {int page = 0, int size = 20}) async =>
-      pageOf(dashboard.recentNotifications,
+          {int page = 0, int size = 20}) async {
+    _count('notifications');
+    return pageOf(dashboard.recentNotifications,
           total: dashboard.unreadNotifications);
+  }
 
   @override
   Future<int> unreadNotificationCount() async =>
@@ -347,6 +472,42 @@ class FakeInternshipRepository implements InternshipRepository {
   @override
   Future<int> unreadMessageCount() async => dashboard.unreadMessages;
 
+  /// T14/D14: the accepted count mirrors the request (one notification per
+  /// covered internship), so a controller that sends the wrong set cannot
+  /// pass on a hard-coded mock value. Fails when [failWrites] is set, like
+  /// every other write fake.
+  int notifyCalls = 0;
+  final List<String?> notifyKeys = [];
+  final List<List<String>> notifyIds = [];
+  Object? notifyError;
+
+  @override
+  Future<int> notifyDocumentsPreparation(List<String> internshipIds,
+      {String? idempotencyKey}) async {
+    // A dispatched request records its key/targets even when the transport
+    // rejects it: that is exactly the case where the server may already
+    // have stored a receipt and the client must retry with the same key.
+    notifyKeys.add(idempotencyKey);
+    notifyIds.add(List.of(internshipIds));
+    final failure = notifyError;
+    if (failure != null) throw failure;
+    if (failWrites) throw Exception('offline');
+    notifyCalls++;
+    return internshipIds.length;
+  }
+
+  /// T14: locale sync is fire-and-forget in the UI; the fake accepts it.
+  int localeSyncCalls = 0;
+  String? lastLocaleSynced;
+  bool failLocaleSync = false;
+
+  @override
+  Future<void> syncLocale(String code) async {
+    if (failLocaleSync) throw Exception('locale sync failed');
+    localeSyncCalls++;
+    lastLocaleSynced = code;
+  }
+
   // --- D3 deliverables ---
 
   final List<Map<String, dynamic>> createdDeliverables = [];
@@ -354,6 +515,38 @@ class FakeInternshipRepository implements InternshipRepository {
   final List<String> submittedDeliverables = [];
   final List<(String, String?, String?)> deliverableDecisions = [];
   final List<(String, int)> downloads = [];
+
+  // --- T10 B7/B8/SU-VAL-01: submission window + document kind ---
+
+  /// Server-shaped window the tests override per scenario (open, before,
+  /// late, cancelled). Default: open (existing flows keep working).
+  SubmissionWindow submissionWindowFixture = const SubmissionWindow(
+      open: true, reason: 'OPEN', daysUntilOpen: 0, windowDays: 7);
+
+  /// Kind returned by [getDeliverable] (null = free document).
+  String? documentKindFixture;
+
+  /// `(deliverableId, kind)` pairs registered through the fake.
+  final List<(String, String)> registeredKinds = [];
+
+  /// Set to make [submissionWindow] fail (window read error UX).
+  Object? submissionWindowError;
+
+  @override
+  Future<SubmissionWindow> submissionWindow(String internshipId) async {
+    final error = submissionWindowError;
+    if (error != null) throw error;
+    return submissionWindowFixture;
+  }
+
+  @override
+  Future<DeliverableDetail> registerDocumentKind(
+      String deliverableId, String documentKind) async {
+    if (failWrites) throw Exception('offline');
+    registeredKinds.add((deliverableId, documentKind));
+    documentKindFixture = documentKind;
+    return fixtureDetail();
+  }
 
   DeliverableDetail fixtureDetail() => DeliverableDetail(
         id: 'd-sub',
@@ -386,18 +579,26 @@ class FakeInternshipRepository implements InternshipRepository {
   Future<DeliverableDetail> createDeliverable(String internshipId,
       {required String title,
       String? description,
+      String? documentKind,
       required String fileName,
       required Uint8List fileBytes,
       void Function(int sent, int total)? onProgress}) async {
     if (failWrites) throw Exception('offline');
-    createdDeliverables.add({'title': title, 'fileName': fileName});
+    createdDeliverables.add({
+      'title': title,
+      'fileName': fileName,
+      'internshipId': internshipId,
+      'documentKind': documentKind,
+    });
     onProgress?.call(fileBytes.length, fileBytes.length);
     return DeliverableDetail(
         id: 'd-new',
         title: title,
         description: description,
         status: DeliverableStatus.draft,
-        currentVersion: 1);
+        currentVersion: 1,
+        internshipId: internshipId,
+        documentKind: documentKind);
   }
 
   @override
@@ -426,6 +627,8 @@ class FakeInternshipRepository implements InternshipRepository {
       description: d.description,
       status: isSubmitted ? DeliverableStatus.submitted : DeliverableStatus.draft,
       currentVersion: d.currentVersion,
+      internshipId: 'internship-1',
+      documentKind: documentKindFixture,
       versions: d.versions,
     );
   }
@@ -603,21 +806,32 @@ class FakeInternshipRepository implements InternshipRepository {
       ];
 
   @override
-  Future<List<SupervisedIntern>> supervisedInterns() async => [        SupervisedIntern(
-            internshipId: 'internship-1',
-            reference: 'STG-2026-0001',
-            internName: 'Amira Ben Salah',
-            status: InternshipStatus.inProgress,
-            type: InternshipType.perfectionnement,
-            startDate: day(now, -10),
-            endDate: day(now, 50),
-            departmentName: 'DSI',
-            tasksCompleted: 1,
-            tasksTotal: 4,
-            pendingJournal: 1,
-            pendingDeliverables: 1,
-            evaluationsCount: 1),
-      ];
+  Future<List<SupervisedIntern>> supervisedInterns() async {
+    if (failSupervised) throw Exception('supervised list failed');
+    return supervisedOverride ??
+        [
+          SupervisedIntern(
+              internshipId: 'internship-1',
+              reference: 'STG-2026-0001',
+              internName: 'Amira Ben Salah',
+              status: InternshipStatus.inProgress,
+              type: InternshipType.perfectionnement,
+              startDate: day(now, -10),
+              endDate: day(now, 50),
+              departmentName: 'DSI',
+              tasksCompleted: 1,
+              tasksTotal: 4,
+              pendingJournal: 1,
+              submittedJournal: 1,
+              pendingDeliverables: 1,
+              evaluationsCount: 1),
+        ];
+  }
+
+  /// T12: scripted supervised list (proves the list needs no conversation)
+  /// and a failure switch for the error state.
+  List<SupervisedIntern>? supervisedOverride;
+  bool failSupervised = false;
 
   // --- D6 logbook ---
 

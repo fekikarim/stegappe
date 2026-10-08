@@ -35,6 +35,8 @@ enum NotificationType {
   communityComment,
   communityPostRemoved,
   communityCommentRemoved,
+  // T14/D14: a supervisor asks his student to prepare validation documents.
+  documentsPreparationRequested,
   unknown;
 
   /// Tolerant parse of the backend wire value: null/empty/unknown → [unknown].

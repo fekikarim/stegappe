@@ -131,6 +131,7 @@ class MessagingRepositoryImpl implements MessagingRepository {
     required String contentType,
     required Uint8List bytes,
     void Function(int sent, int total)? onProgress,
+    String? deliverableId,
   }) async {
     final bearer = await _bearer();
     final self = await _selfId();
@@ -140,7 +141,8 @@ class MessagingRepositoryImpl implements MessagingRepository {
         contentType: contentType,
         bytes: bytes,
         onProgress: onProgress,
-        selfUserId: self);
+        selfUserId: self,
+        deliverableId: deliverableId);
   }
 
   @override

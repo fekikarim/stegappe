@@ -27,6 +27,7 @@ import '../widgets/task_board_view.dart';
 import '../widgets/task_row.dart';
 import 'classification_sheet.dart';
 import 'classification_suggest_sheet.dart';
+import 'journal_generation_sheet.dart';
 import 'task_editor_sheet.dart';
 
 /// Student task board (ST-TASK-01/02/06/07):
@@ -173,6 +174,8 @@ class _TaskListScreenState extends ConsumerState<TaskListScreen>
             ),
             const _FilterBar(),
             if (canProgress) const _ClassificationBar(),
+            if (canProgress && internshipId != null)
+              JournalGenerationBar(internshipId: internshipId),
             const SizedBox(height: StegSpacing.xs),
             Expanded(
               child: RefreshIndicator(

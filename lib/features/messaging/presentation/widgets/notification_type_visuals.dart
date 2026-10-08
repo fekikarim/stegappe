@@ -57,6 +57,8 @@ String notificationTypeLabel(NotificationType type, AppLocalizations l10n) =>
         l10n.notifTypeCommunityPostRemoved,
       NotificationType.communityCommentRemoved =>
         l10n.notifTypeCommunityCommentRemoved,
+      NotificationType.documentsPreparationRequested =>
+        l10n.notifTypeDocumentsPreparation,
       NotificationType.unknown => l10n.notifTypeGeneric,
     };
 
@@ -93,6 +95,10 @@ IconData notificationTypeIcon(NotificationType type) => switch (type) {
         Icons.delete_forever_outlined,
       NotificationType.communityCommentRemoved =>
         Icons.comments_disabled_outlined,
+      // T14/D14 preparation request: incoming supervisor ask, distinct
+      // from every key above (pairwise-distinctness is test-guarded).
+      NotificationType.documentsPreparationRequested =>
+        Icons.inbox_outlined,
       NotificationType.unknown => Icons.notifications_outlined,
     };
 
@@ -129,6 +135,7 @@ StegStatusKind notificationTypeKind(NotificationType type) => switch (type) {
       NotificationType.internshipReportSubmitted ||
       NotificationType.messageReceived ||
       NotificationType.communityComment ||
+      NotificationType.documentsPreparationRequested ||
       NotificationType.welcome =>
         StegStatusKind.info,
       NotificationType.unknown => StegStatusKind.neutral,

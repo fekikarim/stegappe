@@ -44,6 +44,9 @@ MessageAttachment attachmentFromJson(Map<String, dynamic> json) =>
       fileName: _str(json['fileName']),
       mimeType: _str(json['mimeType']),
       size: (json['size'] as num?)?.toInt() ?? 0,
+      // T10/SU-VAL-01: source link of an internship document (nullable).
+      sourceDeliverableId: json['sourceDeliverableId'] as String?,
+      sourceDocumentKind: json['sourceDocumentKind'] as String?,
     );
 
 ChatMessage messageFromJson(Map<String, dynamic> json,

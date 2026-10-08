@@ -7,6 +7,8 @@ import '../../../../core/l10n/app_localizations.dart';
 import '../../../../core/network/error_messages.dart';
 import '../../../../core/offline/pending_writes.dart';
 import '../../../../core/theme/steg_spacing.dart';
+import '../../../auth/domain/entities/app_user.dart' show UserRole;
+import '../../../auth/presentation/providers/auth_providers.dart';
 import '../../data/services/stomp_chat_service.dart';
 import '../../domain/entities/conversation.dart'
     show ChatMessage, ChatMessageRules;
@@ -119,6 +121,16 @@ class _ChatScreenState extends ConsumerState<ChatScreen>
 
     // Newest-first for the reversed ListView (bottom = latest).
     final newestFirst = chat.messages.reversed.toList();
+
+    // T10/SU-VAL-01: the viewer's staff role decides whether the attachment
+    // "…" menu offers "set as journal"/"set as report" (the server enforces
+    // the real scope either way).
+    final auth = ref.watch(authControllerProvider);
+    final role = auth is AuthAuthenticated
+        ? auth.user.mobileRole
+        : UserRole.unsupported;
+    final canRegisterDocuments = role == UserRole.supervisor ||
+        role == UserRole.adminSupervisor;
     // Flat rows: failed + pending bubbles first (newest-first), then history
     // with a day separator each time the calendar day changes (T07 §14).
     final rows = <Object>[
@@ -232,7 +244,19 @@ class _ChatScreenState extends ConsumerState<ChatScreen>
                                   }
                                   if (row is _DayHeader) return row;
                                   return MessageBubble(
-                                      message: row as ChatMessage);
+                                    message: row as ChatMessage,
+                                    canRegisterDocuments:
+                                        canRegisterDocuments,
+                                    onDocumentRegistered: () {
+                                      // Re-read the thread so the kind
+                                      // label on the chip stays honest.
+                                      ref
+                                          .read(chatControllerProvider(
+                                                  widget.conversationId)
+                                              .notifier)
+                                          .resync();
+                                    },
+                                  );
                                 },
                               ),
                       ),

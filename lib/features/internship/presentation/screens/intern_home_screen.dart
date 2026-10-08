@@ -8,13 +8,16 @@ import '../../../../core/theme/steg_spacing.dart';
 import '../../../../core/widgets/steg_states.dart';
 import '../../../../core/widgets/steg_status_chip.dart';
 import '../../../auth/domain/entities/app_user.dart';
+import '../../../auth/presentation/providers/auth_providers.dart';
 import '../../domain/dashboard.dart';
 import '../../domain/entities/work_items.dart';
 import '../providers/workspace_providers.dart';
 import '../widgets/dashboard_sections.dart';
+import '../widgets/home_header.dart';
 import '../widgets/status_labels.dart';
 import '../widgets/task_row.dart';
 import '../../../community/presentation/screens/community_feed_screen.dart';
+import 'assistant_screen.dart';
 import 'deliverables_screen.dart';
 import 'my_evaluations_screen.dart';
 import 'progress_screen.dart';
@@ -153,24 +156,61 @@ class _DashboardContent extends ConsumerWidget {
     final l10n = AppLocalizations.of(context);
     final locale = Localizations.localeOf(context);
     final internship = data.internship;
+    final auth = ref.watch(authControllerProvider);
+    final role = auth is AuthAuthenticated
+        ? auth.user.mobileRole
+        : UserRole.unsupported;
+    final email =
+        auth is AuthAuthenticated ? auth.user.email : '';
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        // --- Identity header ---
+        // --- T13 greeting + avatar + role (display only, BR-53) ---
+        HomeHeader(
+          displayName:
+              data.internship.candidateFullName?.isNotEmpty == true
+                  ? data.internship.candidateFullName!
+                  : email,
+          role: role,
+        ),
+        const SizedBox(height: StegSpacing.md),
+
+        // --- T13 quick actions (navigate only, never business logic) ---
+        QuickActionsGrid(actions: [
+          QuickAction(
+            icon: Icons.checklist_outlined,
+            label: l10n.qaTasks,
+            onTap: onOpenTab == null ? null : () => onOpenTab!(1),
+          ),
+          QuickAction(
+            icon: Icons.book_outlined,
+            label: l10n.qaJournal,
+            onTap: onOpenTab == null ? null : () => onOpenTab!(2),
+          ),
+          QuickAction(
+            icon: Icons.smart_toy_outlined,
+            label: l10n.qaAssistant,
+            onTap: () => Navigator.of(context).push(
+              MaterialPageRoute(
+                  builder: (_) => const AssistantScreen()),
+            ),
+          ),
+          QuickAction(
+            icon: Icons.chat_bubble_outline,
+            label: l10n.qaMessages,
+            onTap: onOpenTab == null ? null : () => onOpenTab!(3),
+          ),
+        ]),
+        const SizedBox(height: StegSpacing.md),
+
+        // --- Identity chips (status/type/reference + assignment) ---
         Semantics(
           header: true,
           label: internship.reference,
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              Text(
-                data.internship.candidateFullName?.isNotEmpty == true
-                    ? data.internship.candidateFullName!
-                    : l10n.dashboard,
-                style: Theme.of(context).textTheme.headlineSmall,
-              ),
-              const SizedBox(height: StegSpacing.xs),
               Wrap(
                 spacing: StegSpacing.xs,
                 runSpacing: StegSpacing.xs,

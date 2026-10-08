@@ -281,6 +281,10 @@ class _DeliverableUploadSheetState
   bool _uploading = false;
   double _progress = 0;
 
+  /// T10/B8: explicit validation document kind declared at upload —
+  /// null keeps the document free (no journal/report validation slot).
+  String? _documentKind;
+
   @override
   void dispose() {
     _title.dispose();
@@ -334,6 +338,7 @@ class _DeliverableUploadSheetState
           description: _description.text.trim().isEmpty
               ? null
               : _description.text.trim(),
+          documentKind: _documentKind,
           fileName: file.fileName,
           fileBytes: file.bytes,
           onProgress: (s, t) =>
@@ -364,7 +369,10 @@ class _DeliverableUploadSheetState
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    return Column(
+    // Scrollable: the added T10/B8 kind selector must fit small sheets and
+    // large text scales without a RenderFlex overflow.
+    return SingleChildScrollView(
+      child: Column(
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -383,6 +391,42 @@ class _DeliverableUploadSheetState
           controller: _description,
           label: l10n.deliverableDescLabel,
         ),
+        // T10/B8 (D4b/BR-33): the journal and the report are data, not an
+        // order inference — one declared kind per document, optional.
+        const SizedBox(height: StegSpacing.sm),
+        Text(l10n.deliverableKindLabel,
+            style: Theme.of(context).textTheme.bodySmall),
+        RadioGroup<String?>(
+          groupValue: _documentKind,
+          onChanged: (v) {
+            if (_uploading) return;
+            setState(() => _documentKind = v);
+          },
+          child: Column(
+            children: [
+              RadioListTile<String?>(
+                contentPadding: EdgeInsets.zero,
+                dense: true,
+                title: Text(l10n.deliverableKindNone),
+                value: null,
+              ),
+              RadioListTile<String?>(
+                contentPadding: EdgeInsets.zero,
+                dense: true,
+                title: Text(l10n.deliverableKindJournal),
+                value: 'JOURNAL',
+              ),
+              RadioListTile<String?>(
+                contentPadding: EdgeInsets.zero,
+                dense: true,
+                title: Text(l10n.deliverableKindReport),
+                value: 'REPORT',
+              ),
+            ],
+          ),
+        ),
+        Text(l10n.deliverableKindHint,
+            style: Theme.of(context).textTheme.bodySmall),
         const SizedBox(height: StegSpacing.sm),
         OutlinedButton.icon(
           icon: const Icon(Icons.picture_as_pdf_outlined),
@@ -439,6 +483,7 @@ class _DeliverableUploadSheetState
               (_file == null || _uploading) ? null : _upload,
         ),
       ],
+      ),
     );
   }
 }

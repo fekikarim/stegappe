@@ -5,6 +5,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:stegappe/core/connectivity/connectivity_service.dart';
 import 'package:stegappe/core/l10n/app_localizations.dart';
 import 'package:stegappe/core/network/api_exception.dart';
+import 'package:stegappe/core/network/error_messages.dart';
 import 'package:stegappe/core/theme/steg_theme.dart';
 import 'package:stegappe/features/auth/domain/entities/app_user.dart';
 import 'package:stegappe/features/auth/domain/repositories/auth_repository.dart';
@@ -147,6 +148,52 @@ void main() {
         assistantAnswerFromJson(
             {'responseText': 'real', 'displayText': 'stale'}),
         'real',
+      );
+    });
+
+    test('a degraded envelope never renders the provider text as an answer',
+        () {
+      // The backend answers 200 with `responseText` = a French-only
+      // "service unavailable: <provider error>" sentence and marks the run
+      // in `analysis.outputSummary` (AiService#queryInternAssistant).
+      // Rendering that as an answer leaks the provider error into an
+      // en/ar UI and makes a failure look like a reply.
+      const degraded = {
+        'analysis': {'id': 'a', 'outputSummary': 'AI_UNAVAILABLE: quota exhausted'},
+        'recommendations': <Object>[],
+        'responseText':
+            "Service d'assistance temporairement indisponible: quota exhausted",
+      };
+      expect(
+        () => assistantAnswerFromJson(degraded),
+        throwsA(isA<ApiException>()
+            .having((e) => e.code, 'code', kCodeAiUnavailable)),
+      );
+    });
+
+    test('the degraded failure maps to the localized unavailable sentence',
+        () async {
+      const failure = ApiException(
+        kind: ApiErrorKind.unknown,
+        message: 'The AI service is unavailable.',
+        code: kCodeAiUnavailable,
+      );
+      for (final code in ['fr', 'en', 'ar']) {
+        final l10n = await loadL10n(code);
+        final mapped = userMessageOf(failure, l10n);
+        expect(mapped, l10n.errAiUnavailable);
+        expect(mapped, isNot(contains('quota exhausted')));
+      }
+    });
+
+    test('a normal answer whose outputSummary holds content still decodes',
+        () {
+      expect(
+        assistantAnswerFromJson({
+          'analysis': {'outputSummary': 'Plan de stage en 3 phases.'},
+          'responseText': 'Plan de stage en 3 phases.',
+        }),
+        'Plan de stage en 3 phases.',
       );
     });
   });
@@ -394,6 +441,27 @@ void main() {
       expect(find.text(l10n.errRateLimited), findsOneWidget);
       // The failed row offers retry; the answer never fabricates.
       expect(find.text(l10n.retry), findsWidgets);
+    });
+
+    testWidgets('a degraded provider renders the unavailable state, not an answer',
+        (tester) async {
+      final fake = FakeInternshipRepository()
+        ..assistantError = const ApiException(
+            kind: ApiErrorKind.unknown,
+            message: 'The AI service is unavailable.',
+            code: kCodeAiUnavailable);
+      final l10n = await loadL10n('en');
+      await pumpAssistant(tester, const AssistantScreen(),
+          fake: fake, locale: const Locale('en'));
+      await tester.enterText(find.byType(TextField), 'where am I?');
+      await tester.tap(find.text(l10n.assistantSend));
+      await tester.pumpAndSettle();
+      // Localized banner + a failed row with retry; the French provider
+      // sentence never appears.
+      expect(find.text(l10n.errAiUnavailable), findsOneWidget);
+      expect(find.text(l10n.assistantUnavailable), findsOneWidget);
+      expect(find.text(l10n.retry), findsWidgets);
+      expect(find.textContaining('indisponible'), findsNothing);
     });
 
     testWidgets('arabic renders the thread (RTL smoke)', (tester) async {

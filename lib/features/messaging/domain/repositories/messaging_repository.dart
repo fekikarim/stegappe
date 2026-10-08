@@ -53,6 +53,7 @@ abstract class MessagingRepository {
     required String contentType,
     required Uint8List bytes,
     void Function(int sent, int total)? onProgress,
+    String? deliverableId,
   });
 
   Future<void> markRead(String conversationId, int upToSequence);

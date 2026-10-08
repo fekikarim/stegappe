@@ -227,6 +227,10 @@ class FakeMessagingRepo implements MessagingRepository {
     );
   }
 
+  // T10/SU-VAL-01: the source document link of the last staged send
+  // (null for device-picked files).
+  String? lastAttachmentDeliverableId;
+
   @override
   Future<ChatMessage> sendWithAttachment(
     String conversationId, {
@@ -235,7 +239,9 @@ class FakeMessagingRepo implements MessagingRepository {
     required String contentType,
     required Uint8List bytes,
     void Function(int sent, int total)? onProgress,
+    String? deliverableId,
   }) async {
+    lastAttachmentDeliverableId = deliverableId;
     onProgress?.call(bytes.length, bytes.length);
     return _m(100, sender: 'me');
   }

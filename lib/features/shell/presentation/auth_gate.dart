@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/l10n/app_localizations.dart';
+import '../../../core/l10n/settings_providers.dart';
 import '../../../core/offline/pending_writes.dart';
 import '../../../core/widgets/steg_states.dart';
 import '../../auth/domain/entities/app_user.dart';
@@ -55,6 +56,11 @@ class _AuthGateState extends ConsumerState<AuthGate> {
               .catchError((_) {});
         }
         ref.invalidate(assistantControllerProvider);
+        // T14: the language choice is a per-account preference on the server
+        // (`PUT /api/users/me/locale`), so the device copy must not outlive
+        // the session — otherwise the next account on a shared device is
+        // rendered in the previous user's language.
+        ref.read(localeProvider.notifier).resetToDeviceDefault();
       }
     });
     if (state is AuthAuthenticated) {

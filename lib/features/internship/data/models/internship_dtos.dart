@@ -1,5 +1,7 @@
+import '../../../../core/network/api_exception.dart';
 import '../../domain/entities/evaluation.dart';
 import '../../domain/entities/internship.dart';
+import '../../domain/dashboard.dart';
 import '../../domain/entities/logbook.dart';
 import '../../domain/entities/task_classification.dart';
 import '../../domain/entities/supervisor_tasks.dart';
@@ -62,8 +64,85 @@ InternTask taskFromJson(Map<String, dynamic> json) => InternTask(
       visibleFrom: _date(json['visibleFrom']),
     );
 
-JournalEntry journalFromJson(Map<String, dynamic> json) => JournalEntry(
-      id: _str(json['id']),
+/// Parses one T12/B2 supervised-internship row. Period dates are NOT NULL
+/// server-side (`internships.start_date/end_date`); a row without them is a
+/// contract violation and throws instead of rendering a fabricated bar.
+SupervisedIntern supervisedInternFromJson(Map<String, dynamic> json) {
+  final start = _date(json['startDate']);
+  final end = _date(json['endDate']);
+  if (start == null || end == null) {
+    throw const FormatException('supervised internship without period dates');
+  }
+  return SupervisedIntern(
+    internshipId: _str(json['internshipId']),
+    reference: _str(json['reference']),
+    internName: (json['internName'] as String?)?.trim().isNotEmpty == true
+        ? (json['internName'] as String).trim()
+        : '—',
+    status: internshipStatusFrom(json['status'] as String?),
+    type: internshipTypeFrom(json['type'] as String?),
+    startDate: DateTime(start.year, start.month, start.day),
+    endDate: DateTime(end.year, end.month, end.day),
+    departmentName:
+        (json['departmentName'] as String?)?.trim().isNotEmpty == true
+            ? (json['departmentName'] as String).trim()
+            : '—',
+    tasksCompleted: (json['tasksCompleted'] as num?)?.toInt() ?? 0,
+    tasksTotal: (json['tasksTotal'] as num?)?.toInt() ?? 0,
+    pendingJournal: (json['pendingJournal'] as num?)?.toInt() ?? 0,
+    submittedJournal: (json['submittedJournal'] as num?)?.toInt() ?? 0,
+    pendingDeliverables:
+        (json['pendingDeliverables'] as num?)?.toInt() ?? 0,
+    evaluationsCount: (json['evaluationsCount'] as num?)?.toInt() ?? 0,
+  );
+}
+
+/// Parses the T13/B13 one-call home snapshot. Every section reuses the item
+/// parser of its list screen, so home rows are byte-identical to list rows;
+/// totals are authoritative server values (never recomputed here). Sections
+/// accept both the nested page shape (`{content: [...]}`) and bare lists.
+InternshipSummary internshipSummaryFromJson(Map<String, dynamic> json) {
+  List<T> section<T>(String key, T Function(Map<String, dynamic>) parse) {
+    final node = json[key];
+    if (node is List) {
+      return [
+        for (final e in node)
+          if (e is Map<String, dynamic>) parse(e),
+      ];
+    }
+    if (node is Map<String, dynamic>) {
+      final content = node['content'];
+      if (content is List) {
+        return [
+          for (final e in content)
+            if (e is Map<String, dynamic>) parse(e),
+        ];
+      }
+    }
+    return const [];
+  }
+
+  int total(String key) => (json[key] as num?)?.toInt() ?? 0;
+
+  final assignments = section('assignments', assignmentFromJson);
+  return InternshipSummary(
+    internship: internshipFromJson(
+        (json['internship'] as Map?)?.cast<String, dynamic>() ?? {}),
+    assignments: assignments,
+    tasks: section('tasks', taskFromJson),
+    tasksCompletedTotal: total('tasksCompletedTotal'),
+    tasksGrandTotal: total('tasksGrandTotal'),
+    journal: section('journal', journalFromJson),
+    pendingJournalTotal: total('pendingJournalTotal'),
+    journalValidatedTotal: total('journalValidatedTotal'),
+    deliverables: section('deliverables', deliverableFromJson),
+    deliverablesTotal: total('deliverablesTotal'),
+    evaluations: section('evaluations', evaluationFromJson),
+    notifications: section('notifications', notificationFromJson),
+  );
+}
+
+JournalEntry journalFromJson(Map<String, dynamic> json) => JournalEntry(      id: _str(json['id']),
       title: _str(json['title']),
       description: json['description'] as String?,
       status: journalStatusFrom(json['status'] as String?),
@@ -102,6 +181,44 @@ DeliverableVersionInfo deliverableVersionFromJson(
       uploadedAt: _dateOrNow(json['uploadedAt']),
     );
 
+/// T09/B5 — `GET /api/internships/{id}/journal-eligibility`. Every business
+/// fact (window, remaining days, ratio) is the server's.
+JournalEligibility journalEligibilityFromJson(Map<String, dynamic> json) =>
+    JournalEligibility(
+      eligible: json['eligible'] == true,
+      opensAt: _date(json['opensAt']),
+      closesAt: _date(json['closesAt']),
+      reason: _str(json['reason']),
+      daysUntilOpen: (json['daysUntilOpen'] as num?)?.toInt() ?? 0,
+      windowDays: (json['windowDays'] as num?)?.toInt() ?? 0,
+      taskCount: (json['taskCount'] as num?)?.toInt() ?? 0,
+      approvedTasks: (json['approvedTasks'] as num?)?.toInt() ?? 0,
+      belowThreshold: json['belowThreshold'] == true,
+    );
+
+/// T09/B6 — the journal generation response (created DRAFT deliverable + the
+/// task facts the student was warned about).
+JournalGenerationResult journalGenerationFromJson(Map<String, dynamic> json) {
+  final deliverable =
+      (json['deliverable'] as Map?)?.cast<String, dynamic>() ?? const {};
+  final latest =
+      (deliverable['latestVersion'] as Map?)?.cast<String, dynamic>() ??
+          const {};
+  return JournalGenerationResult(
+    deliverableId: _str(deliverable['id']),
+    title: _str(deliverable['title']),
+    status: deliverableStatusFrom(deliverable['status'] as String?),
+    currentVersion: (deliverable['currentVersion'] as num?)?.toInt() ?? 1,
+    fileName: _str(latest['fileName']),
+    source: _str(json['source']),
+    taskCount: (json['taskCount'] as num?)?.toInt() ?? 0,
+    approvedTasks: (json['approvedTasks'] as num?)?.toInt() ?? 0,
+    belowThreshold: json['belowThreshold'] == true,
+    replacedDraft: json['replacedDraft'] == true,
+    previousSubmitted: json['previousSubmitted'] == true,
+  );
+}
+
 DeliverableDetail deliverableDetailFromJson(Map<String, dynamic> json,
         [List<DeliverableVersionInfo> versions = const []]) =>
     DeliverableDetail(
@@ -110,10 +227,24 @@ DeliverableDetail deliverableDetailFromJson(Map<String, dynamic> json,
       description: json['description'] as String?,
       status: deliverableStatusFrom(json['status'] as String?),
       currentVersion: (json['currentVersion'] as num?)?.toInt() ?? 1,
+      internshipId: json['internshipId'] as String?,
+      documentKind: json['documentKind'] as String?,
       submittedAt: _date(json['submittedAt']),
       validatedAt: _date(json['validatedAt']),
       validatedByName: json['validatedByName'] as String?,
       versions: versions,
+    );
+
+/// T10/B7 — `GET /api/internships/{id}/submission-window`. Every business
+/// fact (open flag, dates, reason, days) is the server's (BR-22).
+SubmissionWindow submissionWindowFromJson(Map<String, dynamic> json) =>
+    SubmissionWindow(
+      open: json['open'] == true,
+      opensAt: _date(json['opensAt']),
+      closesAt: _date(json['closesAt']),
+      reason: _str(json['reason']),
+      daysUntilOpen: (json['daysUntilOpen'] as num?)?.toInt() ?? 0,
+      windowDays: (json['windowDays'] as num?)?.toInt() ?? 0,
     );
 
 AppNotification notificationFromJson(Map<String, dynamic> json) =>
@@ -157,7 +288,28 @@ LogbookState logbookFromJson(Map<String, dynamic> json) => LogbookState(
 /// above reads the same key). There is no `displayText` in the contract —
 /// a body carrying only `displayText` is rejected so a renamed field can
 /// never silently render as "unavailable" again (T11 regression guard).
+/// Backend marker written into `analysis.outputSummary` when the AI provider
+/// could not answer (`AiService.queryInternAssistant`: `AI_UNAVAILABLE: …`).
+/// The 200 envelope then carries a provider-facing sentence in
+/// `responseText`; it is a degradation notice, not an answer.
+const String kAssistantUnavailableMarker = 'AI_UNAVAILABLE';
+
+/// Parses the assistant envelope `{analysis, recommendations, responseText}`.
+///
+/// A degraded envelope is surfaced as a typed failure (mapped to the
+/// localized "AI unavailable" sentence, retryable) instead of being rendered
+/// as the assistant's answer: the raw provider error must never reach the
+/// UI, and the degraded text is not localized for the caller's language.
 String assistantAnswerFromJson(Map<String, dynamic> json) {
+  final analysis = (json['analysis'] as Map?)?.cast<String, dynamic>();
+  final summary = analysis?['outputSummary'];
+  if (summary is String && summary.startsWith(kAssistantUnavailableMarker)) {
+    throw const ApiException(
+      kind: ApiErrorKind.unknown,
+      message: 'The AI service is unavailable.',
+      code: 'AI_UNAVAILABLE',
+    );
+  }
   final text = json['responseText'];
   if (text is String && text.trim().isNotEmpty) return text;
   throw const FormatException('empty assistant answer');

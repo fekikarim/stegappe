@@ -75,6 +75,34 @@ void main() {
       }
     });
 
+    test('preparation requests reach the action hub, never a dead end', () {
+      // T14/D14: the intern lands on home (journal + deliverables actions);
+      // a supervisor lands on the interns list owning the students.
+      expect(
+        resolveNotificationRoute(
+            row(NotificationType.documentsPreparationRequested), intern),
+        const NotificationRoute(tab: 0),
+      );
+      expect(
+        resolveNotificationRoute(
+            row(NotificationType.documentsPreparationRequested),
+            supervisor),
+        const NotificationRoute(tab: 1),
+      );
+      expect(
+        resolveNotificationRoute(
+            row(NotificationType.documentsPreparationRequested),
+            adminSupervisor),
+        const NotificationRoute(tab: 1),
+      );
+      expect(
+        resolveNotificationRoute(
+            row(NotificationType.documentsPreparationRequested),
+            unsupported),
+        isNull,
+      );
+    });
+
     test('messages open the conversation list', () {
       expect(
         resolveNotificationRoute(

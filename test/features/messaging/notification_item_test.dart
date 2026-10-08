@@ -38,6 +38,9 @@ const List<String> kBackendWireValues = [
   'COMMUNITY_COMMENT',
   'COMMUNITY_POST_REMOVED',
   'COMMUNITY_COMMENT_REMOVED',
+  // T14/D14: the supervision producer exists server-side
+  // (DocumentPreparationService → DOCUMENTS_PREPARATION_REQUESTED).
+  'DOCUMENTS_PREPARATION_REQUESTED',
 ];
 
 String wireValueOf(NotificationType type) =>

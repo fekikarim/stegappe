@@ -73,6 +73,16 @@ NotificationRoute? resolveNotificationRoute(
           const NotificationRoute(tab: 3),
         UserRole.unsupported => null,
       };
+    // T14/D14 preparation request: the intern lands on home (the hub for
+    // journal + deliverable preparation actions); a supervisor lands on
+    // the interns list that owns the students.
+    case NotificationType.documentsPreparationRequested:
+      return switch (role) {
+        UserRole.intern => const NotificationRoute(tab: 0),
+        UserRole.supervisor || UserRole.adminSupervisor =>
+          const NotificationRoute(tab: 1),
+        UserRole.unsupported => null,
+      };
     case NotificationType.internshipAssigned:
     case NotificationType.internshipStatusChanged:
     case NotificationType.internshipReportSubmitted:

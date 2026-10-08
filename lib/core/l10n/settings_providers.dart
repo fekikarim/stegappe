@@ -28,6 +28,18 @@ class LocaleController extends StateNotifier<Locale?> {
     state = locale;
     await _prefs.saveLocale(locale?.languageCode ?? 'system');
   }
+
+  /// Sign-out reset (T14). The language choice is stored per **account** by
+  /// the backend (`PUT /api/users/me/locale`), so the device copy must not
+  /// outlive the session: otherwise the next account on a shared device is
+  /// rendered in the previous user's language. Removes the key (absent =
+  /// follow the system) instead of writing the literal `'system'`, which
+  /// would parse back as `Locale('system')`. Theme is deliberately kept — it
+  /// is an accessibility/device preference, not account data.
+  Future<void> resetToDeviceDefault() async {
+    state = null;
+    await _prefs.removeRaw(PrefsStore.kLocale);
+  }
 }
 
 enum StegThemeMode { system, light, dark }

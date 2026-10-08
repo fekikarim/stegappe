@@ -50,6 +50,29 @@ class AppLocalizations {
       'ar': 'دخول',
     },
     'logout': {'fr': 'Déconnexion', 'en': 'Sign out', 'ar': 'تسجيل الخروج'},
+    'logoutConfirmTitle': {'fr': 'Se déconnecter ?', 'en': 'Sign out?', 'ar': 'تسجيل الخروج؟'},
+    'logoutConfirmMessage': {'fr': 'Vous devrez vous reconnecter pour continuer.', 'en': 'You will need to sign in again to continue.', 'ar': 'ستحتاج إلى تسجيل الدخول مجددا للمتابعة.'},
+    'profileTitle': {'fr': 'Profil', 'en': 'Profile', 'ar': 'الملف الشخصي'},
+    'profileName': {'fr': 'Nom', 'en': 'Name', 'ar': 'الاسم'},
+    'profileEmail': {'fr': 'E-mail', 'en': 'Email', 'ar': 'البريد الإلكتروني'},
+    'profileRole': {'fr': 'Rôle', 'en': 'Role', 'ar': 'الدور'},
+    'profileInternship': {'fr': 'Stage', 'en': 'Internship', 'ar': 'التربص'},
+    'profileReadOnly': {'fr': 'Champs en lecture seule — aucune modification n’est possible sur cet appareil.', 'en': 'Read-only fields — nothing can be edited on this device.', 'ar': 'حقول للقراءة فقط — لا يمكن تعديل أي شيء على هذا الجهاز.'},
+    'profileChangePassword': {'fr': 'Changer le mot de passe', 'en': 'Change password', 'ar': 'تغيير كلمة المرور'},
+    'accountTitle': {'fr': 'Compte', 'en': 'Account', 'ar': 'الحساب'},
+    'appearanceTitle': {'fr': 'Apparence', 'en': 'Appearance', 'ar': 'المظهر'},
+    'aboutTitle': {'fr': 'À propos', 'en': 'About', 'ar': 'حول التطبيق'},
+    'aboutVersion': {'fr': 'Version {v}', 'en': 'Version {v}', 'ar': 'الإصدار {v}'},
+    'aboutLicenses': {'fr': 'Licences', 'en': 'Licences', 'ar': 'التراخيص'},
+    'aboutSupport': {'fr': 'Assistance', 'en': 'Support', 'ar': 'الدعم'},
+    'aboutSupportBody': {'fr': 'Pour toute aide, contactez votre encadrant via la Messagerie.', 'en': 'For help, contact your supervisor through Messages.', 'ar': 'للمساعدة، اتصل بمؤطرك عبر الرسائل.'},
+    'aboutPrivacy': {'fr': 'Confidentialité', 'en': 'Privacy', 'ar': 'الخصوصية'},
+    'aboutPrivacyBody': {'fr': 'L’application n’affiche ni CIN, ni mot de passe, ni jeton. Vos données restent liées à votre stage.', 'en': 'The app never shows CIN, passwords or tokens. Your data stays scoped to your internship.', 'ar': 'لا يعرض التطبيق أبدا رقم التعريف أو كلمة المرور أو الرموز. تبقى بياناتك مرتبطة بتربصك.'},
+    'notifyPrepareAsk': {'fr': 'Demander la préparation', 'en': 'Request preparation', 'ar': 'طلب التحضير'},
+    'notifySelected': {'fr': '{n} sélectionné(s)', 'en': '{n} selected', 'ar': 'تم تحديد {n}'},
+    'notifyEmptyHint': {'fr': 'Sélectionnez au moins un stagiaire.', 'en': 'Select at least one intern.', 'ar': 'اختر متربصا واحدا على الأقل.'},
+    'notifySuccess': {'fr': '{n} stagiaire(s) notifié(s).', 'en': '{n} intern(s) notified.', 'ar': 'تم إشعار {n} من المتربصين.'},
+    'notifyNeedsConnection': {'fr': 'Connexion requise pour notifier.', 'en': 'Connection required to notify.', 'ar': 'الاتصال مطلوب للإشعار.'},
     'emailRequired': {
       'fr': 'Veuillez saisir une adresse e-mail valide.',
       'en': 'Please enter a valid email address.',
@@ -113,6 +136,17 @@ class AppLocalizations {
     'markAllRead': {'fr': 'Tout marquer comme lu', 'en': 'Mark all as read', 'ar': 'تعليم الكل كمقروء'},
     'timelineTitle': {'fr': 'Chronologie du stage', 'en': 'Internship timeline', 'ar': 'الخط الزمني للتربص'},
     'myProgress': {'fr': 'Ma progression', 'en': 'My progress', 'ar': 'تقدمي'},
+    'homeGreetMorning': {'fr': 'Bonjour {name}', 'en': 'Good morning, {name}', 'ar': 'صباح الخير {name}'},
+    'homeGreetAfternoon': {'fr': 'Bon après-midi {name}', 'en': 'Good afternoon, {name}', 'ar': 'مساء الخير {name}'},
+    'homeGreetEvening': {'fr': 'Bonsoir {name}', 'en': 'Good evening, {name}', 'ar': 'مساء الخير {name}'},
+    'homeGreetNight': {'fr': 'Bonne nuit {name}', 'en': 'Good night, {name}', 'ar': 'ليلة سعيدة {name}'},
+    'homeQuickActions': {'fr': 'Actions rapides', 'en': 'Quick actions', 'ar': 'إجراءات سريعة'},
+    'qaTasks': {'fr': 'Mes tâches', 'en': 'My tasks', 'ar': 'مهامي'},
+    'qaJournal': {'fr': 'Journal', 'en': 'Journal', 'ar': 'اليومية'},
+    'qaAssistant': {'fr': 'Assistant', 'en': 'Assistant', 'ar': 'المساعد'},
+    'qaMessages': {'fr': 'Messages', 'en': 'Messages', 'ar': 'الرسائل'},
+    'qaValidations': {'fr': 'Validations', 'en': 'Validations', 'ar': 'المصادقات'},
+    'qaCalendar': {'fr': 'Calendrier', 'en': 'Calendar', 'ar': 'التقويم'},
     'tasksProgress': {'fr': 'Tâches accomplies', 'en': 'Tasks completed', 'ar': 'المهام المنجزة'},
     'timelineProgress': {'fr': 'Temps écoulé', 'en': 'Time elapsed', 'ar': 'الوقت المنقضي'},
     'viewAll': {'fr': 'Tout voir', 'en': 'View all', 'ar': 'عرض الكل'},
@@ -280,6 +314,109 @@ class AppLocalizations {
       'fr': 'Cette catégorie est refusée : vérifiez le nom (1 à 40 caractères, sans doublon) et la couleur.',
       'en': 'This category was refused: check the name (1–40 characters, no duplicate) and the color.',
       'ar': 'تم رفض هذه الفئة: تحقق من الاسم (1 إلى 40 حرفاً، بدون تكرار) واللون.'},
+    'errJournalNotEligible': {'fr': 'La fenêtre de génération du journal n’est pas encore ouverte.', 'en': 'The journal generation window is not open yet.', 'ar': 'نافذة إنشاء الدفتر غير مفتوحة بعد.'},
+    // --- T10 B7/B8/SU-VAL-01: submission window + document kind ---
+    'errSubmissionWindowClosed': {
+      'fr': 'Soumission refusée : la fenêtre de la semaine finale est fermée. Contactez votre encadrant via la Messagerie — aucune dérogation n’est possible.',
+      'en': 'Submission refused: the final-week window is closed. Contact your supervisor through Messages — no override is possible.',
+      'ar': 'تم رفض التسليم: نافذة الأسبوع الأخير مغلقة. اتصل بمؤطرك عبر الرسائل — لا يمكن تجاوز ذلك.',
+    },
+    'submissionWindowOpens': {
+      'fr': 'Soumission possible à partir du {date} (dernière semaine du stage).',
+      'en': 'Submission opens on {date} (the internship’s final week).',
+      'ar': 'يفتح التسليم في {date} (الأسبوع الأخير للتربص).',
+    },
+    'submissionWindowUntil': {
+      'fr': 'Fenêtre de soumission ouverte jusqu’au {date}.',
+      'en': 'Submission window open until {date}.',
+      'ar': 'نافذة التسليم مفتوحة حتى {date}.',
+    },
+    'submissionWindowLate': {
+      'fr': 'La fenêtre de soumission s’est terminée le {date} : les soumissions tardives ne sont pas acceptées. Contactez votre encadrant via la Messagerie.',
+      'en': 'The submission window closed on {date}: late submissions are not accepted. Contact your supervisor through Messages.',
+      'ar': 'انتهت نافذة التسليم في {date}: لا تُقبل التسليمات المتأخرة. اتصل بمؤطرك عبر الرسائل.',
+    },
+    'submissionWindowNoPeriod': {
+      'fr': 'Période de stage incomplète : aucune fenêtre de soumission ne peut être déterminée. Contactez votre encadrant.',
+      'en': 'Incomplete internship period: no submission window can be determined. Contact your supervisor.',
+      'ar': 'فترة التربص غير مكتملة: لا يمكن تحديد نافذة التسليم. اتصل بمؤطرك.',
+    },
+    'submissionWindowCancelled': {
+      'fr': 'Ce stage est annulé : aucune soumission n’est possible.',
+      'en': 'This internship is cancelled: no submission is possible.',
+      'ar': 'تم إلغاء هذا التربص: لا يمكن أي تسليم.',
+    },
+    'contactSupervisorAction': {
+      'fr': 'Contacter l’encadrant',
+      'en': 'Contact supervisor',
+      'ar': 'الاتصال بالمؤطر',
+    },
+    'contactNoConversation': {
+      'fr': 'Aucune conversation avec votre encadrant pour le moment.',
+      'en': 'No conversation with your supervisor yet.',
+      'ar': 'لا توجد محادثة مع مؤطرك حاليا.',
+    },
+    'deliverableKindLabel': {
+      'fr': 'Type de document',
+      'en': 'Document type',
+      'ar': 'نوع الوثيقة',
+    },
+    'deliverableKindNone': {
+      'fr': 'Document libre (aucun type)',
+      'en': 'Free document (no type)',
+      'ar': 'وثيقة حرة (بدون نوع)',
+    },
+    'deliverableKindJournal': {
+      'fr': 'Journal de stage',
+      'en': 'Internship journal',
+      'ar': 'دفتر التربص',
+    },
+    'deliverableKindReport': {
+      'fr': 'Rapport de stage',
+      'en': 'Internship report',
+      'ar': 'تقرير التربص',
+    },
+    'deliverableKindHint': {
+      'fr': 'Identifiez le journal et le rapport pour la validation : un seul document par type.',
+      'en': 'Identify the journal and the report for validation: one document per type.',
+      'ar': 'حدّد الدفتر والتقرير للمصادقة: وثيقة واحدة لكل نوع.',
+    },
+    'errDeliverableKindLocked': {
+      'fr': 'Le type de ce document est verrouillé : il est déjà attribué ou le document est validé.',
+      'en': 'This document’s kind is locked: it is already assigned, or the document is validated.',
+      'ar': 'نوع هذه الوثيقة مقفل: مُسنَد مسبقا أو وثيقة مصادق عليها.',
+    },
+    'errDocumentNotInConversation': {
+      'fr': 'Ce document appartient à un autre stage.',
+      'en': 'This document belongs to another internship.',
+      'ar': 'هذه الوثيقة تخص تربصا آخر.',
+    },
+    'msgDocMenu': {
+      'fr': 'Actions du document',
+      'en': 'Document actions',
+      'ar': 'إجراءات الوثيقة',
+    },
+    'msgSetAsJournal': {
+      'fr': 'Définir comme journal',
+      'en': 'Set as journal',
+      'ar': 'تعيين كدفتر',
+    },
+    'msgSetAsReport': {
+      'fr': 'Définir comme rapport',
+      'en': 'Set as report',
+      'ar': 'تعيين كتقرير',
+    },
+    'msgDocRegistered': {
+      'fr': 'Enregistré comme {kind} — revue de premier niveau ; l’administration prendra la décision finale.',
+      'en': 'Registered as {kind} — first-level review; the administration takes the final decision.',
+      'ar': 'تم التسجيل كـ {kind} — مراجعة المستوى الأول؛ تتخذ الإدارة القرار النهائي.',
+    },
+    'msgDocNotLinked': {
+      'fr': 'Ce fichier n’a pas été envoyé depuis les documents du stage : demandez au stagiaire de l’envoyer depuis ses documents pour pouvoir l’enregistrer.',
+      'en': 'This file was not sent from the internship documents: ask the intern to send it from their documents so it can be registered.',
+      'ar': 'لم يُرسل هذا الملف من وثائق التربص: اطلب من المتربص إرساله من وثائقه حتى يمكن تسجيله.',
+    },
+    'errJournalTextInvalid': {'fr': 'Texte trop court ou trop long (40 à 8000 caractères).', 'en': 'Text too short or too long (40 to 8000 characters).', 'ar': 'النص قصير جدا أو طويل جدا (من 40 إلى 8000 حرف).'},
     'errCategoryChanged': {
       'fr': 'Cette tâche a été classée entre-temps. Rechargez et réessayez.',
       'en': 'This task was classified meanwhile. Reload and try again.',
@@ -566,6 +703,41 @@ class AppLocalizations {
     'journalComments': {'fr': 'Commentaires', 'en': 'Comments', 'ar': 'التعليقات'},
     'journalNoComments': {'fr': 'Aucun commentaire pour le moment.', 'en': 'No comments yet.', 'ar': 'لا تعليقات بعد.'},
     'journalValidatedBy': {'fr': 'Validé par {n}', 'en': 'Validated by {n}', 'ar': 'صادق عليه {n}'},
+    // --- T09/B5+B6: journal document (server window + AI PDF generation) ---
+    'journalGenTitle': {'fr': 'Journal de stage', 'en': 'Internship journal', 'ar': 'دفتر التربص'},
+    'journalGenButton': {'fr': 'Générer le journal de stage', 'en': 'Generate the internship journal', 'ar': 'إنشاء دفتر التربص'},
+    'journalGenOpensIn': {'fr': 'Disponible dans {days} jour(s)', 'en': 'Available in {days} day(s)', 'ar': 'متاح بعد {days} يوم'},
+    'journalGenLate': {'fr': 'Période terminée : génération possible (en retard).', 'en': 'Period over: generation is still possible (late).', 'ar': 'انتهت الفترة: الإنشاء ما زال ممكنا (متأخر).'},
+    'journalGenNoPeriod': {'fr': 'Aucune période de stage : génération impossible.', 'en': 'No internship period: generation is not possible.', 'ar': 'لا توجد فترة تربص: الإنشاء غير ممكن.'},
+    'journalGenCancelled': {'fr': 'Stage annulé : génération impossible.', 'en': 'Cancelled internship: generation is not possible.', 'ar': 'تربص ملغى: الإنشاء غير ممكن.'},
+    'journalGenOffline': {'fr': 'Connexion requise pour générer le journal.', 'en': 'Connection required to generate the journal.', 'ar': 'الاتصال مطلوب لإنشاء الدفتر.'},
+    'journalGenChooserHint': {'fr': 'Le document est produit par le serveur en PDF : période du stage et tableau des tâches.', 'en': 'The server produces a PDF: internship period and task table.', 'ar': 'يُنشئ الخادم ملف PDF: فترة التربص وجدول المهام.'},
+    'journalGenFromTasks': {'fr': 'À partir de mes tâches', 'en': 'From my tasks', 'ar': 'من مهامي'},
+    'journalGenFromTasksHint': {'fr': 'Vos tâches et leurs statuts sont assemblés par le serveur.', 'en': 'Your tasks and their statuses are assembled by the server.', 'ar': 'يجمع الخادم مهامك وحالاتها.'},
+    'journalGenFromText': {'fr': 'À partir de mon texte', 'en': 'From my text', 'ar': 'من نصّي'},
+    'journalGenFromTextHint': {'fr': 'Décrivez votre stage ; le tableau des tâches reste ajouté par le serveur.', 'en': 'Describe your internship; the task table is still added by the server.', 'ar': 'صِف تربصك؛ يبقى جدول المهام مضافا من الخادم.'},
+    'journalGenTextLabel': {'fr': 'Description du stage', 'en': 'Internship description', 'ar': 'وصف التربص'},
+    'journalGenTextHint': {'fr': 'Activités, missions, résultats…', 'en': 'Activities, missions, results…', 'ar': 'الأنشطة والمهام والنتائج…'},
+    'journalGenTextCounter': {'fr': '{used} / {max} caractères', 'en': '{used} / {max} characters', 'ar': '{used} / {max} حرفا'},
+    'journalGenTextTooShort': {'fr': 'Au moins {min} caractères sont requis.', 'en': 'At least {min} characters are required.', 'ar': 'مطلوب {min} حرفا على الأقل.'},
+    'journalGenProgress': {'fr': 'Génération en cours…', 'en': 'Generating…', 'ar': 'جارٍ الإنشاء…'},
+    'journalGenStart': {'fr': 'Lancer la génération', 'en': 'Start generation', 'ar': 'بدء الإنشاء'},
+    'journalGenBelowThreshold': {'fr': 'Seulement {done} sur {total} tâches approuvées : le journal peut échouer la vérification.', 'en': 'Only {done} of {total} tasks are approved: the journal may fail verification.', 'ar': 'تمت المصادقة على {done} من {total} مهمة فقط: قد يفشل التحقق من الدفتر.'},
+    'journalGenNoTasks': {'fr': 'Aucune tâche enregistrée : le tableau du journal sera vide.', 'en': 'No task recorded: the journal table will be empty.', 'ar': 'لا توجد مهام مسجلة: سيكون جدول الدفتر فارغا.'},
+    'journalGenDone': {'fr': 'Journal généré en brouillon (version {v}).', 'en': 'Journal generated as a draft (version {v}).', 'ar': 'أُنشئ الدفتر كمسودة (النسخة {v}).'},
+    'journalGenReplaced': {'fr': 'Le brouillon précédent a été remplacé.', 'en': 'The previous draft was replaced.', 'ar': 'تم استبدال المسودة السابقة.'},
+    'journalGenPreviousSubmitted': {'fr': 'Un journal déjà soumis reste inchangé : ceci est un nouveau brouillon.', 'en': 'An already submitted journal stays unchanged: this is a new draft.', 'ar': 'يبقى الدفتر المرسل دون تغيير: هذه مسودة جديدة.'},
+    'journalGenOpen': {'fr': 'Ouvrir / partager le PDF', 'en': 'Open / share the PDF', 'ar': 'فتح / مشاركة ملف PDF'},
+    'journalGenOpenFailed': {'fr': 'Ouverture du fichier impossible.', 'en': 'Could not open the file.', 'ar': 'تعذر فتح الملف.'},
+    'journalGenRegenerate': {'fr': 'Régénérer', 'en': 'Regenerate', 'ar': 'إعادة الإنشاء'},
+    'journalGenRegenerateConfirm': {'fr': 'Régénérer le journal ? Le brouillon précédent sera remplacé.', 'en': 'Regenerate the journal? The previous draft will be replaced.', 'ar': 'إعادة إنشاء الدفتر؟ ستُستبدل المسودة السابقة.'},
+    'journalGenKeep': {'fr': 'Conserver', 'en': 'Keep', 'ar': 'الاحتفاظ'},
+    'journalGenKeepNote': {'fr': 'Conserver n’envoie rien : personne n’est notifié tant que le livrable n’est pas soumis.', 'en': 'Keeping sends nothing: nobody is notified until the deliverable is submitted.', 'ar': 'الاحتفاظ لا يرسل شيئا: لا يُخطَر أحد حتى يتم إرسال المُخرَج.'},
+    'journalGenManualPath': {'fr': 'Écrire une entrée de journal manuellement', 'en': 'Write a journal entry manually', 'ar': 'كتابة إدخال في اليومية يدويا'},
+    'journalGenCancel': {'fr': 'Annuler', 'en': 'Cancel', 'ar': 'إلغاء'},
+    'journalGenClose': {'fr': 'Fermer', 'en': 'Close', 'ar': 'إغلاق'},
+    'journalGenSourceTasks': {'fr': 'Source : mes tâches', 'en': 'Source: my tasks', 'ar': 'المصدر: مهامي'},
+    'journalGenSourceText': {'fr': 'Source : mon texte', 'en': 'Source: my text', 'ar': 'المصدر: نصّي'},
     'backToToday': {'fr': 'Aujourd’hui', 'en': 'Today', 'ar': 'اليوم'},
     'validationsTitle': {'fr': 'Validations en attente', 'en': 'Pending validations', 'ar': 'المصادقات المعلقة'},
     'validationsEmpty': {'fr': 'Rien à valider pour le moment.', 'en': 'Nothing to validate right now.', 'ar': 'لا شيء للمصادقة حاليا.'},
@@ -616,10 +788,18 @@ class AppLocalizations {
     'deliverableReviewsEmpty': {'fr': 'Aucun livrable à réviser.', 'en': 'No deliverables to review.', 'ar': 'لا مُخرَجات للمراجعة.'},
     'uploadFailedRetry': {'fr': 'Échec de l’envoi. Réessayez.', 'en': 'Upload failed. Retry.', 'ar': 'فشل الرفع. أعد المحاولة.'},
     // --- D4: supervisor workspace & evaluations ---
-    'supHomeTitle': {'fr': 'Pilotage des stages', 'en': 'Internship supervision', 'ar': 'تأطير التربصات'},
     'myInterns': {'fr': 'Mes stagiaires', 'en': 'My interns', 'ar': 'متربصيّ'},
     'noSupervised': {'fr': 'Aucun stagiaire lié pour le moment.', 'en': 'No linked interns yet.', 'ar': 'لا متربصين مرتبطين بعد.'},
     'noSupervisedHint': {'fr': 'Les stagiaires apparaissent ici dès leur affectation.', 'en': 'Interns appear here once assigned to you.', 'ar': 'يظهر المتربصون هنا بمجرد تعيينهم لك.'},
+    'supViewList': {'fr': 'Liste', 'en': 'List', 'ar': 'قائمة'},
+    'supViewCalendar': {'fr': 'Calendrier', 'en': 'Calendar', 'ar': 'تقويم'},
+    'supSearchHint': {'fr': 'Rechercher (nom, référence)…', 'en': 'Search (name, reference)…', 'ar': 'بحث (الاسم، المرجع)…'},
+    'supSortName': {'fr': 'Nom', 'en': 'Name', 'ar': 'الاسم'},
+    'supSortEndDate': {'fr': 'Fin de stage', 'en': 'Internship end', 'ar': 'نهاية التربص'},
+    'supSortStatus': {'fr': 'Statut', 'en': 'Status', 'ar': 'الحالة'},
+    'supPrevMonth': {'fr': 'Mois précédent', 'en': 'Previous month', 'ar': 'الشهر السابق'},
+    'supNextMonth': {'fr': 'Mois suivant', 'en': 'Next month', 'ar': 'الشهر التالي'},
+    'supEmptyMonth': {'fr': 'Aucun stage sur ce mois.', 'en': 'No internships this month.', 'ar': 'لا تربصات في هذا الشهر.'},
     'needsAttention': {'fr': 'Nécessite votre attention', 'en': 'Needs your attention', 'ar': 'يحتاج إلى انتباهك'},
     'allCaughtUp': {'fr': 'Tout est à jour.', 'en': 'All caught up.', 'ar': 'كل شيء محدث.'},
     'internDetailTitle': {'fr': 'Dossier stagiaire', 'en': 'Intern file', 'ar': 'ملف المتربص'},
@@ -803,6 +983,8 @@ class AppLocalizations {
       'fr': 'Publication retirée', 'en': 'Post removed', 'ar': 'تمت إزالة المنشور'},
     'notifTypeCommunityCommentRemoved': {
       'fr': 'Commentaire retiré', 'en': 'Comment removed', 'ar': 'تمت إزالة التعليق'},
+    'notifTypeDocumentsPreparation': {
+      'fr': 'Préparer les documents', 'en': 'Prepare documents', 'ar': 'جهّز الوثائق'},
     'notifTypeGeneric': {
       'fr': 'Notification', 'en': 'Notification', 'ar': 'إشعار'},
     'notifToday': {
@@ -1000,6 +1182,32 @@ class AppLocalizations {
   String get password => _get('password');
   String get loginAction => _get('loginAction');
   String get logout => _get('logout');
+  String get logoutConfirmTitle => _get('logoutConfirmTitle');
+  String get logoutConfirmMessage => _get('logoutConfirmMessage');
+  String get profileTitle => _get('profileTitle');
+  String get profileName => _get('profileName');
+  String get profileEmail => _get('profileEmail');
+  String get profileRole => _get('profileRole');
+  String get profileInternship => _get('profileInternship');
+  String get profileReadOnly => _get('profileReadOnly');
+  String get profileChangePassword => _get('profileChangePassword');
+  String get accountTitle => _get('accountTitle');
+  String get appearanceTitle => _get('appearanceTitle');
+  String get aboutTitle => _get('aboutTitle');
+  String aboutVersion(String v) =>
+      _get('aboutVersion').replaceAll('{v}', v);
+  String get aboutLicenses => _get('aboutLicenses');
+  String get aboutSupport => _get('aboutSupport');
+  String get aboutSupportBody => _get('aboutSupportBody');
+  String get aboutPrivacy => _get('aboutPrivacy');
+  String get aboutPrivacyBody => _get('aboutPrivacyBody');
+  String get notifyPrepareAsk => _get('notifyPrepareAsk');
+  String notifySelected(int n) =>
+      _get('notifySelected').replaceAll('{n}', '$n');
+  String get notifyEmptyHint => _get('notifyEmptyHint');
+  String notifySuccess(int n) =>
+      _get('notifySuccess').replaceAll('{n}', '$n');
+  String get notifyNeedsConnection => _get('notifyNeedsConnection');
   String get emailRequired => _get('emailRequired');
   String get passwordRequired => _get('passwordRequired');
   String get offline => _get('offline');
@@ -1036,6 +1244,21 @@ class AppLocalizations {
   String get markAllRead => _get('markAllRead');
   String get timelineTitle => _get('timelineTitle');
   String get myProgress => _get('myProgress');
+  String homeGreetMorning(String name) =>
+      _get('homeGreetMorning').replaceAll('{name}', name);
+  String homeGreetAfternoon(String name) =>
+      _get('homeGreetAfternoon').replaceAll('{name}', name);
+  String homeGreetEvening(String name) =>
+      _get('homeGreetEvening').replaceAll('{name}', name);
+  String homeGreetNight(String name) =>
+      _get('homeGreetNight').replaceAll('{name}', name);
+  String get homeQuickActions => _get('homeQuickActions');
+  String get qaTasks => _get('qaTasks');
+  String get qaJournal => _get('qaJournal');
+  String get qaAssistant => _get('qaAssistant');
+  String get qaMessages => _get('qaMessages');
+  String get qaValidations => _get('qaValidations');
+  String get qaCalendar => _get('qaCalendar');
   String get tasksProgress => _get('tasksProgress');
   String get timelineProgress => _get('timelineProgress');
   String get viewAll => _get('viewAll');
@@ -1262,6 +1485,81 @@ class AppLocalizations {
   String get journalNoComments => _get('journalNoComments');
   String journalValidatedBy(String n) =>
       _get('journalValidatedBy').replaceAll('{n}', n);
+  // --- T09/B5+B6: journal document (server window + AI PDF generation) ---
+  String get journalGenTitle => _get('journalGenTitle');
+  String get journalGenButton => _get('journalGenButton');
+  String journalGenOpensIn(int days) =>
+      _get('journalGenOpensIn').replaceAll('{days}', '$days');
+  String get journalGenLate => _get('journalGenLate');
+  String get journalGenNoPeriod => _get('journalGenNoPeriod');
+  String get journalGenCancelled => _get('journalGenCancelled');
+  String get journalGenOffline => _get('journalGenOffline');
+  String get journalGenChooserHint => _get('journalGenChooserHint');
+  String get journalGenFromTasks => _get('journalGenFromTasks');
+  String get journalGenFromTasksHint => _get('journalGenFromTasksHint');
+  String get journalGenFromText => _get('journalGenFromText');
+  String get journalGenFromTextHint => _get('journalGenFromTextHint');
+  String get journalGenTextLabel => _get('journalGenTextLabel');
+  String get journalGenTextHint => _get('journalGenTextHint');
+  String journalGenTextCounter(int used, int max) =>
+      _get('journalGenTextCounter')
+          .replaceAll('{used}', '$used')
+          .replaceAll('{max}', '$max');
+  String journalGenTextTooShort(int min) =>
+      _get('journalGenTextTooShort').replaceAll('{min}', '$min');
+  String get journalGenProgress => _get('journalGenProgress');
+  String get journalGenStart => _get('journalGenStart');
+  String journalGenBelowThreshold(int done, int total) =>
+      _get('journalGenBelowThreshold')
+          .replaceAll('{done}', '$done')
+          .replaceAll('{total}', '$total');
+  String get journalGenNoTasks => _get('journalGenNoTasks');
+  String journalGenDone(int v) =>
+      _get('journalGenDone').replaceAll('{v}', '$v');
+  String get journalGenReplaced => _get('journalGenReplaced');
+  String get journalGenPreviousSubmitted => _get('journalGenPreviousSubmitted');
+  String get journalGenOpen => _get('journalGenOpen');
+  String get journalGenOpenFailed => _get('journalGenOpenFailed');
+  String get journalGenRegenerate => _get('journalGenRegenerate');
+  String get journalGenRegenerateConfirm => _get('journalGenRegenerateConfirm');
+  String get journalGenKeep => _get('journalGenKeep');
+  String get journalGenKeepNote => _get('journalGenKeepNote');
+  String get journalGenManualPath => _get('journalGenManualPath');
+  String get journalGenCancel => _get('journalGenCancel');
+  String get journalGenClose => _get('journalGenClose');
+  String get journalGenSourceTasks => _get('journalGenSourceTasks');
+  String get journalGenSourceText => _get('journalGenSourceText');
+  String get errJournalNotEligible => _get('errJournalNotEligible');
+  // --- T10 B7/B8/SU-VAL-01: submission window + document kind ---
+  String get errSubmissionWindowClosed =>
+      _get('errSubmissionWindowClosed');
+  String submissionWindowOpens(String date) =>
+      _get('submissionWindowOpens').replaceAll('{date}', date);
+  String submissionWindowUntil(String date) =>
+      _get('submissionWindowUntil').replaceAll('{date}', date);
+  String submissionWindowLate(String date) =>
+      _get('submissionWindowLate').replaceAll('{date}', date);
+  String get submissionWindowNoPeriod => _get('submissionWindowNoPeriod');
+  String get submissionWindowCancelled =>
+      _get('submissionWindowCancelled');
+  String get contactSupervisorAction => _get('contactSupervisorAction');
+  String get contactNoConversation => _get('contactNoConversation');
+  String get deliverableKindLabel => _get('deliverableKindLabel');
+  String get deliverableKindNone => _get('deliverableKindNone');
+  String get deliverableKindJournal => _get('deliverableKindJournal');
+  String get deliverableKindReport => _get('deliverableKindReport');
+  String get deliverableKindHint => _get('deliverableKindHint');
+  String get errDeliverableKindLocked =>
+      _get('errDeliverableKindLocked');
+  String get errDocumentNotInConversation =>
+      _get('errDocumentNotInConversation');
+  String get msgDocMenu => _get('msgDocMenu');
+  String get msgSetAsJournal => _get('msgSetAsJournal');
+  String get msgSetAsReport => _get('msgSetAsReport');
+  String msgDocRegistered(String kind) =>
+      _get('msgDocRegistered').replaceAll('{kind}', kind);
+  String get msgDocNotLinked => _get('msgDocNotLinked');
+  String get errJournalTextInvalid => _get('errJournalTextInvalid');
   String get backToToday => _get('backToToday');
   String get validationsTitle => _get('validationsTitle');
   String get validationsEmpty => _get('validationsEmpty');
@@ -1318,10 +1616,18 @@ class AppLocalizations {
   String get uploadFailedRetry => _get('uploadFailedRetry');
 
   // D4 supervisor workspace & evaluations
-  String get supHomeTitle => _get('supHomeTitle');
   String get myInterns => _get('myInterns');
   String get noSupervised => _get('noSupervised');
   String get noSupervisedHint => _get('noSupervisedHint');
+  String get supViewList => _get('supViewList');
+  String get supViewCalendar => _get('supViewCalendar');
+  String get supSearchHint => _get('supSearchHint');
+  String get supSortName => _get('supSortName');
+  String get supSortEndDate => _get('supSortEndDate');
+  String get supSortStatus => _get('supSortStatus');
+  String get supPrevMonth => _get('supPrevMonth');
+  String get supNextMonth => _get('supNextMonth');
+  String get supEmptyMonth => _get('supEmptyMonth');
   String get needsAttention => _get('needsAttention');
   String get allCaughtUp => _get('allCaughtUp');
   String get internDetailTitle => _get('internDetailTitle');
@@ -1481,6 +1787,8 @@ class AppLocalizations {
       _get('notifTypeCommunityPostRemoved');
   String get notifTypeCommunityCommentRemoved =>
       _get('notifTypeCommunityCommentRemoved');
+  String get notifTypeDocumentsPreparation =>
+      _get('notifTypeDocumentsPreparation');
   String get notifTypeGeneric => _get('notifTypeGeneric');
   String get notifToday => _get('notifToday');
   String get notifWelcomeEmpty => _get('notifWelcomeEmpty');

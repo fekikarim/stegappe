@@ -222,6 +222,13 @@ enum JournalStatus { draft, submitted, validated, rejected }
 /// authoritative and a longer title fails server-side.
 const int kJournalTitleMaxLength = 255;
 
+/// T09/B6 text path bounds (AI-3/ST-JRN-05). UX-only mirrors of the server
+/// validation (`JournalDocumentService`): the backend rejects out-of-range
+/// text with `JOURNAL_TEXT_TOO_SHORT` / `JOURNAL_TEXT_TOO_LONG` regardless of
+/// what the app sends, and the counter shows the same numbers.
+const int kJournalTextMinLength = 40;
+const int kJournalTextMaxLength = 8000;
+
 JournalStatus journalStatusFrom(String? raw) =>
     switch (raw?.toUpperCase()) {
       'SUBMITTED' => JournalStatus.submitted,
@@ -362,6 +369,8 @@ class DeliverableDetail extends Equatable {
     this.description,
     required this.status,
     required this.currentVersion,
+    this.internshipId,
+    this.documentKind,
     this.submittedAt,
     this.validatedAt,
     this.validatedByName,
@@ -373,6 +382,13 @@ class DeliverableDetail extends Equatable {
   final String? description;
   final DeliverableStatus status;
   final int currentVersion;
+
+  /// Owning internship (needed to read the T10/B7 submission window).
+  final String? internshipId;
+
+  /// T10/B8: `JOURNAL` · `REPORT` · null (free document, no validation slot).
+  final String? documentKind;
+
   final DateTime? submittedAt;
   final DateTime? validatedAt;
   final String? validatedByName;
@@ -391,6 +407,8 @@ class DeliverableDetail extends Equatable {
         description,
         status,
         currentVersion,
+        internshipId,
+        documentKind,
         submittedAt,
         validatedAt,
         validatedByName,
@@ -442,6 +460,156 @@ class AppNotification extends Equatable {
   @override
   List<Object?> get props =>
       [id, title, message, priority, createdAt, isRead];
+}
+
+/// T09/B5 — server-computed journal eligibility window (BR-20/BR-21/BR-61).
+///
+/// The window, the remaining days and the task ratio ALL come from the backend
+/// (`Africa/Tunis`): the app never derives a business window from the device
+/// clock, this object only reflects the server's decision.
+class JournalEligibility extends Equatable {
+  const JournalEligibility({
+    required this.eligible,
+    this.opensAt,
+    this.closesAt,
+    required this.reason,
+    required this.daysUntilOpen,
+    required this.windowDays,
+    required this.taskCount,
+    required this.approvedTasks,
+    required this.belowThreshold,
+  });
+
+  final bool eligible;
+  final DateTime? opensAt;
+  final DateTime? closesAt;
+
+  /// `ELIGIBLE_WINDOW` · `ELIGIBLE_LATE` · `BEFORE_WINDOW` · `NO_PERIOD` ·
+  /// `CANCELLED` (backend-owned codes).
+  final String reason;
+
+  /// Server-computed calendar days until [opensAt] (0 when eligible).
+  final int daysUntilOpen;
+  final int windowDays;
+
+  /// A2 denominator (visible, not cancelled) — the same number the back-office
+  /// verification uses.
+  final int taskCount;
+  final int approvedTasks;
+
+  /// BR-24: fewer than 75 % approved-done → non-blocking warning before
+  /// generating/submitting.
+  final bool belowThreshold;
+
+  /// D3b: the internship already ended and the window stays open (late).
+  bool get isLate => reason == 'ELIGIBLE_LATE';
+
+  /// BR-20: the window has not opened yet → the action is disabled with the
+  /// remaining days.
+  bool get beforeWindow => reason == 'BEFORE_WINDOW';
+
+  @override
+  List<Object?> get props => [
+        eligible,
+        opensAt,
+        closesAt,
+        reason,
+        daysUntilOpen,
+        windowDays,
+        taskCount,
+        approvedTasks,
+        belowThreshold,
+      ];
+}
+
+/// T10/B7 — `GET /api/internships/{id}/submission-window` (BR-22: the final
+/// week of ANY internship type, server-computed in `Africa/Tunis`). The app
+/// only reflects the server's decision: it never derives the window from the
+/// device clock, and outside the window it explains + offers to contact the
+/// supervisor — never an override.
+class SubmissionWindow extends Equatable {
+  const SubmissionWindow({
+    required this.open,
+    this.opensAt,
+    this.closesAt,
+    required this.reason,
+    required this.daysUntilOpen,
+    required this.windowDays,
+  });
+
+  final bool open;
+  final DateTime? opensAt;
+  final DateTime? closesAt;
+
+  /// `OPEN` · `BEFORE_WINDOW` · `AFTER_WINDOW` · `NO_PERIOD` · `CANCELLED`
+  /// (backend-owned codes — the same honesty contract as the T09 journal
+  /// window, but a 7-day final week that never stays open late).
+  final String reason;
+
+  /// Server-computed calendar days until [opensAt] (0 when open).
+  final int daysUntilOpen;
+  final int windowDays;
+
+  @override
+  List<Object?> get props => [
+        open,
+        opensAt,
+        closesAt,
+        reason,
+        daysUntilOpen,
+        windowDays,
+      ];
+}
+
+/// T09/B6 — the journal document the server produced (a DRAFT deliverable).
+class JournalGenerationResult extends Equatable {
+  const JournalGenerationResult({
+    required this.deliverableId,
+    required this.title,
+    required this.status,
+    required this.currentVersion,
+    required this.fileName,
+    required this.source,
+    required this.taskCount,
+    required this.approvedTasks,
+    required this.belowThreshold,
+    required this.replacedDraft,
+    required this.previousSubmitted,
+  });
+
+  final String deliverableId;
+  final String title;
+  final DeliverableStatus status;
+  final int currentVersion;
+  final String fileName;
+
+  /// `TASKS` or `TEXT`.
+  final String source;
+  final int taskCount;
+  final int approvedTasks;
+  final bool belowThreshold;
+
+  /// True when the previous unsubmitted draft was replaced (ST-JRN-06).
+  final bool replacedDraft;
+
+  /// True when an earlier journal was already submitted/validated and stays
+  /// immutable — this result is a new draft.
+  final bool previousSubmitted;
+
+  @override
+  List<Object?> get props => [
+        deliverableId,
+        title,
+        status,
+        currentVersion,
+        fileName,
+        source,
+        taskCount,
+        approvedTasks,
+        belowThreshold,
+        replacedDraft,
+        previousSubmitted,
+      ];
 }
 
 /// Supervisor/intern feedback attached to a journal entry.

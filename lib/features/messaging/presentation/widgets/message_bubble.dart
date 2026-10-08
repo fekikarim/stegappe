@@ -3,7 +3,8 @@ import 'package:flutter/material.dart';
 import '../../../../core/l10n/app_localizations.dart';
 import '../../../../core/theme/steg_spacing.dart';
 import '../../domain/entities/conversation.dart';
-import '../screens/attachment_sheet.dart' show showAttachmentPreview;
+import '../screens/attachment_sheet.dart'
+    show showAttachmentDocumentActions, showAttachmentPreview;
 
 /// One message bubble: sender side, redaction for soft-deleted history,
 /// per-message attachments, and read/delivery markers for own messages.
@@ -11,9 +12,22 @@ import '../screens/attachment_sheet.dart' show showAttachmentPreview;
 /// Markers reflect backend-reported status only (SENT/DELIVERED/READ),
 /// updated live via topic broadcasts.
 class MessageBubble extends StatelessWidget {
-  const MessageBubble({super.key, required this.message});
+  const MessageBubble({
+    super.key,
+    required this.message,
+    this.canRegisterDocuments = false,
+    this.onDocumentRegistered,
+  });
 
   final ChatMessage message;
+
+  /// Supervisor/admin of the internship: the attachment "…" menu offers
+  /// "set as journal" / "set as report" (server enforces the real scope).
+  final bool canRegisterDocuments;
+
+  /// Called after a successful registration (refresh the thread so the
+  /// kind label on the chip stays honest).
+  final VoidCallback? onDocumentRegistered;
 
   @override
   Widget build(BuildContext context) {
@@ -73,7 +87,9 @@ class MessageBubble extends StatelessWidget {
             for (final a in message.attachments)
               _AttachmentChip(
                   attachment: a,
-                  conversationId: message.conversationId),
+                  conversationId: message.conversationId,
+                  canRegister: canRegisterDocuments,
+                  onRegistered: onDocumentRegistered),
           Row(
             mainAxisSize: MainAxisSize.min,
             mainAxisAlignment: MainAxisAlignment.end,
@@ -140,23 +156,48 @@ class _StatusMark extends StatelessWidget {
 }
 
 class _AttachmentChip extends StatelessWidget {
-  const _AttachmentChip(
-      {required this.attachment, required this.conversationId});
+  const _AttachmentChip({
+    required this.attachment,
+    required this.conversationId,
+    this.canRegister = false,
+    this.onRegistered,
+  });
 
   final MessageAttachment attachment;
   final String conversationId;
+  final bool canRegister;
+  final VoidCallback? onRegistered;
+
+  void _openActions(BuildContext context) {
+    showAttachmentDocumentActions(
+      context,
+      attachment: attachment,
+      canRegister: canRegister,
+      onRegistered: onRegistered,
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
+    final kindLabel = attachment.sourceDocumentKind == 'JOURNAL'
+        ? l10n.deliverableKindJournal
+        : attachment.sourceDocumentKind == 'REPORT'
+            ? l10n.deliverableKindReport
+            : null;
     return Padding(
       padding: const EdgeInsets.only(top: StegSpacing.xs),
       child: Semantics(
         button: true,
-        label: '${attachment.fileName}, ${l10n.msgDownload}',
+        label: '${attachment.fileName}'
+            '${kindLabel == null ? '' : ', $kindLabel'}'
+            ', ${l10n.msgDownload}',
         child: InkWell(
           onTap: () => showAttachmentPreview(context,
               attachment: attachment),
+          // T10/SU-VAL-01: long-press reaches the same actions sheet as
+          // the explicit "…" menu below (gesture alone is inaccessible).
+          onLongPress: () => _openActions(context),
           borderRadius:
               BorderRadius.circular(StegSpacing.radiusSm),
           child: Container(
@@ -186,8 +227,30 @@ class _AttachmentChip extends StatelessWidget {
                           .textTheme
                           .bodySmall),
                 ),
+                if (kindLabel != null) ...[
+                  const SizedBox(width: StegSpacing.xs),
+                  Text(kindLabel,
+                      style: Theme.of(context)
+                          .textTheme
+                          .bodySmall
+                          ?.copyWith(
+                              color: Theme.of(context)
+                                  .colorScheme
+                                  .primary,
+                              fontWeight:
+                                  FontWeight.w700)),
+                ],
                 const SizedBox(width: StegSpacing.xs),
                 const Icon(Icons.download_outlined, size: 18),
+                IconButton(
+                  icon: const Icon(Icons.more_vert_outlined,
+                      size: 18),
+                  tooltip: l10n.msgDocMenu,
+                  visualDensity: VisualDensity.compact,
+                  constraints: const BoxConstraints(
+                      minWidth: 40, minHeight: 40),
+                  onPressed: () => _openActions(context),
+                ),
               ],
             ),
           ),

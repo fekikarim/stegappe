@@ -17,7 +17,7 @@ import '../../../internship/domain/deliverable_file_rules.dart'
 import '../../../internship/domain/entities/work_items.dart'
     show DeliverableSummary;
 import '../../../internship/presentation/providers/workspace_providers.dart'
-    show internshipRepositoryProvider;
+    show internshipRepositoryProvider, refreshValidations;
 import '../../../internship/presentation/widgets/status_labels.dart'
     show deliverableStatusLabel;
 import '../../domain/entities/conversation.dart';
@@ -92,6 +92,10 @@ class _AttachmentSheetState
   String? _loadingDocId;
   String? _docError;
 
+  /// T10/SU-VAL-01: set when the staged file came from a deliverable, so
+  /// the send carries the source link (null for device-picked files).
+  String? _stagedDeliverableId;
+
   @override
   void dispose() {
     _caption.dispose();
@@ -123,6 +127,8 @@ class _AttachmentSheetState
         _bytes = bytes;
         _fileName = name;
         _fileError = null;
+        // A fresh device file is not linked to any internship document.
+        _stagedDeliverableId = null;
       } else {
         _bytes = null;
         _fileName = null;
@@ -164,6 +170,7 @@ class _AttachmentSheetState
           contentType: ChatAttachmentRules.mimeForExtension[ext] ??
               'application/octet-stream',
           bytes: bytes,
+          deliverableId: _stagedDeliverableId,
           onProgress: (s, t) =>
               setState(() => _progress = t == 0 ? 0 : s / t));
       if (!mounted) return;
@@ -235,6 +242,9 @@ class _AttachmentSheetState
           _fileName = fileName;
           _fileError = null;
           _showDocs = false;
+          // T10/SU-VAL-01: staged FROM a document → the sent attachment
+          // carries the source link so the supervisor can register its kind.
+          _stagedDeliverableId = doc.id;
           if (_caption.text.trim().isEmpty) {
             _caption.text = doc.title;
           }
@@ -359,6 +369,172 @@ Future<void> showAttachmentSheet(BuildContext context,
     builder: (_) => AttachmentSheet(
         conversationId: conversationId, internshipId: internshipId),
   );
+}
+
+/// T10/SU-VAL-01: attachment actions — open/download plus, for the
+/// supervisor of the internship, "set as journal" / "set as report" on an
+/// attachment sent from a document (both the long-press gesture and the
+/// explicit "…" menu land here; the menu exists because long-press alone is
+/// undiscoverable and inaccessible). Registration is first-level (D2/BR-28):
+/// the administration takes the final decision — the feedback says so.
+Future<void> showAttachmentDocumentActions(
+  BuildContext context, {
+  required MessageAttachment attachment,
+  required bool canRegister,
+  VoidCallback? onRegistered,
+}) {
+  return showStegSheet(
+    context,
+    title: attachment.fileName,
+    builder: (_) => _AttachmentActionsBody(
+        attachment: attachment,
+        canRegister: canRegister,
+        onRegistered: onRegistered),
+  );
+}
+
+class _AttachmentActionsBody extends ConsumerStatefulWidget {
+  const _AttachmentActionsBody({
+    required this.attachment,
+    required this.canRegister,
+    this.onRegistered,
+  });
+
+  final MessageAttachment attachment;
+  final bool canRegister;
+  final VoidCallback? onRegistered;
+
+  @override
+  ConsumerState<_AttachmentActionsBody> createState() =>
+      _AttachmentActionsBodyState();
+}
+
+class _AttachmentActionsBodyState
+    extends ConsumerState<_AttachmentActionsBody> {
+  bool _working = false;
+  String? _error;
+
+  Future<void> _register(String kind) async {
+    final l10n = AppLocalizations.of(context);
+    final sourceId = widget.attachment.sourceDeliverableId;
+    if (sourceId == null || _working) return;
+    setState(() {
+      _working = true;
+      _error = null;
+    });
+    try {
+      await ref
+          .read(internshipRepositoryProvider)
+          .registerDocumentKind(sourceId, kind);
+      if (!mounted) return;
+      Navigator.of(context).pop();
+      refreshValidations(ref);
+      widget.onRegistered?.call();
+      final kindLabel = kind == 'JOURNAL'
+          ? l10n.deliverableKindJournal
+          : l10n.deliverableKindReport;
+      ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(l10n.msgDocRegistered(kindLabel))));
+    } on Exception catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _working = false;
+        _error = userMessageOf(e, l10n);
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    final a = widget.attachment;
+    final source = a.sourceDeliverableId;
+    final current = a.sourceDocumentKind;
+    final currentLabel = current == 'JOURNAL'
+        ? l10n.deliverableKindJournal
+        : l10n.deliverableKindReport;
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        ListTile(
+          contentPadding: EdgeInsets.zero,
+          leading: Icon(a.isImage
+              ? Icons.image_outlined
+              : Icons.picture_as_pdf_outlined),
+          title: Text(a.fileName,
+              maxLines: 1, overflow: TextOverflow.ellipsis),
+          subtitle: Text(
+              DeliverableFileRules.formatBytes(a.size)),
+        ),
+        ListTile(
+          contentPadding: EdgeInsets.zero,
+          leading: const Icon(Icons.download_outlined),
+          title: Text(l10n.msgDownload),
+          enabled: !_working,
+          onTap: () {
+            Navigator.of(context).pop();
+            showAttachmentPreview(context, attachment: a);
+          },
+        ),
+        if (widget.canRegister) ...[
+          const Divider(),
+          if (source == null)
+            Text(l10n.msgDocNotLinked,
+                style: Theme.of(context).textTheme.bodySmall),
+          if (source != null) ...[
+            if (current != null)
+              Text(
+                  '${l10n.deliverableKindLabel} : $currentLabel',
+                  style:
+                      Theme.of(context).textTheme.bodySmall),
+            ListTile(
+              contentPadding: EdgeInsets.zero,
+              leading:
+                  const Icon(Icons.menu_book_outlined),
+              title: Text(l10n.msgSetAsJournal),
+              trailing: current == 'JOURNAL'
+                  ? const Icon(Icons.check_outlined)
+                  : null,
+              enabled: !_working && current != 'JOURNAL',
+              onTap: current == 'JOURNAL'
+                  ? null
+                  : () => _register('JOURNAL'),
+            ),
+            ListTile(
+              contentPadding: EdgeInsets.zero,
+              leading:
+                  const Icon(Icons.description_outlined),
+              title: Text(l10n.msgSetAsReport),
+              trailing: current == 'REPORT'
+                  ? const Icon(Icons.check_outlined)
+                  : null,
+              enabled: !_working && current != 'REPORT',
+              onTap: current == 'REPORT'
+                  ? null
+                  : () => _register('REPORT'),
+            ),
+          ],
+        ],
+        if (_working) ...[
+          const SizedBox(height: StegSpacing.sm),
+          const LinearProgressIndicator(),
+        ],
+        if (_error != null) ...[
+          const SizedBox(height: StegSpacing.xs),
+          Semantics(
+            liveRegion: true,
+            label: _error,
+            excludeSemantics: true,
+            child: Text(_error!,
+                style: TextStyle(
+                    color:
+                        Theme.of(context).colorScheme.error)),
+          ),
+        ],
+      ],
+    );
+  }
 }
 
 /// Inline deliverable picker rows (T07): loading / error+retry / empty

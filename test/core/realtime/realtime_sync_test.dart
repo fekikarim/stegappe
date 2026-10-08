@@ -56,6 +56,8 @@ void main() {
           pendingValidationsProvider,
           pendingDeliverableReviewsProvider,
           pendingLogbookReviewsProvider,
+          // T12: the supervised list carries server counts.
+          supervisedInternsProvider,
         ]),
       );
     });

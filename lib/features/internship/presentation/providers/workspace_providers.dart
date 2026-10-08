@@ -8,6 +8,7 @@ import '../../data/cache/internship_id_store.dart';
 import '../../data/datasources/internship_remote_data_source.dart';
 import '../../data/repositories/internship_repository_impl.dart';
 import '../../domain/dashboard.dart';
+import '../../domain/calendar.dart';
 import '../../domain/entities/evaluation.dart';
 import '../../domain/entities/internship.dart';
 import '../../domain/entities/logbook.dart';
@@ -59,58 +60,37 @@ final taskFilterProvider = StateProvider<TaskStatus?>((ref) => null);
 /// replaces the server status filter.
 final taskSearchProvider = StateProvider<String>((ref) => '');
 
-/// Full dashboard snapshot, fetched in parallel. Throws
-/// `StateError('no-internship')` when no internship is linked yet.
+/// Full dashboard snapshot: ONE scoped read (T13/B13) plus the two live
+/// badge counts. Throws `StateError('no-internship')` when no internship is
+/// linked yet. The badge reads stay separate on purpose: they are
+/// shell-global live state (socket-invalidated), and bundling them into the
+/// cached summary would stale the badges.
 final dashboardProvider = FutureProvider<DashboardData>((ref) async {
   final repo = ref.watch(internshipRepositoryProvider);
   final id = await ref.watch(myInternshipIdProvider.future);
   if (id == null) throw StateError('no-internship');
   final now = DateTime.now();
 
+  final summary = await repo.internshipSummary(id);
   final results = await Future.wait([
-    repo.getInternship(id),
-    repo.getAssignments(id),
-    repo.listTasks(id, size: 50),
-    // BR-11/A2: "done" = APPROVED. `COMPLETED` is work finished by the
-    // student and still awaiting the supervisor's review, so counting it here
-    // would overstate the student's progress by a whole review step.
-    repo.listTasks(id, size: 1, status: TaskStatus.approved),
-    repo.listJournal(id, size: 20),
-    repo.listJournal(id, size: 1, status: JournalStatus.draft),
-    repo.listJournal(id, size: 1, status: JournalStatus.rejected),
-    repo.listJournal(id, size: 1, status: JournalStatus.validated),
-    repo.listDeliverables(id, size: 50),
-    repo.listEvaluations(id, size: 10),
-    repo.listNotifications(size: 5),
     repo.unreadNotificationCount(),
     repo.unreadMessageCount(),
   ]);
-
-  final tasks = results[2] as Paged<InternTask>;
-  final tasksDone = results[3] as Paged<InternTask>;
-  final journal = results[4] as Paged<JournalEntry>;
-  final drafts = results[5] as Paged<JournalEntry>;
-  final rejected = results[6] as Paged<JournalEntry>;
-  final validated = results[7] as Paged<JournalEntry>;
-  final deliverables = results[8] as Paged<DeliverableSummary>;
-  final evaluations = results[9] as Paged<EvaluationSummary>;
-  final notifications = results[10] as Paged<AppNotification>;
-
   final data = buildDashboard(DashboardInput(
-    internship: results[0] as Internship,
-    assignments: results[1] as List<InternshipAssignment>,
-    tasks: tasks.items,
-    tasksCompletedTotal: tasksDone.totalElements,
-    tasksGrandTotal: tasks.totalElements,
-    journal: journal.items,
-    pendingJournalTotal: drafts.totalElements + rejected.totalElements,
-    journalValidatedTotal: validated.totalElements,
-    deliverables: deliverables.items,
-    deliverablesTotal: deliverables.totalElements,
-    evaluations: evaluations.items,
-    notifications: notifications.items,
-    unreadNotifications: results[11] as int,
-    unreadMessages: results[12] as int,
+    internship: summary.internship,
+    assignments: summary.assignments,
+    tasks: summary.tasks,
+    tasksCompletedTotal: summary.tasksCompletedTotal,
+    tasksGrandTotal: summary.tasksGrandTotal,
+    journal: summary.journal,
+    pendingJournalTotal: summary.pendingJournalTotal,
+    journalValidatedTotal: summary.journalValidatedTotal,
+    deliverables: summary.deliverables,
+    deliverablesTotal: summary.deliverablesTotal,
+    evaluations: summary.evaluations,
+    notifications: summary.notifications,
+    unreadNotifications: results[0],
+    unreadMessages: results[1],
     now: now,
   ));
   // Keep last-good snapshot for honest stale rendering when offline.
@@ -262,6 +242,16 @@ final deliverableDetailProvider =
   return repo.getDeliverable(deliverableId);
 });
 
+/// T10/B7 — the server-owned final-week submission window (BR-22). Family by
+/// internship id; invalidated after a submit so the read stays honest.
+/// The device clock never decides (server computes in `Africa/Tunis`).
+final submissionWindowProvider =
+    FutureProvider.family<SubmissionWindow, String>(
+        (ref, internshipId) async {
+  final repo = ref.watch(internshipRepositoryProvider);
+  return repo.submissionWindow(internshipId);
+});
+
 final deliverableCommentsProvider =
     FutureProvider.family<List<JournalComment>, String>(
         (ref, deliverableId) async {
@@ -294,8 +284,28 @@ void refreshDeliverables(WidgetRef ref, [String? deliverableId]) {
 final supervisedInternsProvider =
     FutureProvider<List<SupervisedIntern>>((ref) async {
   final repo = ref.watch(internshipRepositoryProvider);
-  return repo.supervisedInterns();
+  final interns = await repo.supervisedInterns();
+  ref.read(lastSupervisedProvider.notifier).state = interns;
+  return interns;
 });
+
+/// Last good supervised list for stale-offline rendering (T12 mirrors the
+/// journal pattern: cached rows stay visible with an explicit stale label).
+final lastSupervisedProvider =
+    StateProvider<List<SupervisedIntern>?>((ref) => null);
+
+/// Interns-tab view: list or period calendar (SU-CAL-01/02).
+enum SupervisedView { list, calendar }
+
+final supervisedViewProvider =
+    StateProvider<SupervisedView>((ref) => SupervisedView.list);
+
+/// Candidates-list search text (name/reference, case-insensitive).
+final supervisedSearchProvider = StateProvider<String>((ref) => '');
+
+/// Candidates-list sort order (SU-CAL-02).
+final supervisedSortProvider =
+    StateProvider<SupervisedSort>((ref) => SupervisedSort.name);
 
 /// Full intern detail for supervisors: header, tasks, pending journal,
 /// deliverables, evaluations — composed from backend reads.

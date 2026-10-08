@@ -48,8 +48,9 @@ Future<void> pumpAuthGate(
   WidgetTester tester, {
   AppUser? user,
   Locale locale = const Locale('fr'),
+  Map<String, Object> seedPrefs = const {},
 }) async {
-  SharedPreferences.setMockInitialValues({});
+  SharedPreferences.setMockInitialValues(seedPrefs);
   final prefs = await PrefsStore.load();
   await tester.pumpWidget(
     ProviderScope(

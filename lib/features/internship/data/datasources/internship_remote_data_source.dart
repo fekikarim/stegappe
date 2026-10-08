@@ -3,6 +3,7 @@ import 'dart:typed_data';
 import '../../../../core/network/api_client.dart';
 import '../../../../core/network/endpoints.dart';
 import '../../../../core/network/paged.dart';
+import '../../domain/dashboard.dart';
 import '../../domain/entities/evaluation.dart';
 import '../../domain/entities/internship.dart';
 import '../../domain/entities/logbook.dart';
@@ -22,6 +23,34 @@ class InternshipRemoteDataSource {
   Future<Internship> getInternship(String id, String? bearer) =>
       _client.get(Endpoints.internship(id),
           bearer: bearer, decode: (j) => internshipFromJson(_map(j)));
+
+  /// T13/B13: one-call student home snapshot (same sections as the lists).
+  Future<InternshipSummary> internshipSummary(
+          String internshipId, String? bearer) =>
+      _client.get(Endpoints.internshipSummary(internshipId),
+          bearer: bearer,
+          decode: (j) => internshipSummaryFromJson(_map(j)));
+
+  /// T14/D14: ask own students to prepare validation documents. The
+  /// idempotency key makes a double submit replay without duplicating.
+  Future<int> notifyDocumentsPreparation(
+          List<String> internshipIds, String? bearer,
+          {String? idempotencyKey}) =>
+      _client.post(Endpoints.notifyDocumentPreparation,
+          bearer: bearer,
+          headers: idempotencyKey == null
+              ? null
+              : {'X-Idempotency-Key': idempotencyKey},
+          body: {'internshipIds': internshipIds},
+          decode: (j) =>
+              (_map(j)['notified'] as num?)?.toInt() ?? 0);
+
+  /// T14: best-effort server sync of the UI locale (never blocks the switch).
+  Future<void> syncLocale(String code, String? bearer) => _client.put(
+      Endpoints.userLocale,
+      bearer: bearer,
+      body: {'locale': code},
+      decode: (_) {});
 
   Future<List<InternshipAssignment>> getAssignments(
           String id, String? bearer) =>
@@ -158,6 +187,28 @@ class InternshipRemoteDataSource {
         return <JournalComment>[];
       });
 
+  // --- T09/B5+B6: journal eligibility window + AI journal document ---
+
+  /// Server-authoritative window + task ratio (BR-21: never the device clock).
+  Future<JournalEligibility> journalEligibility(
+          String internshipId, String? bearer) =>
+      _client.get(Endpoints.journalEligibility(internshipId),
+          bearer: bearer, decode: (j) => journalEligibilityFromJson(_map(j)));
+
+  /// Generate the journal PDF from the internship's own tasks.
+  Future<JournalGenerationResult> generateJournalFromTasks(
+          String internshipId, String? bearer) =>
+      _client.post(Endpoints.journalGenerate(internshipId),
+          bearer: bearer, decode: (j) => journalGenerationFromJson(_map(j)));
+
+  /// Generate the journal PDF from the student's bounded description.
+  Future<JournalGenerationResult> generateJournalFromText(
+          String internshipId, String? bearer, String text) =>
+      _client.post(Endpoints.journalGenerateFromText(internshipId),
+          bearer: bearer,
+          body: {'text': text},
+          decode: (j) => journalGenerationFromJson(_map(j)));
+
   // --- D3: deliverables (multipart, versioned, reviewed) ---
 
   Future<DeliverableDetail> createDeliverable(
@@ -165,6 +216,7 @@ class InternshipRemoteDataSource {
     String? bearer, {
     required String title,
     String? description,
+    String? documentKind,
     required String fileName,
     required Uint8List fileBytes,
     void Function(int sent, int total)? onProgress,
@@ -175,6 +227,10 @@ class InternshipRemoteDataSource {
             'title': title,
             if (description != null && description.isNotEmpty)
               'description': description,
+            // T10/B8: explicit validation document kind (JOURNAL/REPORT);
+            // absent means a free document with no validation slot.
+            if (documentKind != null && documentKind.isNotEmpty)
+              'documentKind': documentKind,
           },
           fileField: 'file',
           fileName: fileName,
@@ -230,6 +286,22 @@ class InternshipRemoteDataSource {
           bearer: bearer,
           decode: (j) => deliverableDetailFromJson(_map(j)));
 
+  /// T10/B7 — the server-owned final-week submission window (BR-22,
+  /// `Africa/Tunis`). Read so the app shows/hides the submit action honestly.
+  Future<SubmissionWindow> submissionWindow(
+          String internshipId, String? bearer) =>
+      _client.get(Endpoints.submissionWindow(internshipId),
+          bearer: bearer, decode: (j) => submissionWindowFromJson(_map(j)));
+
+  /// T10/B8 + SU-VAL-01 — register a deliverable as the internship's journal
+  /// or report (one per kind; VALIDATED documents are locked server-side).
+  Future<DeliverableDetail> registerDocumentKind(
+          String deliverableId, String? bearer, String documentKind) =>
+      _client.post(Endpoints.deliverableDocumentKind(deliverableId),
+          bearer: bearer,
+          body: {'documentKind': documentKind},
+          decode: (j) => deliverableDetailFromJson(_map(j)));
+
   Future<DeliverableDetail> validateDeliverable(
           String deliverableId, String? bearer, String? comment) =>
       _client.post(Endpoints.deliverableValidate(deliverableId),
@@ -268,6 +340,18 @@ class InternshipRemoteDataSource {
       });
 
   // --- D4: evaluations (template-driven, supervisor-authored) ---
+
+  /// T12/B2: own-scope supervised internships with server counts (one call;
+  /// D1b own-students semantics even for an ADMIN caller).
+  Future<List<SupervisedIntern>> supervisedInternships(String? bearer) =>
+      _client.get(Endpoints.supervisedInternships,
+          bearer: bearer,
+          decode: (j) => [
+                if (j is List)
+                  for (final e in j)
+                    if (e is Map<String, dynamic>)
+                      supervisedInternFromJson(e),
+              ]);
 
   Future<List<EvaluationTemplate>> listTemplates(
     String? bearer, {

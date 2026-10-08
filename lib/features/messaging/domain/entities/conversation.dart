@@ -93,6 +93,8 @@ class MessageAttachment extends Equatable {
     required this.fileName,
     required this.mimeType,
     required this.size,
+    this.sourceDeliverableId,
+    this.sourceDocumentKind,
   });
 
   final String id;
@@ -100,10 +102,23 @@ class MessageAttachment extends Equatable {
   final String mimeType;
   final int size;
 
+  /// T10/SU-VAL-01: the internship document this attachment was sent from
+  /// (null for ordinary chat files). [sourceDocumentKind] is its explicit
+  /// `JOURNAL`/`REPORT` registration (null when unmarked).
+  final String? sourceDeliverableId;
+  final String? sourceDocumentKind;
+
   bool get isImage => mimeType.startsWith('image/');
 
   @override
-  List<Object?> get props => [id, fileName, mimeType, size];
+  List<Object?> get props => [
+        id,
+        fileName,
+        mimeType,
+        size,
+        sourceDeliverableId,
+        sourceDocumentKind,
+      ];
 }
 
 /// A chat message. Ordering is by [sequenceNumber] (monotonic per

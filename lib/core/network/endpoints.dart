@@ -12,9 +12,27 @@ abstract final class Endpoints {
   static const String candidateMe = '/api/candidates/me';
   static const String internships = '/api/internships';
   static String internship(String id) => '/api/internships/$id';
+  // T14/D14: supervisor asks his own students to prepare documents.
+  static const String notifyDocumentPreparation =
+      '/api/supervision/document-preparation';
+  // T14: server-persisted locale preference (best-effort sync).
+  static const String userLocale = '/api/users/me/locale';
+  // T13/B13: one-call student home snapshot (same sections as the lists).
+  static String internshipSummary(String id) =>
+      '/api/internships/$id/summary';
+  // T12/B2: own-scope supervised list with server counts (D1b: own students
+  // even for an ADMIN caller — never the global list).
+  static const String supervisedInternships = '/api/internships/supervised';
   static String internshipTasks(String id) => '/api/internships/$id/tasks';
   static String journalEntries(String id) =>
       '/api/internships/$id/journal/entries';
+  // --- T09/B5+B6 journal document (server window + AI PDF generation) ---
+  static String journalEligibility(String id) =>
+      '/api/internships/$id/journal-eligibility';
+  static String journalGenerate(String id) =>
+      '/api/internships/$id/journal/generate';
+  static String journalGenerateFromText(String id) =>
+      '/api/internships/$id/journal/generate-from-text';
   static String deliverables(String id) => '/api/internships/$id/deliverables';
   static String evaluations(String id) => '/api/internships/$id/evaluations';
   // --- T03 student task classification (student-defined categories) ---
@@ -67,6 +85,11 @@ abstract final class Endpoints {
       '/api/internships/deliverables/$id/versions';
   static String deliverableSubmit(String id) =>
       '/api/internships/deliverables/$id/submit';
+  // --- T10 B7/B8: final-week submission window + explicit document kind ---
+  static String submissionWindow(String id) =>
+      '/api/internships/$id/submission-window';
+  static String deliverableDocumentKind(String id) =>
+      '/api/internships/deliverables/$id/document-kind';
   static String deliverableValidate(String id) =>
       '/api/internships/deliverables/$id/validate';
   static String deliverableReject(String id) =>

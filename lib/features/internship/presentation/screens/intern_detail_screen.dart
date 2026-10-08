@@ -2,12 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/l10n/app_localizations.dart';
+import '../../../../core/connectivity/connectivity_service.dart';
 import '../../../../core/network/error_messages.dart';
 import '../../../../core/theme/steg_spacing.dart';
 import '../../../../core/widgets/steg_button.dart';
 import '../../../../core/widgets/steg_states.dart';
 import '../../../../core/widgets/steg_status_chip.dart';
 import '../providers/workspace_providers.dart';
+import '../providers/notify_providers.dart';
 import '../widgets/dashboard_sections.dart';
 import '../widgets/status_labels.dart';
 import '../widgets/task_row.dart';
@@ -117,6 +119,10 @@ class InternDetailScreen extends ConsumerWidget {
                 counter:
                     '${d.tasksCompletedTotal}/${d.tasksTotal}',
               ),
+              const SizedBox(height: StegSpacing.md),
+
+              // --- T14/SU-CAL-04: ask this student to prepare documents ---
+              _NotifyStudentButton(internshipId: internshipId),
               const SizedBox(height: StegSpacing.md),
 
               // --- Planned tasks (read-only for supervisor in D4) ---
@@ -338,6 +344,78 @@ class InternDetailScreen extends ConsumerWidget {
             ],
           ),
         ),
+      ),
+    );
+  }
+}
+
+/// T14/SU-CAL-04 single-student shortcut for the preparation request.
+/// Server-confirmed with an in-flight guard; the UI waits only for server
+/// acceptance (a notified line), never for recipient delivery.
+class _NotifyStudentButton extends ConsumerWidget {
+  const _NotifyStudentButton({required this.internshipId});
+
+  final String internshipId;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context);
+    final state = ref.watch(notifyPreparationProvider);
+    final isOnline = ref.watch(isOnlineProvider);
+    final canSend = !state.sending && isOnline;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        StegButton(
+          label: l10n.notifyPrepareAsk,
+          variant: StegButtonVariant.secondary,
+          icon: Icons.send_outlined,
+          loading: state.sending,
+          onPressed: !canSend ? null : () => _send(context, ref),
+        ),
+        if (state.error != null) ...[
+          const SizedBox(height: StegSpacing.xs),
+          Semantics(
+            liveRegion: true,
+            label: !isOnline
+                ? l10n.notifyNeedsConnection
+                : context.userError(state.error!).message,
+            excludeSemantics: true,
+            child: Text(
+              !isOnline
+                  ? l10n.notifyNeedsConnection
+                  : context.userError(state.error!).message,
+              style:
+                  TextStyle(color: Theme.of(context).colorScheme.error),
+            ),
+          ),
+        ],
+        if (state.error == null && state.lastNotified != null) ...[
+          const SizedBox(height: StegSpacing.xs),
+          Semantics(
+            liveRegion: true,
+            label: l10n.notifySuccess(state.lastNotified!),
+            excludeSemantics: true,
+            child: Text(
+              l10n.notifySuccess(state.lastNotified!),
+              style: TextStyle(
+                  color: Theme.of(context).colorScheme.primary),
+            ),
+          ),
+        ],
+      ],
+    );
+  }
+
+  Future<void> _send(BuildContext context, WidgetRef ref) async {
+    final notified = await ref
+        .read(notifyPreparationProvider.notifier)
+        .sendTo(internshipId);
+    if (!context.mounted || notified == null) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content:
+            Text(AppLocalizations.of(context).notifySuccess(notified)),
       ),
     );
   }

@@ -142,6 +142,7 @@ class SupervisedIntern extends Equatable {
     required this.tasksCompleted,
     required this.tasksTotal,
     required this.pendingJournal,
+    this.submittedJournal = 0,
     required this.pendingDeliverables,
     required this.evaluationsCount,
   });
@@ -157,6 +158,11 @@ class SupervisedIntern extends Equatable {
   final int tasksCompleted;
   final int tasksTotal;
   final int pendingJournal;
+
+  /// SUBMITTED-only journal count (T13): the review-queue tile. Defaults
+  /// to 0 so older constructions keep compiling; the B2 parser always
+  /// sets it explicitly.
+  final int submittedJournal;
   final int pendingDeliverables;
   final int evaluationsCount;
 
@@ -179,6 +185,7 @@ class SupervisedIntern extends Equatable {
         tasksCompleted,
         tasksTotal,
         pendingJournal,
+        submittedJournal,
         pendingDeliverables,
         evaluationsCount,
       ];

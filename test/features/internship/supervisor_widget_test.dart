@@ -84,10 +84,24 @@ void main() {
     testWidgets('home shows queues + interns needing attention', (
       tester,
     ) async {
-      await pumpSup(tester, const SupervisorHomeScreen(onOpenTab: null));
+      // T13: the static headline gave way to the greeting + quick actions;
+      // queues now read the T12 server counts (same assertions, new source).
+      await pumpSup(
+          tester, SupervisorHomeScreen(user: _sup, onOpenTab: null));
 
-      expect(find.text('Pilotage des stages'), findsOneWidget);
+      expect(find.text('Encadrant'), findsOneWidget);
       expect(find.text('Journal en attente'), findsWidgets);
+      // T14 added the SU-HOME-02 notify quick action, so the queue sections
+      // start below the fold: scroll them into view before asserting (same
+      // pattern as the intern-file test below; no assertion removed).
+      final scroll = find.byType(CustomScrollView).first;
+      for (var i = 0;
+          i < 10 &&
+              find.text('Nécessite votre attention').evaluate().isEmpty;
+          i++) {
+        await tester.drag(scroll, const Offset(0, -300));
+        await tester.pumpAndSettle();
+      }
       expect(find.text('Nécessite votre attention'), findsOneWidget);
       expect(find.text('Amira Ben Salah'), findsWidgets);
     });

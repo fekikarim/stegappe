@@ -26,8 +26,8 @@ void main() {
                 reason: '$type reuses the label "$label"');
           }
         }
-        // 25 catalogue keys (22 + T08's 3 community keys), 25 distinct
-        // icons, none of them the generic one.
+        // 26 catalogue keys (25 + T14's DOCUMENTS_PREPARATION_REQUESTED),
+        // 26 distinct icons, none of them the generic one.
         expect(icons, hasLength(NotificationType.values.length));
         expect(labels, hasLength(NotificationType.values.length - 1));
       }

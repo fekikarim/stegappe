@@ -51,6 +51,9 @@ final Map<RealtimeCategory, List<ProviderOrFamily>> kRealtimeTargets = {
     pendingValidationsProvider,
     pendingDeliverableReviewsProvider,
     pendingLogbookReviewsProvider,
+    // T12: the supervised list carries server counts (pending journal /
+    // deliverables), so document frames converge it too.
+    supervisedInternsProvider,
     dashboardProvider,
   ],
   RealtimeCategory.notifications: <ProviderOrFamily>[

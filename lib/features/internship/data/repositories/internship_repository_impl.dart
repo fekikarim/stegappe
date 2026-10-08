@@ -4,6 +4,7 @@ import '../../../../core/network/api_exception.dart';
 import '../../../../core/storage/token_storage.dart';
 import '../../domain/entities/evaluation.dart';
 import '../../domain/entities/internship.dart';
+import '../../domain/dashboard.dart';
 import '../../domain/entities/logbook.dart';
 import '../../domain/entities/supervisor_tasks.dart';
 import '../../domain/entities/task_classification.dart';
@@ -79,6 +80,10 @@ class InternshipRepositoryImpl implements InternshipRepository {
   @override
   Future<Internship> getInternship(String id) async =>
       remote.getInternship(id, await _bearer());
+
+  @override
+  Future<InternshipSummary> internshipSummary(String internshipId) async =>
+      remote.internshipSummary(internshipId, await _bearer());
 
   @override
   Future<List<InternshipAssignment>> getAssignments(String id) async =>
@@ -159,20 +164,8 @@ class InternshipRepositoryImpl implements InternshipRepository {
       remote.rejectJournal(entryId, await tokens.readAccessToken(), comment);
 
   @override
-  Future<List<String>> supervisedInternshipIds() async {
-    final conversations =
-        await remote.listConversations(await tokens.readAccessToken());
-    final ids = <String>{};
-    for (final c in conversations) {
-      final id = c.internshipId;
-      if (c.type.toUpperCase() == 'PRIVATE' &&
-          id != null &&
-          id.isNotEmpty) {
-        ids.add(id);
-      }
-    }
-    return ids.toList();
-  }
+  Future<List<String>> supervisedInternshipIds() async =>
+      (await supervisedInterns()).map((s) => s.internshipId).toList();
 
   @override
   Future<Paged<DeliverableSummary>> listDeliverables(String internshipId,
@@ -203,15 +196,44 @@ class InternshipRepositoryImpl implements InternshipRepository {
       remote.markAllNotificationsRead(await _bearer());
 
   @override
+  Future<int> notifyDocumentsPreparation(List<String> internshipIds,
+          {String? idempotencyKey}) async =>
+      remote.notifyDocumentsPreparation(
+          internshipIds, await _bearer(),
+          idempotencyKey: idempotencyKey);
+
+  @override
+  Future<void> syncLocale(String code) async =>
+      remote.syncLocale(code, await _bearer());
+
+  // --- T09 journal document (thin delegation; every business rule is server-side) ---
+
+  @override
+  Future<JournalEligibility> journalEligibility(String internshipId) async =>
+      remote.journalEligibility(internshipId, await _bearer());
+
+  @override
+  Future<JournalGenerationResult> generateJournalFromTasks(
+          String internshipId) async =>
+      remote.generateJournalFromTasks(internshipId, await _bearer());
+
+  @override
+  Future<JournalGenerationResult> generateJournalFromText(
+          String internshipId, String text) async =>
+      remote.generateJournalFromText(internshipId, await _bearer(), text);
+
+  @override
   Future<DeliverableDetail> createDeliverable(String internshipId,
           {required String title,
           String? description,
+          String? documentKind,
           required String fileName,
           required Uint8List fileBytes,
           void Function(int sent, int total)? onProgress}) async =>
       remote.createDeliverable(internshipId, await _bearer(),
           title: title,
           description: description,
+          documentKind: documentKind,
           fileName: fileName,
           fileBytes: fileBytes,
           onProgress: onProgress);
@@ -242,6 +264,8 @@ class InternshipRepositoryImpl implements InternshipRepository {
       description: detail.description,
       status: detail.status,
       currentVersion: detail.currentVersion,
+      internshipId: detail.internshipId,
+      documentKind: detail.documentKind,
       submittedAt: detail.submittedAt,
       validatedAt: detail.validatedAt,
       validatedByName: detail.validatedByName,
@@ -258,6 +282,16 @@ class InternshipRepositoryImpl implements InternshipRepository {
   Future<DeliverableDetail> submitDeliverable(
           String deliverableId) async =>
       remote.submitDeliverable(deliverableId, await _bearer());
+
+  @override
+  Future<SubmissionWindow> submissionWindow(String internshipId) async =>
+      remote.submissionWindow(internshipId, await _bearer());
+
+  @override
+  Future<DeliverableDetail> registerDocumentKind(
+          String deliverableId, String documentKind) async =>
+      remote.registerDocumentKind(
+          deliverableId, await _bearer(), documentKind);
 
   @override
   Future<DeliverableDetail> validateDeliverable(
@@ -371,65 +405,8 @@ class InternshipRepositoryImpl implements InternshipRepository {
       remote.evaluationComments(evaluationId, await _bearer());
 
   @override
-  Future<List<SupervisedIntern>> supervisedInterns() async {
-    final ids = await supervisedInternshipIds();
-    final out = <SupervisedIntern>[];
-    final results = await Future.wait(ids.map((id) async {
-      try {
-        final internship = await getInternship(id);
-        final bearer = await _bearer();
-        final assignments =
-            await remote.getAssignments(id, bearer);
-        final tasks = await remote.listTasks(id, bearer, size: 1);
-        // BR-11/A2: an intern's progress counts APPROVED tasks only — a
-        // completion still under review is not done.
-        final done = await remote.listTasks(id, bearer,
-            size: 1, status: TaskStatus.approved);
-        final drafts = await remote.listJournal(id, bearer,
-            size: 1, status: JournalStatus.draft);
-        final rejected = await remote.listJournal(id, bearer,
-            size: 1, status: JournalStatus.rejected);
-        final submitted = await remote.listJournal(id, bearer,
-            size: 1, status: JournalStatus.submitted);
-        final deliverables =
-            await remote.listDeliverables(id, bearer, size: 50);
-        final evaluations =
-            await remote.listEvaluations(id, bearer, size: 1);
-        InternshipAssignment? active;
-        for (final a in assignments) {
-          if (a.isActive) {
-            active = a;
-            break;
-          }
-        }
-        return SupervisedIntern(
-          internshipId: id,
-          reference: internship.reference,
-          internName: internship.candidateFullName ?? '—',
-          status: internship.status,
-          type: internship.type,
-          startDate: internship.startDate,
-          endDate: internship.endDate,
-          departmentName: active?.departmentName ?? '—',
-          tasksCompleted: done.totalElements,
-          tasksTotal: tasks.totalElements,
-          pendingJournal: drafts.totalElements +
-              rejected.totalElements +
-              submitted.totalElements,
-          pendingDeliverables: deliverables.items
-              .where((d) => d.awaitsSupervisor)
-              .length,
-          evaluationsCount: evaluations.totalElements,
-        );
-      } on Exception {
-        return null; // fail-soft: one intern never hides the others
-      }
-    }));
-    for (final s in results) {
-      if (s != null) out.add(s);
-    }
-    return out;
-  }
+  Future<List<SupervisedIntern>> supervisedInterns() async =>
+      remote.supervisedInternships(await tokens.readAccessToken());
 
   @override
   Future<LogbookDraft> generateLogbookDraft(

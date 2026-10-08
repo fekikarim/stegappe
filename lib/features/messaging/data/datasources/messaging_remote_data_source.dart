@@ -69,6 +69,8 @@ class MessagingRemoteDataSource {
 
   /// Attachment send: `content` is a REQUIRED query param per contract,
   /// the file is the multipart part (PDF/JPEG/PNG, 10 MB, Tika-checked).
+  /// `deliverableId` (T10/SU-VAL-01) links the attachment to the internship
+  /// document it was sent from so the supervisor can register its kind.
   Future<ChatMessage> sendMessageWithAttachment(
     String conversationId,
     String? bearer, {
@@ -78,10 +80,12 @@ class MessagingRemoteDataSource {
     required Uint8List bytes,
     void Function(int sent, int total)? onProgress,
     String? selfUserId,
+    String? deliverableId,
   }) =>
       _client.uploadMultipart(
           '${Endpoints.conversationMessagesWithAttachment(conversationId)}'
-          '?content=${Uri.encodeQueryComponent(content)}',
+          '?content=${Uri.encodeQueryComponent(content)}'
+          '${deliverableId == null || deliverableId.isEmpty ? '' : '&deliverableId=${Uri.encodeComponent(deliverableId)}'}',
           bearer: bearer,
           fileField: 'file',
           fileName: fileName,

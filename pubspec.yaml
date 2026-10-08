@@ -30,6 +30,11 @@ dependencies:
   http_parser: ^4.1.2
   stomp_dart_client: ^3.0.1
   file_selector: ^1.1.0
+  # Application version/build for the About screen (T14 SH-SET-04).
+  # Chosen over hardcoding (drifts from pubspec) and --dart-define
+  # (needs build wiring on every platform): the canonical Flutter
+  # Community package, no platform setup required for version reads.
+  package_info_plus: ^9.0.0
 
 dev_dependencies:
   flutter_test:

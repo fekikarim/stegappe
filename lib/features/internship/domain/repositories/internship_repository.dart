@@ -1,6 +1,7 @@
 import 'dart:typed_data';
 
 import '../../../../core/network/paged.dart';
+import '../dashboard.dart';
 import '../entities/evaluation.dart';
 import '../entities/internship.dart';
 import '../entities/logbook.dart';
@@ -20,6 +21,9 @@ abstract class InternshipRepository {
 
   Future<Internship> getInternship(String id);
   Future<List<InternshipAssignment>> getAssignments(String id);
+
+  /// T13/B13: one-call student home snapshot (same sections as the lists).
+  Future<InternshipSummary> internshipSummary(String internshipId);
 
   Future<Paged<InternTask>> listTasks(String internshipId,
       {int page = 0, int size = 50, TaskStatus? status});
@@ -54,15 +58,29 @@ abstract class InternshipRepository {
   Future<JournalEntry> validateJournal(String entryId, String? comment);
   Future<JournalEntry> rejectJournal(String entryId, String? comment);
 
-  /// Internship ids visible through the supervisor's PRIVATE
-  /// conversations (backend auto-creates the thread on assignment).
+  /// Supervised internship ids from the own-scope endpoint
+  /// (`GET /api/internships/supervised`, D1b/BR-03) — never derived from
+  /// conversations (T12 deleted that workaround).
   Future<List<String>> supervisedInternshipIds();
+
+  // --- T09 journal document: server window (B5) + AI generation (B6) ---
+
+  /// Server-computed eligibility window + task-completion facts (BR-20/21/24).
+  Future<JournalEligibility> journalEligibility(String internshipId);
+
+  /// Generates the journal PDF from the student's tasks (server-assembled).
+  Future<JournalGenerationResult> generateJournalFromTasks(String internshipId);
+
+  /// Generates the journal PDF from the student's own (bounded) description.
+  Future<JournalGenerationResult> generateJournalFromText(
+      String internshipId, String text);
 
   // --- D3 deliverables (versioned, reviewed) ---
 
   Future<DeliverableDetail> createDeliverable(String internshipId,
       {required String title,
       String? description,
+      String? documentKind,
       required String fileName,
       required Uint8List fileBytes,
       void Function(int sent, int total)? onProgress});
@@ -75,6 +93,15 @@ abstract class InternshipRepository {
   Future<List<DeliverableVersionInfo>> deliverableVersions(
       String deliverableId);
   Future<DeliverableDetail> submitDeliverable(String deliverableId);
+
+  /// T10/B7 — server-computed final-week submission window (BR-22). The app
+  /// only reflects it; the device clock never decides.
+  Future<SubmissionWindow> submissionWindow(String internshipId);
+
+  /// T10/B8 + SU-VAL-01 — register a deliverable as `JOURNAL`/`REPORT` for
+  /// the internship's validation (supervisor long-press path).
+  Future<DeliverableDetail> registerDocumentKind(
+      String deliverableId, String documentKind);
   Future<DeliverableDetail> validateDeliverable(
       String deliverableId, String? comment);
   Future<DeliverableDetail> rejectDeliverable(
@@ -94,6 +121,15 @@ abstract class InternshipRepository {
   Future<int> unreadNotificationCount();
   Future<void> markAllNotificationsRead();
   Future<int> unreadMessageCount();
+
+  /// T14/D14: ask own students to prepare validation documents. Returns
+  /// the server-accepted recipient count. Server-validates scope (404),
+  /// rate limit and idempotency — the app never decides.
+  Future<int> notifyDocumentsPreparation(List<String> internshipIds,
+      {String? idempotencyKey});
+
+  /// T14: best-effort server sync of the UI locale (never blocks).
+  Future<void> syncLocale(String code);
 
   // --- D4 evaluations (supervisor-authored, template-driven) ---
 

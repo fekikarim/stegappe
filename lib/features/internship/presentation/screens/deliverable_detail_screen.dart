@@ -10,6 +10,8 @@ import '../../../../core/widgets/steg_states.dart';
 import '../../../../core/widgets/steg_status_chip.dart';
 import '../../../auth/domain/entities/app_user.dart';
 import '../../../auth/presentation/providers/auth_providers.dart';
+import '../../../messaging/presentation/providers/messaging_providers.dart';
+import '../../../messaging/presentation/screens/chat_screen.dart';
 import '../../domain/deliverable_file_rules.dart';
 import '../../domain/entities/work_items.dart';
 import '../providers/workspace_providers.dart';
@@ -62,10 +64,16 @@ class _DeliverableDetailScreenState
     setState(() => _submitting = true);
     final l10n = AppLocalizations.of(context);
     try {
-      await ref
-          .read(internshipRepositoryProvider)
-          .submitDeliverable(widget.deliverableId);
+      final repo = ref.read(internshipRepositoryProvider);
+      final detail =
+          await repo.getDeliverable(widget.deliverableId);
+      await repo.submitDeliverable(widget.deliverableId);
       refreshDeliverables(ref, widget.deliverableId);
+      final internshipId = detail.internshipId;
+      if (internshipId != null) {
+        // T10/B7: the window read stays honest after a successful submit.
+        ref.invalidate(submissionWindowProvider(internshipId));
+      }
       if (!mounted) return;
       // The guard stays held: the refetched SUBMITTED state removes the
       // action, so no spinner lingers and no second submit can start. A tap
@@ -82,6 +90,142 @@ class _DeliverableDetailScreenState
           content: Text(userMessageOf(e, l10n)),
         ),
       );
+    }
+  }
+
+  /// T10/B7: a declared validation document (journal/report) may only be
+  /// submitted inside the final week (BR-22, server-owned window). The read
+  /// shows/hides the action honestly — outside the window the app explains
+  /// and offers to contact the supervisor, never an override.
+  List<Widget> _submitAction(BuildContext context, AppLocalizations l10n,
+      Locale locale, DeliverableDetail d) {
+    if (d.documentKind == null || d.internshipId == null) {
+      return [
+        StegButton(
+          label: l10n.deliverableSubmitAction,
+          icon: Icons.send_outlined,
+          loading: _submitting,
+          onPressed: _submitting ? null : _submit,
+        ),
+      ];
+    }
+    final windowAsync =
+        ref.watch(submissionWindowProvider(d.internshipId!));
+    return windowAsync.when(
+      loading: () => [
+        StegButton(
+          label: l10n.deliverableSubmitAction,
+          icon: Icons.send_outlined,
+          loading: true,
+          onPressed: null,
+        ),
+      ],
+      // The window read failed: the server still enforces on submit and the
+      // coded refusal maps to an honest sentence — never a silent bypass.
+      error: (e, _) => [
+        StegButton(
+          label: l10n.deliverableSubmitAction,
+          icon: Icons.send_outlined,
+          loading: _submitting,
+          onPressed: _submitting ? null : _submit,
+        ),
+      ],
+      data: (w) {
+        if (w.open) {
+          return [
+            StegButton(
+              label: l10n.deliverableSubmitAction,
+              icon: Icons.send_outlined,
+              loading: _submitting,
+              onPressed: _submitting ? null : _submit,
+            ),
+            if (w.closesAt != null) ...[
+              const SizedBox(height: StegSpacing.xs),
+              Text(
+                  l10n.submissionWindowUntil(
+                      formatDay(w.closesAt!, locale)),
+                  style: Theme.of(context).textTheme.bodySmall),
+            ],
+          ];
+        }
+        return [
+          _closedWindowCard(context, l10n, locale, w, d.internshipId!),
+        ];
+      },
+    );
+  }
+
+  Widget _closedWindowCard(BuildContext context, AppLocalizations l10n,
+      Locale locale, SubmissionWindow w, String internshipId) {
+    final reason = switch (w.reason) {
+      'BEFORE_WINDOW' when w.opensAt != null =>
+        l10n.submissionWindowOpens(formatDay(w.opensAt!, locale)),
+      'AFTER_WINDOW' when w.closesAt != null =>
+        l10n.submissionWindowLate(formatDay(w.closesAt!, locale)),
+      'NO_PERIOD' => l10n.submissionWindowNoPeriod,
+      'CANCELLED' => l10n.submissionWindowCancelled,
+      _ => l10n.errSubmissionWindowClosed,
+    };
+    return Container(
+      padding: const EdgeInsets.all(StegSpacing.sm),
+      decoration: BoxDecoration(
+        border: Border.all(color: Theme.of(context).dividerColor),
+        borderRadius: BorderRadius.circular(StegSpacing.radiusSm),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Semantics(
+            liveRegion: true,
+            label: reason,
+            excludeSemantics: true,
+            child: Text(reason,
+                style: Theme.of(context).textTheme.bodyMedium),
+          ),
+          const SizedBox(height: StegSpacing.sm),
+          StegButton(
+            label: l10n.contactSupervisorAction,
+            variant: StegButtonVariant.secondary,
+            icon: Icons.chat_outlined,
+            onPressed: () => _contactSupervisor(internshipId),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// T10 edge case: refused outside the window → offer the supervisor chat
+  /// (the app never overrides the server decision).
+  Future<void> _contactSupervisor(String internshipId) async {
+    final l10n = AppLocalizations.of(context);
+    try {
+      final conversations =
+          await ref.read(conversationsProvider.future);
+      final match = conversations
+          .where((c) => c.internshipId == internshipId)
+          .toList();
+      if (!mounted) return;
+      if (match.isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(l10n.contactNoConversation)));
+        return;
+      }
+      final conversation = match.first;
+      final kindLabel = conversation.isPrivate
+          ? l10n.convPrivate
+          : l10n.convGroup;
+      Navigator.of(context).push(MaterialPageRoute(
+        builder: (_) => ChatScreen(
+          conversationId: conversation.id,
+          title: conversation.title.isEmpty
+              ? kindLabel
+              : conversation.title,
+        ),
+      ));
+    } on Exception catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(userMessageOf(e, l10n))));
     }
   }
 
@@ -169,12 +313,7 @@ class _DeliverableDetailScreenState
               // --- Actions ---
               if (role == UserRole.intern &&
                   d.canSubmit) ...[
-                StegButton(
-                  label: l10n.deliverableSubmitAction,
-                  icon: Icons.send_outlined,
-                  loading: _submitting,
-                  onPressed: _submitting ? null : _submit,
-                ),
+                ..._submitAction(context, l10n, locale, d),
                 const SizedBox(height: StegSpacing.xs),
               ],
               if (role == UserRole.intern &&

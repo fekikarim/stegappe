@@ -65,6 +65,10 @@ const String kCodeAiGenerationFailed = 'AI_GENERATION_FAILED';
 const String kCodeAiUnavailable = 'AI_UNAVAILABLE';
 const String kCodeAiTemporarilyUnavailable = 'AI_TEMPORARILY_UNAVAILABLE';
 const String kCodeAiGenerationInvalid = 'AI_GENERATION_INVALID';
+// T09/B5+B6 journal document: the server owns the window and the input bounds.
+const String kCodeJournalNotEligible = 'JOURNAL_NOT_ELIGIBLE';
+const String kCodeJournalTextTooShort = 'JOURNAL_TEXT_TOO_SHORT';
+const String kCodeJournalTextTooLong = 'JOURNAL_TEXT_TOO_LONG';
 const String kCodeRateLimitExceeded = 'RATE_LIMIT_EXCEEDED';
 const String kCodePasswordChangeRequired = 'PASSWORD_CHANGE_REQUIRED';
 const String kCodeCategoryChanged = 'CATEGORY_CHANGED';
@@ -82,6 +86,12 @@ const String kCodeStudentMuted = 'STUDENT_MUTED';
 const String kCodeReportAlreadyOpen = 'REPORT_ALREADY_OPEN';
 const String kCodePostTooLong = 'POST_TOO_LONG';
 const String kCodeCommentTooLong = 'COMMENT_TOO_LONG';
+// T10/B7+B8+SU-VAL-01: final-week window + explicit validation document kind.
+const String kCodeSubmissionNotInWindow = 'SUBMISSION_NOT_IN_WINDOW';
+const String kCodeDocumentKindLocked = 'DOCUMENT_KIND_LOCKED';
+const String kCodeDeliverableAlreadyValidated = 'DELIVERABLE_ALREADY_VALIDATED';
+const String kCodeDeliverableNotInConversation =
+    'DELIVERABLE_NOT_IN_CONVERSATION';
 
 /// Maps one error to a [UserError]. Never returns a raw exception string.
 UserError userErrorOf(Object error, AppLocalizations l10n) {
@@ -252,6 +262,42 @@ UserError userErrorOf(Object error, AppLocalizations l10n) {
     case kCodePasswordChangeRequired:
       return UserError(
         message: l10n.errPasswordChangeRequired,
+        traceId: traceId,
+        retryable: false,
+      );
+    case kCodeJournalNotEligible:
+      return UserError(
+        message: l10n.errJournalNotEligible,
+        traceId: traceId,
+        retryable: false,
+      );
+    case kCodeJournalTextTooShort:
+    case kCodeJournalTextTooLong:
+      return UserError(
+        message: l10n.errJournalTextInvalid,
+        traceId: traceId,
+        retryable: false,
+      );
+    // T10/B7: the server refused outside the final week — explain and point
+    // at the supervisor chat, never an override (documented edge case).
+    case kCodeSubmissionNotInWindow:
+      return UserError(
+        message: l10n.errSubmissionWindowClosed,
+        traceId: traceId,
+        retryable: false,
+      );
+    // T10/B8: the document's kind is locked (already assigned elsewhere or
+    // the document is VALIDATED) — one honest sentence for both codes.
+    case kCodeDocumentKindLocked:
+    case kCodeDeliverableAlreadyValidated:
+      return UserError(
+        message: l10n.errDeliverableKindLocked,
+        traceId: traceId,
+        retryable: false,
+      );
+    case kCodeDeliverableNotInConversation:
+      return UserError(
+        message: l10n.errDocumentNotInConversation,
         traceId: traceId,
         retryable: false,
       );
