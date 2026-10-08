@@ -210,14 +210,20 @@ class _TaskListScreenState extends ConsumerState<TaskListScreen>
                       onRetry: () => ref.invalidate(taskListProvider),
                     );
                   },
-                  data: (page) => _TaskBody(
-                    page: page,
-                    filter: filter,
-                    query: query,
-                    boardView: _boardView,
-                    canProgress: canProgress,
-                    userId: userId,
-                  ),
+                  data: (page) {
+                    final displayPage = (page.items.isEmpty && last != null && !isOnline)
+                        ? last
+                        : page;
+                    return _TaskBody(
+                      page: displayPage,
+                      filter: filter,
+                      query: query,
+                      boardView: _boardView,
+                      canProgress: canProgress,
+                      userId: userId,
+                      showStale: !isOnline,
+                    );
+                  },
                 ),
               ),
             ),
@@ -405,6 +411,7 @@ class _TaskBody extends StatelessWidget {
     required this.boardView,
     required this.canProgress,
     required this.userId,
+    this.showStale = false,
   });
 
   final Paged<InternTask> page;
@@ -413,6 +420,7 @@ class _TaskBody extends StatelessWidget {
   final bool boardView;
   final bool canProgress;
   final String? userId;
+  final bool showStale;
 
   @override
   Widget build(BuildContext context) {
@@ -423,7 +431,7 @@ class _TaskBody extends StatelessWidget {
       boardView: boardView,
       canProgress: canProgress,
       userId: userId,
-      showStale: false,
+      showStale: showStale,
     );
   }
 }
@@ -501,6 +509,11 @@ class _TaskSurface extends ConsumerWidget {
         return ListView(
           physics: const AlwaysScrollableScrollPhysics(),
           children: [
+            if (showStale)
+              const Padding(
+                padding: EdgeInsetsDirectional.only(bottom: StegSpacing.sm),
+                child: StaleNotice(),
+              ),
             SizedBox(
               height: 320,
               child: StegEmptyView(

@@ -96,6 +96,15 @@ class QuickActionsGrid extends StatelessWidget {
 
   final List<QuickAction> actions;
 
+  /// Cell height = vertical padding + icon + gap + two scaled label lines.
+  double _cellExtent(BuildContext context) {
+    final style = Theme.of(context).textTheme.bodySmall;
+    final scaler = MediaQuery.textScalerOf(context);
+    final lineHeight = scaler.scale(style?.fontSize ?? 12.5) *
+        (style?.height ?? 1.5);
+    return StegSpacing.sm * 2 + 26 + 4 + lineHeight * 2;
+  }
+
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
@@ -109,41 +118,51 @@ class QuickActionsGrid extends StatelessWidget {
           Text(l10n.homeQuickActions,
               style: Theme.of(context).textTheme.titleMedium),
           const SizedBox(height: StegSpacing.xs),
-          GridView.count(
-            crossAxisCount: 4,
+          GridView.builder(
             shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
-            mainAxisSpacing: StegSpacing.xs,
-            crossAxisSpacing: StegSpacing.xs,
-            children: [
-              for (final a in actions)
-                Semantics(
-                  button: true,
-                  label: a.label,
-                  child: InkWell(
-                    onTap: a.onTap,
-                    borderRadius: BorderRadius.circular(12),
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(
-                          vertical: StegSpacing.sm),
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(a.icon, size: 26),
-                          const SizedBox(height: 4),
-                          Text(
+            // T15: the cell must fit two label lines at the user's text scale
+            // (Arabic wraps earlier and 2.0× doubles the line height). The
+            // height is measured from the real style instead of the default
+            // square aspect ratio, which overflowed by 6 px (ar) / 44 px (2×).
+            gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: 4,
+              mainAxisSpacing: StegSpacing.xs,
+              crossAxisSpacing: StegSpacing.xs,
+              mainAxisExtent: _cellExtent(context),
+            ),
+            itemCount: actions.length,
+            itemBuilder: (context, i) {
+              final a = actions[i];
+              return Semantics(
+                button: true,
+                label: a.label,
+                child: InkWell(
+                  onTap: a.onTap,
+                  borderRadius: BorderRadius.circular(12),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(
+                        vertical: StegSpacing.sm),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(a.icon, size: 26),
+                        const SizedBox(height: 4),
+                        Flexible(
+                          child: Text(
                             a.label,
                             textAlign: TextAlign.center,
                             maxLines: 2,
                             overflow: TextOverflow.ellipsis,
                             style: Theme.of(context).textTheme.bodySmall,
                           ),
-                        ],
-                      ),
+                        ),
+                      ],
                     ),
                   ),
                 ),
-            ],
+              );
+            },
           ),
         ],
       ),

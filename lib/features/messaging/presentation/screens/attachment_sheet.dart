@@ -462,7 +462,8 @@ class _AttachmentActionsBodyState
           leading: Icon(a.isImage
               ? Icons.image_outlined
               : Icons.picture_as_pdf_outlined),
-          title: Text(a.fileName,
+          // T15/RTL: filenames are LTR technical values.
+          title: BidiText(a.fileName,
               maxLines: 1, overflow: TextOverflow.ellipsis),
           subtitle: Text(
               DeliverableFileRules.formatBytes(a.size)),
@@ -763,7 +764,7 @@ class _AttachmentPreviewBodyState
             contentPadding: EdgeInsets.zero,
             leading:
                 const Icon(Icons.picture_as_pdf_outlined),
-            title: Text(widget.attachment.fileName,
+            title: BidiText(widget.attachment.fileName,
                 maxLines: 1, overflow: TextOverflow.ellipsis),
             subtitle: Text(DeliverableFileRules.formatBytes(
                 widget.attachment.size)),

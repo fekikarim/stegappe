@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../../core/l10n/app_localizations.dart';
+import '../../../../core/widgets/steg_fields.dart';
 import '../../../../core/widgets/steg_status_chip.dart';
 import '../../domain/entities/evaluation.dart';
 import '../widgets/status_labels.dart';
@@ -47,7 +48,8 @@ class InternCard extends StatelessWidget {
         title: Text(intern.internName,
             maxLines: 1, overflow: TextOverflow.ellipsis),
         subtitle: Text(
-          '${intern.reference} • ${intern.departmentName} • '
+          // T15/RTL: the reference is an LTR run inside a localized sentence.
+          '${BidiText.isolate(intern.reference)} • ${intern.departmentName} • '
           '${formatDay(intern.endDate, locale)}',
           maxLines: 2,
           overflow: TextOverflow.ellipsis,

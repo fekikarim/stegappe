@@ -5,6 +5,7 @@ import '../../../core/l10n/app_localizations.dart';
 import '../../../core/network/error_messages.dart';
 import '../../../core/theme/steg_spacing.dart';
 import '../../../core/widgets/steg_card.dart';
+import '../../../core/widgets/steg_fields.dart';
 import '../../../core/widgets/steg_states.dart';
 import '../../../core/widgets/steg_status_chip.dart';
 import '../../../core/widgets/user_avatar.dart';
@@ -95,7 +96,11 @@ class _IdentityCard extends StatelessWidget {
                   children: [
                     Semantics(
                       header: true,
-                      child: Text(user.email,
+                      // T15/RTL: an email is an LTR technical run; inside an
+                      // RTL paragraph it must be isolated or it reverses.
+                      child: BidiText(user.email,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
                           style: Theme.of(context)
                               .textTheme
                               .titleMedium),
@@ -150,6 +155,8 @@ class _InternshipCard extends ConsumerWidget {
                       internshipStatusLabel(internship.status, l10n),
                   kind: internshipStatusKind(internship.status),
                 ),
+                // Standalone LTR value: renders LTR-visual in RTL as-is
+                // (measured), so no invisible isolate characters.
                 StegStatusChip(label: internship.reference),
               ],
             ),

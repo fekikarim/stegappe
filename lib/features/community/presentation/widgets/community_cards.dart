@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../../../core/l10n/app_localizations.dart';
 import '../../../../core/theme/steg_colors.dart';
 import '../../../../core/theme/steg_spacing.dart';
+import '../../../../core/widgets/steg_fields.dart';
 import '../../../internship/presentation/widgets/status_labels.dart'
     show formatDay;
 import '../../domain/entities/community.dart';
@@ -252,8 +253,9 @@ class _AttachmentRow extends StatelessWidget {
                   : Icons.picture_as_pdf_outlined,
               size: 20),
           const SizedBox(width: StegSpacing.xs),
+          // T15/RTL: filenames are LTR technical values.
           Flexible(
-            child: Text(attachment.fileName,
+            child: BidiText(attachment.fileName,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 style: Theme.of(context).textTheme.bodySmall),

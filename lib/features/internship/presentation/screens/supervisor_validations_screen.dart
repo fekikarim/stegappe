@@ -63,6 +63,14 @@ class SupervisorValidationsScreen extends ConsumerWidget {
                   // below still render (or the combined empty state).
                   return SliverMainAxisGroup(
                     slivers: [
+                      if (!isOnline)
+                        const SliverToBoxAdapter(
+                          child: Padding(
+                            padding: EdgeInsets.only(
+                                bottom: StegSpacing.sm),
+                            child: StaleNotice(),
+                          ),
+                        ),
                       _DeliverablesQueueSliver(
                         isOnline: isOnline,
                         journalEmpty: true,

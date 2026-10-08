@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
 import '../../../../core/l10n/app_localizations.dart';
+import '../../../../core/connectivity/connectivity_service.dart';
 import '../../../../core/network/api_exception.dart';
 import '../../../../core/network/error_messages.dart';
 import '../../../../core/theme/steg_spacing.dart';
@@ -212,6 +213,10 @@ class _JournalComposerScreenState
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     final locale = Localizations.localeOf(context);
+    // T15/BR-58: the composer persists server-side (draft or submit) — a
+    // write outside the D12 queue, so offline it disables with a reason
+    // instead of failing after the tap.
+    final isOnline = ref.watch(isOnlineProvider);
     String dayTitle;
     try {
       dayTitle = DateFormat.yMMMMEEEEd(locale.languageCode)
@@ -329,17 +334,29 @@ class _JournalComposerScreenState
                   label: l10n.journalSubmitAction,
                   icon: Icons.send_outlined,
                   loading: _working,
-                  onPressed:
-                      _working ? null : () => _persist(submit: true),
+                  onPressed: (_working || !isOnline)
+                      ? null
+                      : () => _persist(submit: true),
                 ),
                 const SizedBox(height: StegSpacing.xs),
                 StegButton(
                   label: l10n.journalSaveDraft,
                   variant: StegButtonVariant.secondary,
                   icon: Icons.save_outlined,
-                  onPressed:
-                      _working ? null : () => _persist(submit: false),
+                  onPressed: (_working || !isOnline)
+                      ? null
+                      : () => _persist(submit: false),
                 ),
+                if (!isOnline) ...[
+                  const SizedBox(height: StegSpacing.xs),
+                  Text(
+                    l10n.submitNeedsConnection,
+                    style: Theme.of(context)
+                        .textTheme
+                        .bodySmall
+                        ?.copyWith(color: Theme.of(context).colorScheme.error),
+                  ),
+                ],
               ],
             ),
     );

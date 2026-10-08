@@ -125,16 +125,29 @@ class _MonthBar extends ConsumerWidget {
             header: true,
             child: Text(title,
                 textAlign: TextAlign.center,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
                 style: Theme.of(context).textTheme.titleMedium),
           ),
         ),
-        TextButton(
-          onPressed: () {
-            final now = DateTime.now();
-            ref.read(calendarMonthProvider.notifier).state =
-                DateTime(now.year, now.month, 1);
-          },
-          child: Text(l10n.backToToday),
+        // T15: the two nav IconButtons plus an unbounded "today" label
+        // overflowed the bar by 21 px at 2.0× (measured). The action is
+        // bounded and ellipsizes; the full label stays in its tooltip.
+        ConstrainedBox(
+          constraints: BoxConstraints(
+              maxWidth: MediaQuery.sizeOf(context).width * 0.28),
+          child: Tooltip(
+            message: l10n.backToToday,
+            child: TextButton(
+              onPressed: () {
+                final now = DateTime.now();
+                ref.read(calendarMonthProvider.notifier).state =
+                    DateTime(now.year, now.month, 1);
+              },
+              child: Text(l10n.backToToday,
+                  maxLines: 1, overflow: TextOverflow.ellipsis),
+            ),
+          ),
         ),
         IconButton(
           tooltip: l10n.supNextMonth,
@@ -245,55 +258,62 @@ class _LaneBar extends StatelessWidget {
         '${lane.intern.internName}, ${formatDay(lane.intern.startDate, locale)} → '
         '${formatDay(lane.intern.endDate, locale)}, '
         '${internshipStatusLabel(lane.intern.status, l10n)}';
-    return Semantics(
-      button: true,
-      label: description,
-      child: InkWell(
-        onTap: () => Navigator.of(context).push(
-          MaterialPageRoute(
-            builder: (_) => InternDetailScreen(
-                internshipId: lane.intern.internshipId),
+    // T15: the lane is the tap target (it opens the intern file) and measured
+    // 26 px tall — below the 48 dp minimum. The visual bar keeps its height
+    // while the interactive box grows to a real target.
+    return SizedBox(
+      height: StegSpacing.minTouchTarget,
+      child: Semantics(
+        button: true,
+        label: description,
+        child: InkWell(
+          onTap: () => Navigator.of(context).push(
+            MaterialPageRoute(
+              builder: (_) => InternDetailScreen(
+                  internshipId: lane.intern.internshipId),
+            ),
           ),
-        ),
-        borderRadius: BorderRadius.circular(StegSpacing.radiusSm),
-        child: Row(
-          children: [
-            for (var i = 0; i < 7; i++)
-              if (i < segment.offset || i >= segment.offset + segment.length)
-                const Expanded(child: SizedBox(height: 26))
-              else
-                Expanded(
-                  child: Container(
-                    height: 26,
-                    alignment: AlignmentDirectional.centerStart,
-                    padding: const EdgeInsets.symmetric(horizontal: 4),
-                    decoration: BoxDecoration(
-                      color: color.withValues(alpha: 0.22),
-                      border: Border(
-                        left: i == segment.offset
-                            ? BorderSide(color: color, width: 3)
-                            : BorderSide.none,
+          borderRadius: BorderRadius.circular(StegSpacing.radiusSm),
+          child: Row(
+            children: [
+              for (var i = 0; i < 7; i++)
+                if (i < segment.offset ||
+                    i >= segment.offset + segment.length)
+                  const Expanded(child: SizedBox(height: 26))
+                else
+                  Expanded(
+                    child: Container(
+                      height: 26,
+                      alignment: AlignmentDirectional.centerStart,
+                      padding: const EdgeInsets.symmetric(horizontal: 4),
+                      decoration: BoxDecoration(
+                        color: color.withValues(alpha: 0.22),
+                        border: Border(
+                          left: i == segment.offset
+                              ? BorderSide(color: color, width: 3)
+                              : BorderSide.none,
+                        ),
+                        borderRadius:
+                            BorderRadius.circular(StegSpacing.radiusSm),
                       ),
-                      borderRadius:
-                          BorderRadius.circular(StegSpacing.radiusSm),
+                      child: i == segment.offset
+                          ? Text(
+                              lane.intern.internName,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: Theme.of(context)
+                                  .textTheme
+                                  .bodySmall
+                                  ?.copyWith(
+                                    color: scheme.onSurface,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                            )
+                          : null,
                     ),
-                    child: i == segment.offset
-                        ? Text(
-                            lane.intern.internName,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: Theme.of(context)
-                                .textTheme
-                                .bodySmall
-                                ?.copyWith(
-                                  color: scheme.onSurface,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                          )
-                        : null,
                   ),
-                ),
-          ],
+            ],
+          ),
         ),
       ),
     );

@@ -163,15 +163,28 @@ void main() {
       );
       final box = tester.getSize(find.byType(StegButton));
       expect(box.height, greaterThanOrEqualTo(48));
+      // T15: assert on the node a screen reader actually reads — the label
+      // now lives on the Material button's own node (which carries the tap),
+      // not on a wrapper, so `getSemantics(find.byType(StegButton))` would
+      // resolve to the root (StegButton itself creates no semantics node).
+      final buttonSemantics =
+          tester.getSemantics(find.bySemanticsLabel('Save changes'));
       expect(
-        tester.getSemantics(find.byType(StegButton)),
+        buttonSemantics,
         matchesSemantics(
           label: 'Save changes',
           isButton: true,
           isEnabled: true,
           hasEnabledState: true,
+          isFocusable: true,
+          // The name and the tap must sit on the *same* node: the previous
+          // wrapper split them (labelled node without actions, actionable
+          // node without a name), which is what T15's semantics gate flags.
+          hasTapAction: true,
+          hasFocusAction: true,
         ),
       );
+      expect(buttonSemantics.rect.height, greaterThanOrEqualTo(48));
       await tester.tap(find.byType(StegButton));
       expect(tapped, isTrue);
       semantics.dispose();

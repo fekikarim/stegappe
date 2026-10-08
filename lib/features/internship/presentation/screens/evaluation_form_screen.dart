@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/l10n/app_localizations.dart';
+import '../../../../core/connectivity/connectivity_service.dart';
 import '../../../../core/network/error_messages.dart';
 import '../../../../core/network/paged.dart';
 import '../../../../core/theme/steg_spacing.dart';
@@ -219,6 +220,9 @@ class _EvaluationFormScreenState
     final l10n = AppLocalizations.of(context);
     final locale = Localizations.localeOf(context);
     final templatesAsync = ref.watch(evaluationTemplatesProvider);
+    // T15/BR-58: submitting an evaluation is a server write outside the D12
+    // queue — offline it disables with a reason rather than failing on tap.
+    final isOnline = ref.watch(isOnlineProvider);
 
     return Scaffold(
       appBar: AppBar(title: Text(l10n.evalNew)),
@@ -300,6 +304,10 @@ class _EvaluationFormScreenState
                         child: DropdownButtonFormField<
                             EvaluationKind>(
                           initialValue: _kind,
+                          // T15: without isExpanded the selected item keeps
+                          // its intrinsic width and overflowed the row by
+                          // 80 px in Arabic (measured).
+                          isExpanded: true,
                           decoration: InputDecoration(
                               labelText: l10n.evalType),
                           items: EvaluationKind.values
@@ -325,7 +333,9 @@ class _EvaluationFormScreenState
                             decoration: InputDecoration(
                                 labelText: l10n.evalDate),
                             child: Text(
-                                formatDay(_date, locale)),
+                                formatDay(_date, locale),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis),
                           ),
                         ),
                       ),
@@ -419,10 +429,21 @@ class _EvaluationFormScreenState
                     label: l10n.evalSubmit,
                     icon: Icons.send_outlined,
                     loading: _submitting,
-                    onPressed: _submitting
+                    onPressed: (_submitting || !isOnline)
                         ? null
                         : () => _submit(criteria),
                   ),
+                  if (!isOnline) ...[
+                    const SizedBox(height: StegSpacing.xs),
+                    Text(
+                      l10n.submitNeedsConnection,
+                      style: Theme.of(context)
+                          .textTheme
+                          .bodySmall
+                          ?.copyWith(
+                              color: Theme.of(context).colorScheme.error),
+                    ),
+                  ],
                 ],
               );
             },

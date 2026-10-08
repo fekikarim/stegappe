@@ -66,17 +66,25 @@ class StegButton extends StatelessWidget {
         ),
     };
 
+    final sized = ConstrainedBox(
+      constraints: const BoxConstraints(
+        minWidth: StegSpacing.minTouchTarget,
+        minHeight: StegSpacing.minTouchTarget,
+      ),
+      child: button,
+    );
+    // T15: the Material button already publishes its role and derives its
+    // label from the child text. The extra wrapper was only needed when the
+    // visible child is a spinner (loading) or when a different label must be
+    // announced. Left in place unconditionally it produced an *unlabelled*
+    // actionable node — the wrapper carried the label while the button
+    // carried the tap (measured on the task board and the logbook).
+    if (!loading && semanticsLabel == null) return sized;
     return Semantics(
       button: true,
       enabled: onPressed != null && !loading,
       label: semanticsLabel ?? label,
-      child: ConstrainedBox(
-        constraints: const BoxConstraints(
-          minWidth: StegSpacing.minTouchTarget,
-          minHeight: StegSpacing.minTouchTarget,
-        ),
-        child: button,
-      ),
+      child: sized,
     );
   }
 }

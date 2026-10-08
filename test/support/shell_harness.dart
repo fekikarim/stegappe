@@ -49,6 +49,7 @@ Future<void> pumpAuthGate(
   AppUser? user,
   Locale locale = const Locale('fr'),
   Map<String, Object> seedPrefs = const {},
+  bool reduceMotion = false,
 }) async {
   SharedPreferences.setMockInitialValues(seedPrefs);
   final prefs = await PrefsStore.load();
@@ -71,7 +72,20 @@ Future<void> pumpAuthGate(
           GlobalCupertinoLocalizations.delegate,
         ],
         theme: StegTheme.light(),
-        home: const AuthGate(),
+        // T15 motion: the platform's reduce-motion flag is read from the
+        // ambient MediaQuery (`MediaQueryData.disableAnimations`), so the
+        // shell's swap can be exercised in both states. `copyWith` keeps the
+        // window metrics the framework already resolved.
+        home: Builder(
+          builder: (context) {
+            if (!reduceMotion) return const AuthGate();
+            return MediaQuery(
+              data: MediaQuery.of(context)
+                  .copyWith(disableAnimations: true),
+              child: const AuthGate(),
+            );
+          },
+        ),
       ),
     ),
   );

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../../../core/l10n/app_localizations.dart';
 import '../../../../core/theme/steg_spacing.dart';
+import '../../../../core/widgets/steg_fields.dart';
 import '../../domain/entities/conversation.dart';
 import '../screens/attachment_sheet.dart'
     show showAttachmentDocumentActions, showAttachmentPreview;
@@ -220,7 +221,8 @@ class _AttachmentChip extends StatelessWidget {
                     size: 20),
                 const SizedBox(width: StegSpacing.xs),
                 Flexible(
-                  child: Text(attachment.fileName,
+                  // T15/RTL: filenames are LTR technical values.
+                  child: BidiText(attachment.fileName,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: Theme.of(context)

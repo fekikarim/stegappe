@@ -198,18 +198,35 @@ class _BulkTaskSheetState extends ConsumerState<BulkTaskSheet> {
               Row(
                 children: [
                   Expanded(
-                    child: Text(_due == null
-                        ? '${l10n.taskDueLabel} : ${l10n.noDueDate}'
-                        : '${l10n.taskDueLabel} : ${formatDay(_due!, Localizations.localeOf(context))}'),
+                    child: Text(
+                        _due == null
+                            ? '${l10n.taskDueLabel} : ${l10n.noDueDate}'
+                            : '${l10n.taskDueLabel} : ${formatDay(_due!, Localizations.localeOf(context))}',
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis),
                   ),
-                  TextButton(
-                    onPressed: _pickDue,
-                    child: Text(l10n.taskPickDate),
+                  // T15: bounded actions (66 px right overflow at 2.0×
+                  // measured).
+                  ConstrainedBox(
+                    constraints: BoxConstraints(
+                        maxWidth:
+                            MediaQuery.sizeOf(context).width * 0.32),
+                    child: TextButton(
+                      onPressed: _pickDue,
+                      child: Text(l10n.taskPickDate,
+                          maxLines: 1, overflow: TextOverflow.ellipsis),
+                    ),
                   ),
                   if (_due != null)
-                    TextButton(
-                      onPressed: () => setState(() => _due = null),
-                      child: Text(l10n.taskClearDate),
+                    ConstrainedBox(
+                      constraints: BoxConstraints(
+                          maxWidth:
+                              MediaQuery.sizeOf(context).width * 0.32),
+                      child: TextButton(
+                        onPressed: () => setState(() => _due = null),
+                        child: Text(l10n.taskClearDate,
+                            maxLines: 1, overflow: TextOverflow.ellipsis),
+                      ),
                     ),
                 ],
               ),

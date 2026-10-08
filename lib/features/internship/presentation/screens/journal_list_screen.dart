@@ -56,13 +56,12 @@ class JournalListScreen extends ConsumerWidget {
                 padding: const EdgeInsets.fromLTRB(
                     StegSpacing.md, 0, StegSpacing.md, StegSpacing.md),
                 sliver: async.when(
-                  loading: () => SliverFillRemaining(
-                    hasScrollBody: false,
-                    child: (last != null && !isOnline)
-                        ? _JournalBody(
-                            page: last, showStale: true)
-                        : const StegLoading(),
-                  ),
+                  loading: () => (last != null && !isOnline)
+                      ? _JournalBody(page: last, showStale: true)
+                      : const SliverFillRemaining(
+                          hasScrollBody: false,
+                          child: StegLoading(),
+                        ),
                   error: (e, _) {
                     if (e is StateError &&
                         e.message == 'no-internship') {
@@ -76,10 +75,7 @@ class JournalListScreen extends ConsumerWidget {
                       );
                     }
                     if (last != null && !isOnline) {
-                      return SliverToBoxAdapter(
-                        child: _JournalBody(
-                            page: last, showStale: true),
-                      );
+                      return _JournalBody(page: last, showStale: true);
                     }
                     return SliverFillRemaining(
                       hasScrollBody: false,
@@ -92,6 +88,9 @@ class JournalListScreen extends ConsumerWidget {
                   },
                   data: (page) {
                     if (page.items.isEmpty) {
+                      if (last != null && !isOnline) {
+                        return _JournalBody(page: last, showStale: true);
+                      }
                       return SliverFillRemaining(
                         hasScrollBody: false,
                         child: StegEmptyView(
@@ -184,8 +183,14 @@ class _DayStrip extends ConsumerWidget {
                       .state =
                       selected.subtract(const Duration(days: 7)),
                 ),
+                // T15: seven Expanded cells inside a 400 px phone gave each
+                // day a 39 px-wide target (measured) — below the 48 dp
+                // minimum. The strip scrolls horizontally instead, so every
+                // day keeps a full-size target.
                 Expanded(
-                  child: Row(
+                  child: SingleChildScrollView(
+                    scrollDirection: Axis.horizontal,
+                    child: Row(
                     children: [
                       for (var i = 0; i < 7; i++)
                         _DayCell(
@@ -204,6 +209,7 @@ class _DayStrip extends ConsumerWidget {
                               weekStart.add(Duration(days: i)),
                         ),
                     ],
+                    ),
                   ),
                 ),
             IconButton(
@@ -255,7 +261,8 @@ class _DayCell extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
-    return Expanded(
+    return SizedBox(
+      width: StegSpacing.minTouchTarget,
       child: Semantics(
         button: true,
         selected: selected,

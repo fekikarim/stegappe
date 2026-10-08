@@ -92,8 +92,9 @@ class InternDetailScreen extends ConsumerWidget {
                           label: internshipTypeLabel(
                               d.internship.type, l10n),
                         ),
-                        StegStatusChip(
-                            label: d.internship.reference),
+                        // Standalone LTR value: renders LTR-visual in an
+                        // RTL paragraph as-is (measured), so plain.
+                        StegStatusChip(label: d.internship.reference),
                       ],
                     ),
                     if (d.activeAssignment != null) ...[

@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/l10n/app_localizations.dart';
+import '../../../../core/connectivity/connectivity_service.dart';
 import '../../../../core/network/api_exception.dart';
 import '../../../../core/network/error_messages.dart';
 import '../../../../core/theme/steg_spacing.dart';
@@ -170,6 +171,9 @@ class _VersionUploadSheetState
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     final uploading = _phase == _UploadPhase.uploading;
+    // T15/BR-58: an upload is a server write outside the D12 queue — offline
+    // the button disables with a reason instead of failing after the tap.
+    final isOnline = ref.watch(isOnlineProvider);
     return Column(
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -237,8 +241,18 @@ class _VersionUploadSheetState
           icon: Icons.cloud_upload_outlined,
           loading: uploading,
           onPressed:
-              (_file == null || uploading) ? null : _upload,
+              (_file == null || uploading || !isOnline) ? null : _upload,
         ),
+        if (!isOnline) ...[
+          const SizedBox(height: StegSpacing.xs),
+          Text(
+            l10n.uploadNeedsConnection,
+            style: Theme.of(context)
+                .textTheme
+                .bodySmall
+                ?.copyWith(color: Theme.of(context).colorScheme.error),
+          ),
+        ],
       ],
     );
   }
@@ -369,6 +383,9 @@ class _DeliverableUploadSheetState
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
+    // T15/BR-58: see VersionUploadSheet — offline the create+upload write
+    // disables with a reason.
+    final isOnline = ref.watch(isOnlineProvider);
     // Scrollable: the added T10/B8 kind selector must fit small sheets and
     // large text scales without a RenderFlex overflow.
     return SingleChildScrollView(
@@ -480,8 +497,18 @@ class _DeliverableUploadSheetState
           icon: Icons.cloud_upload_outlined,
           loading: _uploading,
           onPressed:
-              (_file == null || _uploading) ? null : _upload,
+              (_file == null || _uploading || !isOnline) ? null : _upload,
         ),
+        if (!isOnline) ...[
+          const SizedBox(height: StegSpacing.xs),
+          Text(
+            l10n.uploadNeedsConnection,
+            style: Theme.of(context)
+                .textTheme
+                .bodySmall
+                ?.copyWith(color: Theme.of(context).colorScheme.error),
+          ),
+        ],
       ],
       ),
     );

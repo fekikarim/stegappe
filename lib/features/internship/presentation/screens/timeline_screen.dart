@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/l10n/app_localizations.dart';
 import '../../../../core/network/error_messages.dart';
 import '../../../../core/theme/steg_spacing.dart';
+import '../../../../core/widgets/steg_fields.dart';
 import '../../../../core/widgets/steg_states.dart';
 import '../../../../core/widgets/steg_status_chip.dart';
 import '../../domain/dashboard.dart';
@@ -134,8 +135,8 @@ List<_Milestone> _milestones(BuildContext context, DashboardData data) {
     _Milestone(
       date: internship.startDate,
       title: l10n.msStart,
-      subtitle:
-          '${l10n.startLabel} • ${internship.reference}',
+      subtitle: '${l10n.startLabel} • '
+          '${BidiText.isolate(internship.reference)}',
       done: !now.isBefore(internship.startDate),
       icon: Icons.play_circle_outline,
     ),

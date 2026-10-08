@@ -175,7 +175,11 @@ class _AiEntryCard extends StatelessWidget {
                           .textTheme
                           .titleMedium),
                 ),
-                StegStatusChip(label: l10n.logbookTitle),
+                // T15: the chip must shrink with the row instead of pushing
+                // it past the edge (measured: 48 px right overflow in Arabic).
+                Flexible(
+                  child: StegStatusChip(label: l10n.logbookTitle),
+                ),
               ],
             ),
             const SizedBox(height: StegSpacing.xs),
@@ -185,29 +189,26 @@ class _AiEntryCard extends StatelessWidget {
             Text(l10n.aiAdvisoryNote,
                 style: Theme.of(context).textTheme.bodySmall),
             const SizedBox(height: StegSpacing.sm),
-            Semantics(
-              button: true,
-              label: l10n.logbookTitle,
-              child: OutlinedButton.icon(
-                icon: const Icon(Icons.book_outlined),
-                label: Text(l10n.logbookTitle),
-                onPressed: () => Navigator.of(context).push(
-                  MaterialPageRoute(
-                      builder: (_) => const LogbookScreen()),
-                ),
+            // T15: these buttons carried a redundant `Semantics(button:true,
+            // label:)` wrapper. Material buttons already publish their role
+            // and label, and the extra wrapper collapsed the reported tap
+            // rectangle to 7 px (measured), i.e. a screen reader was handed a
+            // 7 px-tall target for a real 48 px button.
+            OutlinedButton.icon(
+              icon: const Icon(Icons.book_outlined),
+              label: Text(l10n.logbookTitle),
+              onPressed: () => Navigator.of(context).push(
+                MaterialPageRoute(
+                    builder: (_) => const LogbookScreen()),
               ),
             ),
             const SizedBox(height: StegSpacing.xs),
-            Semantics(
-              button: true,
-              label: l10n.assistantTitle,
-              child: FilledButton.tonalIcon(
-                icon: const Icon(Icons.smart_toy_outlined),
-                label: Text(l10n.assistantTitle),
-                onPressed: () => Navigator.of(context).push(
-                  MaterialPageRoute(
-                      builder: (_) => const AssistantScreen()),
-                ),
+            FilledButton.tonalIcon(
+              icon: const Icon(Icons.smart_toy_outlined),
+              label: Text(l10n.assistantTitle),
+              onPressed: () => Navigator.of(context).push(
+                MaterialPageRoute(
+                    builder: (_) => const AssistantScreen()),
               ),
             ),
           ],

@@ -223,8 +223,14 @@ class _SupervisorFab extends ConsumerWidget {
     if (interns == null || interns.isEmpty) return const SizedBox.shrink();
     final selected = ref.watch(selectedSupervisedInternshipProvider) ??
         interns.first.internshipId;
-    return Row(
-      mainAxisSize: MainAxisSize.min,
+    // T15: two extended FABs in a Row overflowed the action area by 79 px at
+    // 2.0× (measured). A Wrap keeps both actions reachable by moving the
+    // second one to its own line instead of pushing it off the screen.
+    return Wrap(
+      alignment: WrapAlignment.end,
+      crossAxisAlignment: WrapCrossAlignment.center,
+      spacing: StegSpacing.sm,
+      runSpacing: StegSpacing.sm,
       children: [
         FloatingActionButton.extended(
           heroTag: 'sup-bulk',
@@ -235,7 +241,6 @@ class _SupervisorFab extends ConsumerWidget {
           icon: const Icon(Icons.group_add_outlined),
           label: Text(l10n.supBulkTitle),
         ),
-        const SizedBox(width: StegSpacing.sm),
         FloatingActionButton(
           heroTag: 'sup-add',
           tooltip: l10n.supTaskNew,
@@ -456,10 +461,19 @@ class _SupervisorTaskCard extends ConsumerWidget {
                     ),
                   ),
                   const SizedBox(width: StegSpacing.xs),
-                  StegStatusChip(
-                    label: taskStatusLabel(task.status, l10n),
-                    kind: taskStatusKind(task.status,
-                        overdue: task.isOverdue(now)),
+                  // T15: as a non-flex child the chip received the row's FULL
+                  // width, so a long status label (large text, square test
+                  // font) could collapse the title's Expanded to zero and
+                  // wrap it one character per line. As a flex child the chip
+                  // and the title now split the row, and the chip's own
+                  // ellipsis keeps the label readable; the Semantics wrapper
+                  // still exposes the full text to screen readers.
+                  Flexible(
+                    child: StegStatusChip(
+                      label: taskStatusLabel(task.status, l10n),
+                      kind: taskStatusKind(task.status,
+                          overdue: task.isOverdue(now)),
+                    ),
                   ),
                 ],
               ),

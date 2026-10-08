@@ -28,14 +28,31 @@ class StegCard extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           children: [
             if (title case final t?) ...[
-              Row(
-                children: [
-                  Expanded(
-                    child: Text(t,
-                        style: Theme.of(context).textTheme.titleMedium),
-                  ),
-                  if (action case final Widget a) a,
-                ],
+              // T15: an unbounded action (a TextButton with a long label at
+              // 2.0×) overflowed the header by up to 164 px. The action is
+              // capped at 40 % of the card width and the title ellipsizes, so
+              // both stay readable and nothing is clipped away.
+              LayoutBuilder(
+                builder: (context, constraints) => Row(
+                  children: [
+                    Expanded(
+                      child: Text(t,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          style: Theme.of(context).textTheme.titleMedium),
+                    ),
+                    if (action case final Widget a)
+                      ConstrainedBox(
+                        constraints: BoxConstraints(
+                            maxWidth: constraints.maxWidth * 0.4),
+                        // T15: a tight 48 dp height gives the header action a
+                        // real touch target. Loose, it reported 28 px (e.g.
+                        // the supervisor home "see all" button — measured).
+                        child: SizedBox(
+                            height: StegSpacing.minTouchTarget, child: a),
+                      ),
+                  ],
+                ),
               ),
               const SizedBox(height: StegSpacing.sm),
             ],

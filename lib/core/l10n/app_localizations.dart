@@ -921,6 +921,8 @@ class AppLocalizations {
     'communityNoReports': {'fr': 'Aucun signalement. Belle communauté !', 'en': 'No reports. Healthy community!', 'ar': 'لا بلاغات. مجتمع سليم!'},
     'communityRemovedGone': {'fr': 'Ce contenu n’est plus disponible.', 'en': 'This content is no longer available.', 'ar': 'هذا المحتوى لم يعد متاحا.'},
     'communityNeedsConnection': {'fr': 'Connexion requise pour publier.', 'en': 'Connection required to post.', 'ar': 'الاتصال مطلوب للنشر.'},
+    'submitNeedsConnection': {'fr': 'Connexion requise pour enregistrer.', 'en': 'Connection required to save.', 'ar': 'الاتصال مطلوب للحفظ.'},
+    'uploadNeedsConnection': {'fr': 'Connexion requise pour téléverser.', 'en': 'Connection required to upload.', 'ar': 'الاتصال مطلوب للرفع.'},
     'communityNewAvailable': {'fr': 'Nouveautés — tirer pour actualiser', 'en': 'New activity — pull to refresh', 'ar': 'نشاط جديد — اسحب للتحديث'},
     'sockConnecting': {'fr': 'Connexion en cours…', 'en': 'Connecting…', 'ar': 'جارٍ الاتصال…'},
     'sockOffline': {'fr': 'Temps réel indisponible — les messages s’envoient par relais.', 'en': 'Real-time unavailable — messages use fallback.', 'ar': 'الوقت الحقيقي غير متاح — تُرسل الرسائل بالطريقة البديلة.'},
@@ -1743,6 +1745,8 @@ class AppLocalizations {
   String get communityNoReports => _get('communityNoReports');
   String get communityRemovedGone => _get('communityRemovedGone');
   String get communityNeedsConnection => _get('communityNeedsConnection');
+  String get submitNeedsConnection => _get('submitNeedsConnection');
+  String get uploadNeedsConnection => _get('uploadNeedsConnection');
   String get communityNewAvailable => _get('communityNewAvailable');
   String get sockConnecting => _get('sockConnecting');
   String get sockOffline => _get('sockOffline');

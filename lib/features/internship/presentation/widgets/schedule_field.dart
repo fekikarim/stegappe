@@ -4,6 +4,10 @@ import '../../../../core/l10n/app_localizations.dart';
 import '../../domain/schedule.dart';
 import 'status_labels.dart';
 
+/// T15: the share of a row an inline action may occupy before it truncates.
+BoxConstraints _actionBox(BuildContext context) =>
+    BoxConstraints(maxWidth: MediaQuery.sizeOf(context).width * 0.32);
+
 /// T04/D8 shared schedule field (SU-TASK-04): Tunis date + time pickers
 /// producing an absolute UTC instant, plus clear-to-immediate.
 ///
@@ -33,20 +37,35 @@ class ScheduleField extends StatelessWidget {
         Row(
           children: [
             Expanded(
-              child: Text(scheduled == null
-                  ? '${l10n.supScheduleLabel} : ${l10n.supScheduleNone}'
-                  : '${l10n.supScheduleLabel} : ${formatDay(tunisWallFromInstant(scheduled!), locale)}'),
+              child: Text(
+                  scheduled == null
+                      ? '${l10n.supScheduleLabel} : ${l10n.supScheduleNone}'
+                      : '${l10n.supScheduleLabel} : ${formatDay(tunisWallFromInstant(scheduled!), locale)}',
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis),
             ),
-            TextButton(
-              onPressed: onPick,
-              child: Text(scheduled == null
-                  ? l10n.supSchedulePickDate
-                  : l10n.supSchedulePickTime),
+            // T15: bounded actions — the unbounded pair overflowed the row by
+            // 38 px at 2.0× (measured).
+            ConstrainedBox(
+              constraints: _actionBox(context),
+              child: TextButton(
+                onPressed: onPick,
+                child: Text(
+                    scheduled == null
+                        ? l10n.supSchedulePickDate
+                        : l10n.supSchedulePickTime,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis),
+              ),
             ),
             if (scheduled != null)
-              TextButton(
-                onPressed: onClear,
-                child: Text(l10n.supScheduleClear),
+              ConstrainedBox(
+                constraints: _actionBox(context),
+                child: TextButton(
+                  onPressed: onClear,
+                  child: Text(l10n.supScheduleClear,
+                      maxLines: 1, overflow: TextOverflow.ellipsis),
+                ),
               ),
           ],
         ),

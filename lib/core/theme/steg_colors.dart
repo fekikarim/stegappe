@@ -18,6 +18,14 @@ abstract final class StegColors {
   /// Lighter error tone for dark surfaces (contrast on the deep-navy theme).
   static const Color errorDark = Color(0xFFE56A6C);
 
+  /// Success/warning on the deep-navy theme. `ux-ui.md` §1 requires a
+  /// "success/warning-on-dark pair with verified contrast"; the light values
+  /// measure 2.76:1 and 2.92:1 on `darkPage`, i.e. below the 4.5:1 body bar,
+  /// so the pair is explicit here rather than reusing the light tokens
+  /// (`test/ux/accessibility_test.dart` measures both).
+  static const Color successDark = Color(0xFF4CC46E); // 7.84:1 on darkPage
+  static const Color warningDark = Color(0xFFE0A64B); // 8.08:1 on darkPage
+
   // Light surfaces
   static const Color lightPage = Color(0xFFF4F6F9);
   static const Color lightSurface = Color(0xFFFFFFFF);

@@ -7,6 +7,7 @@ import '../../../core/theme/steg_spacing.dart';
 import '../../../core/widgets/steg_button.dart';
 import '../../../core/widgets/steg_card.dart';
 import '../../../core/widgets/steg_dialog.dart';
+import '../../../core/widgets/steg_fields.dart';
 import '../../../core/widgets/user_avatar.dart';
 import '../../auth/domain/entities/app_user.dart';
 import '../../auth/presentation/providers/auth_providers.dart';
@@ -245,7 +246,8 @@ class _ProfileHeaderCard extends StatelessWidget {
       child: ListTile(
         contentPadding: EdgeInsets.zero,
         leading: UserAvatar(displayName: user.email),
-        title: Text(user.email,
+        // T15/RTL: an email must stay an isolated LTR run inside Arabic.
+        title: BidiText(user.email,
             maxLines: 1, overflow: TextOverflow.ellipsis),
         subtitle: Text(roleLabel(l10n, user.mobileRole)),
         trailing: const Icon(Icons.arrow_forward_outlined),

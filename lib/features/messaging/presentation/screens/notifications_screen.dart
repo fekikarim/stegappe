@@ -99,11 +99,31 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen>
                 child: Icon(Icons.bolt, color: StegColors.success, size: 20),
               ),
             ),
-          TextButton(
-            onPressed: _markingAll ? null : () => _markAllRead(controller),
-            child: Text(
-              l10n.notifMarkAllRead,
-              style: const TextStyle(color: Colors.white),
+          // T15: an unbounded text action overflowed the toolbar row by
+          // 92 px at Arabic + 2.0× (measured). The label keeps its text form
+          // at normal scales, ellipsizes inside a bounded share of the bar,
+          // and the full sentence stays available through the tooltip and the
+          // semantic label.
+          Semantics(
+            button: true,
+            label: l10n.notifMarkAllRead,
+            child: ConstrainedBox(
+              constraints: BoxConstraints(
+                  maxWidth:
+                      MediaQuery.sizeOf(context).width * 0.42),
+              child: Tooltip(
+                message: l10n.notifMarkAllRead,
+                child: TextButton(
+                  onPressed:
+                      _markingAll ? null : () => _markAllRead(controller),
+                  child: Text(
+                    l10n.notifMarkAllRead,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(color: Colors.white),
+                  ),
+                ),
+              ),
             ),
           ),
         ],
@@ -264,11 +284,16 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen>
             const SizedBox(height: StegSpacing.xxs),
             Row(
               children: [
-                Semantics(
-                  label: unread ? l10n.notifUnreadOnly : typeLabel,
-                  child: StegStatusChip(
-                    label: typeLabel,
-                    kind: notificationTypeKind(n.type),
+                // T15: the type chip is intrinsic-width; without a flex it
+                // pushed the metadata row 57 px past the right edge in
+                // Arabic (measured) instead of sharing the line.
+                Flexible(
+                  child: Semantics(
+                    label: unread ? l10n.notifUnreadOnly : typeLabel,
+                    child: StegStatusChip(
+                      label: typeLabel,
+                      kind: notificationTypeKind(n.type),
+                    ),
                   ),
                 ),
                 const SizedBox(width: StegSpacing.xs),
@@ -286,27 +311,34 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen>
           ],
         ),
         isThreeLine: true,
+        // T15: the trailing affordance stays an IconButton — a fixed 48 dp
+        // target that carries its own tooltip/semantic label — so the chevron
+        // and the row both navigate. The row's own `onTap` below is the same
+        // navigation (T08 asserts it opens the post detail and marks read).
         trailing: routable
-            ? Semantics(
-                button: true,
-                label: l10n.notifOpen,
-                child: IconButton(
-                  tooltip: l10n.notifOpen,
-                  icon: const Icon(Icons.arrow_forward_outlined),
-                  onPressed: () {
-                    final target = communityTarget;
-                    if (target != null) {
-                      _openCommunity(n, target);
-                    } else {
-                      _open(n, route!);
-                    }
-                  },
-                ),
+            ? IconButton(
+                tooltip: l10n.notifOpen,
+                icon: const Icon(Icons.arrow_forward_outlined),
+                onPressed: () {
+                  final target = communityTarget;
+                  if (target != null) {
+                    _openCommunity(n, target);
+                  } else {
+                    _open(n, route!);
+                  }
+                },
               )
             : (unread
-                ? TextButton(
-                    onPressed: () => _markRead(n),
-                    child: Text(l10n.notifMarkRead),
+                ? ConstrainedBox(
+                    constraints: BoxConstraints(
+                        maxWidth:
+                            MediaQuery.sizeOf(context).width * 0.36),
+                    child: TextButton(
+                      onPressed: () => _markRead(n),
+                      child: Text(l10n.notifMarkRead,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis),
+                    ),
                   )
                 : null),
         onTap: routable

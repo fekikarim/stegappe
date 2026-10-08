@@ -442,8 +442,11 @@ class _VersionTile extends StatelessWidget {
               ? Icons.picture_as_pdf
               : Icons.history_outlined,
         ),
+        // T15/RTL: a filename is an LTR technical run inside the localized
+        // version caption.
         title: Text(
-          '${l10n.versionLabel(version.versionNumber)} • ${version.fileName}',
+          '${l10n.versionLabel(version.versionNumber)} • '
+          '${BidiText.isolate(version.fileName)}',
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
         ),

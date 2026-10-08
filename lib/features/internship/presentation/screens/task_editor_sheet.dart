@@ -18,6 +18,11 @@ import '../providers/workspace_providers.dart';
 import '../widgets/schedule_field.dart' show pickTunisMoment;
 import '../widgets/status_labels.dart';
 
+/// T15: the share of a row an inline action may occupy before it truncates.
+/// Keeps the label readable at 1.0× and makes an overflow impossible at 2.0×.
+BoxConstraints _actionBox(BuildContext context) =>
+    BoxConstraints(maxWidth: MediaQuery.sizeOf(context).width * 0.32);
+
 /// Task create/edit sheet.
 /// - Creation: a new task for the internship (status defaults to `todo`).
 /// - Edit: the author may edit any field; a student may only edit his *own*
@@ -300,16 +305,28 @@ class _TaskEditorSheetState extends ConsumerState<TaskEditorSheet> {
                   _due == null
                       ? '${l10n.taskDueLabel} : ${l10n.noDueDate}'
                       : '${l10n.taskDueLabel} : ${formatDay(_due!, locale)}',
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
                 ),
               ),
-              TextButton(
-                onPressed: _pickDate,
-                child: Text(l10n.taskPickDate),
+              // T15: the two actions are bounded so a long label at 2.0×
+              // ellipsizes instead of overflowing the row by 66 px (measured).
+              ConstrainedBox(
+                constraints: _actionBox(context),
+                child: TextButton(
+                  onPressed: _pickDate,
+                  child: Text(l10n.taskPickDate,
+                      maxLines: 1, overflow: TextOverflow.ellipsis),
+                ),
               ),
               if (_due != null)
-                TextButton(
-                  onPressed: () => setState(() => _due = null),
-                  child: Text(l10n.taskClearDate),
+                ConstrainedBox(
+                  constraints: _actionBox(context),
+                  child: TextButton(
+                    onPressed: () => setState(() => _due = null),
+                    child: Text(l10n.taskClearDate,
+                        maxLines: 1, overflow: TextOverflow.ellipsis),
+                  ),
                 ),
             ],
           ),
@@ -398,16 +415,27 @@ class _ScheduleRow extends StatelessWidget {
             Expanded(
               child: Text('${l10n.supScheduleLabel} : $moment'),
             ),
-            TextButton(
-              onPressed: onPick,
-              child: Text(scheduled == null
-                  ? l10n.supSchedulePickDate
-                  : l10n.supSchedulePickTime),
+            // T15: bounded actions (38 px right overflow at 2.0× measured).
+            ConstrainedBox(
+              constraints: _actionBox(context),
+              child: TextButton(
+                onPressed: onPick,
+                child: Text(
+                    scheduled == null
+                        ? l10n.supSchedulePickDate
+                        : l10n.supSchedulePickTime,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis),
+              ),
             ),
             if (scheduled != null)
-              TextButton(
-                onPressed: onClear,
-                child: Text(l10n.supScheduleClear),
+              ConstrainedBox(
+                constraints: _actionBox(context),
+                child: TextButton(
+                  onPressed: onClear,
+                  child: Text(l10n.supScheduleClear,
+                      maxLines: 1, overflow: TextOverflow.ellipsis),
+                ),
               ),
           ],
         ),

@@ -55,12 +55,14 @@ class InternHomeScreen extends ConsumerWidget {
           SliverPadding(
             padding: StegSpacing.screenPadding,
             sliver: async.when(
-              loading: () => SliverFillRemaining(
-                hasScrollBody: false,
-                child: (last != null && !isOnline)
-                    ? _StaleBody(data: last, isOnline: false)
-                    : const StegLoading(),
-              ),
+              loading: () => (last != null && !isOnline)
+                  ? SliverToBoxAdapter(
+                      child: _StaleBody(data: last, isOnline: false),
+                    )
+                  : const SliverFillRemaining(
+                      hasScrollBody: false,
+                      child: StegLoading(),
+                    ),
               error: (e, _) {
                 if (e is StateError && e.message == 'no-internship') {
                   return SliverFillRemaining(
@@ -224,6 +226,10 @@ class _DashboardContent extends ConsumerWidget {
                   StegStatusChip(
                     label: internshipTypeLabel(internship.type, l10n),
                   ),
+                  // Bidi: the reference is a standalone LTR run and already
+                  // lays out LTR-visual inside an RTL paragraph (measured),
+                  // so it stays a plain string — isolating it would only add
+                  // invisible characters to a copyable value.
                   StegStatusChip(label: internship.reference),
                 ],
               ),

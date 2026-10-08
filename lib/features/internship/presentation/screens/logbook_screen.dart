@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/l10n/app_localizations.dart';
+import '../../../../core/connectivity/connectivity_service.dart';
 import '../../../../core/network/api_exception.dart';
 import '../../../../core/theme/steg_spacing.dart';
 import '../../../../core/widgets/steg_button.dart';
@@ -178,6 +179,9 @@ class _DraftReview extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context);
+    // T15/BR-58: regenerate (AI) and submit are server writes outside the D12
+    // queue — offline they disable with a reason instead of failing on tap.
+    final isOnline = ref.watch(isOnlineProvider);
     final submitting = ref.watch(logbookSubmitProvider);
     final status = logbook?.status;
     final locked = status == LogbookStatus.submitted ||
@@ -229,7 +233,7 @@ class _DraftReview extends ConsumerWidget {
               label: l10n.logbookRegenerate,
               variant: StegButtonVariant.secondary,
               icon: Icons.refresh_outlined,
-              onPressed: submitting
+              onPressed: (submitting || !isOnline)
                   ? null
                   : () => ref.invalidate(logbookDraftProvider),
             ),
@@ -247,8 +251,19 @@ class _DraftReview extends ConsumerWidget {
                       : l10n.logbookSubmit,
                   variant: StegButtonVariant.primary,
                   icon: Icons.send,
-                  onPressed: () => _submit(context, ref),
+                  onPressed:
+                      isOnline ? () => _submit(context, ref) : null,
                 ),
+          if (!isOnline) ...[
+            const SizedBox(height: StegSpacing.xs),
+            Text(
+              l10n.submitNeedsConnection,
+              style: Theme.of(context)
+                  .textTheme
+                  .bodySmall
+                  ?.copyWith(color: Theme.of(context).colorScheme.error),
+            ),
+          ],
         ],
       ],
     );
@@ -413,8 +428,13 @@ class _EditorSection extends StatelessWidget {
             controller: editor,
             maxLines: null,
             minLines: 10,
-            decoration: const InputDecoration(
-              border: OutlineInputBorder(),
+            // T15: the label used to live only on the wrapping `Semantics`,
+            // which left the actionable field node unnamed (measured: a
+            // 368×264 tappable with no accessible name). The field carries
+            // its own label now, which is what AT reads out.
+            decoration: InputDecoration(
+              labelText: l10n.logbookTitle,
+              border: const OutlineInputBorder(),
               alignLabelWithHint: true,
             ),
             onChanged: onChanged,

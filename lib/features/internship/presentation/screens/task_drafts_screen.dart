@@ -425,10 +425,17 @@ class _DraftsSection extends StatelessWidget {
                 style: Theme.of(context).textTheme.titleSmall,
               ),
             ),
-            TextButton.icon(
-              onPressed: !isOnline ? null : onToggleManual,
-              icon: const Icon(Icons.add),
-              label: Text(l10n.aiDraftManualAdd),
+            // T15: bounded action — the unbounded label overflowed the row
+            // by 5 px at 2.0× (measured).
+            ConstrainedBox(
+              constraints: BoxConstraints(
+                  maxWidth: MediaQuery.sizeOf(context).width * 0.45),
+              child: TextButton.icon(
+                onPressed: !isOnline ? null : onToggleManual,
+                icon: const Icon(Icons.add),
+                label: Text(l10n.aiDraftManualAdd,
+                    maxLines: 1, overflow: TextOverflow.ellipsis),
+              ),
             ),
           ],
         ),

@@ -123,20 +123,26 @@ class _ConversationTile extends StatelessWidget {
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
         ),
-        trailing: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          crossAxisAlignment: CrossAxisAlignment.end,
+        // T15: a stacked time-over-badge trailing was taller than the tile
+        // and overflowed it by 25 px at 2.0× (measured). One line keeps both
+        // values and always fits.
+        trailing: Row(
+          mainAxisSize: MainAxisSize.min,
+          mainAxisAlignment: MainAxisAlignment.end,
+          crossAxisAlignment: CrossAxisAlignment.center,
           children: [
             if (preview != null)
               Text(
                 _timeOfDay(preview.sentAt),
+                maxLines: 1,
                 style: Theme.of(context).textTheme.bodySmall,
               ),
             if (conversation.unreadCount > 0)
               Semantics(
                 label: '${conversation.unreadCount}',
                 child: Container(
-                  margin: const EdgeInsets.only(top: 4),
+                  margin: EdgeInsetsDirectional.only(
+                      start: preview == null ? 0 : 6),
                   padding: const EdgeInsets.symmetric(
                       horizontal: 8, vertical: 2),
                   decoration: BoxDecoration(

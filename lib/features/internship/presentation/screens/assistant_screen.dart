@@ -122,56 +122,67 @@ class _AssistantScreenState extends ConsumerState<AssistantScreen> {
       body: SafeArea(
         child: Column(
           children: [
-            Padding(
-              padding: StegSpacing.cardPadding,
-              child: StegStatusChip(label: l10n.aiBadge),
-            ),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: StegSpacing.md),
-              child: Text(l10n.assistantExplain,
-                  style: Theme.of(context).textTheme.bodySmall),
-            ),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: StegSpacing.md),
-              child: Text(l10n.aiAdvisoryNote,
-                  style: Theme.of(context).textTheme.bodySmall),
-            ),
-            const SizedBox(height: StegSpacing.sm),
+            // T15: the advisory header and the transcript scroll together.
+            // Pinned above the list, the header (badge + two explanations)
+            // grew past the viewport at 2.0× and overflowed by 360 px
+            // (measured). As list content it can never clip the transcript.
             Expanded(
-              child: state.messages.isEmpty && !state.pending
-                  ? Center(
-                      child: Text(l10n.assistantEmpty,
-                          style: Theme.of(context).textTheme.bodyMedium))
-                  : ListView.builder(
-                      controller: _scroll,
-                      padding: const EdgeInsets.all(StegSpacing.md),
-                      itemCount:
-                          state.messages.length + (state.pending ? 1 : 0),
-                      itemBuilder: (context, i) {
-                        if (i >= state.messages.length) {
-                          return Align(
-                            alignment: AlignmentDirectional.centerStart,
-                            child: Semantics(
-                              label: l10n.assistantThinking,
-                              child: const Padding(
-                                padding: EdgeInsets.all(StegSpacing.sm),
-                                child: SizedBox(
-                                    width: 20,
-                                    height: 20,
-                                    child: CircularProgressIndicator(
-                                        strokeWidth: 2)),
-                              ),
-                            ),
-                          );
-                        }
-                        final m = state.messages[i];
-                        return _Bubble(
-                          message: m,
-                          onRetry:
-                              m.failed ? () => _retry(i) : null,
-                        );
-                      },
-                    ),
+              child: ListView.builder(
+                controller: _scroll,
+                padding: const EdgeInsets.all(StegSpacing.md),
+                itemCount: 1 +
+                    state.messages.length +
+                    (state.pending ? 1 : 0),
+                itemBuilder: (context, i) {
+                  if (i == 0) {
+                    return Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        Align(
+                          alignment: AlignmentDirectional.centerStart,
+                          child: StegStatusChip(label: l10n.aiBadge),
+                        ),
+                        const SizedBox(height: StegSpacing.xs),
+                        Text(l10n.assistantExplain,
+                            style: Theme.of(context).textTheme.bodySmall),
+                        const SizedBox(height: StegSpacing.xxs),
+                        Text(l10n.aiAdvisoryNote,
+                            style: Theme.of(context).textTheme.bodySmall),
+                        if (state.messages.isEmpty && !state.pending) ...[
+                          const SizedBox(height: StegSpacing.lg),
+                          Text(l10n.assistantEmpty,
+                              textAlign: TextAlign.center,
+                              style:
+                                  Theme.of(context).textTheme.bodyMedium),
+                        ],
+                        const SizedBox(height: StegSpacing.sm),
+                      ],
+                    );
+                  }
+                  final index = i - 1;
+                  if (index >= state.messages.length) {
+                    return Align(
+                      alignment: AlignmentDirectional.centerStart,
+                      child: Semantics(
+                        label: l10n.assistantThinking,
+                        child: const Padding(
+                          padding: EdgeInsets.all(StegSpacing.sm),
+                          child: SizedBox(
+                              width: 20,
+                              height: 20,
+                              child: CircularProgressIndicator(
+                                  strokeWidth: 2)),
+                        ),
+                      ),
+                    );
+                  }
+                  final m = state.messages[index];
+                  return _Bubble(
+                    message: m,
+                    onRetry: m.failed ? () => _retry(index) : null,
+                  );
+                },
+              ),
             ),
             if (state.error != null)
               Padding(
