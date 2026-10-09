@@ -1,10 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../core/connectivity/connectivity_service.dart';
 import '../../../core/l10n/app_localizations.dart';
 import '../../../core/theme/steg_motion.dart';
-import '../../../core/widgets/connectivity_banner.dart';
 import '../../auth/domain/entities/app_user.dart';
 import '../../auth/presentation/providers/auth_providers.dart';
 import '../../auth/presentation/role_label.dart';
@@ -39,7 +37,6 @@ class RoleScaffold extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final isOnline = ref.watch(isOnlineProvider);
     final reducedMotion = MediaQuery.of(context).disableAnimations;
     final current = destinations[index];
 
@@ -71,22 +68,15 @@ class RoleScaffold extends ConsumerWidget {
           ),
         ],
       ),
-      body: Column(
-        children: [
-          ConnectivityBanner(isOnline: isOnline),
-          Expanded(
-            child: reducedMotion
-                ? current.page
-                : AnimatedSwitcher(
-                    duration: StegMotion.shell,
-                    child: KeyedSubtree(
-                      key: ValueKey(index),
-                      child: current.page,
-                    ),
-                  ),
-          ),
-        ],
-      ),
+      body: reducedMotion
+          ? current.page
+          : AnimatedSwitcher(
+              duration: StegMotion.shell,
+              child: KeyedSubtree(
+                key: ValueKey(index),
+                child: current.page,
+              ),
+            ),
       bottomNavigationBar: Semantics(
         label: roleLabel(AppLocalizations.of(context), user.mobileRole),
         child: NavigationBar(

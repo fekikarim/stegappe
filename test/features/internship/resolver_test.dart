@@ -33,6 +33,7 @@ void main() {
       final tokens = InMemoryTokenStorage();
       repo = InternshipRepositoryImpl(
           remote: remote, tokens: tokens, idStore: ids);
+      when(() => remote.getMyInternship(any())).thenAnswer((_) async => null);
     });
 
     test('verifies and returns the cached id', () async {
@@ -42,10 +43,20 @@ void main() {
 
       expect(await repo.resolveMyInternshipId(), 'cached-1');
       verify(() => remote.getInternship('cached-1', any())).called(1);
+      verifyNever(() => remote.getMyInternship(any()));
       verifyNever(() => remote.listConversations(any()));
     });
 
-    test('discovers via PRIVATE conversation then caches', () async {
+    test('resolves directly via GET /api/internships/mine then caches', () async {
+      when(() => remote.getMyInternship(any())).thenAnswer(
+          (_) async => internshipFromJson(detail('mine-1')));
+
+      expect(await repo.resolveMyInternshipId(), 'mine-1');
+      expect(await ids.read(), 'mine-1');
+      verifyNever(() => remote.listConversations(any()));
+    });
+
+    test('discovers via PRIVATE conversation when mine returns null then caches', () async {
       when(() => remote.listConversations(any())).thenAnswer((_) async => [
             const ConversationLink(type: 'GROUP', internshipId: null),
             const ConversationLink(

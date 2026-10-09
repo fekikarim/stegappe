@@ -53,6 +53,18 @@ class InternshipRepositoryImpl implements InternshipRepository {
         await idStore.clear(); // stale/forbidden -> rediscover
       }
     }
+    // Step 2: Authoritative direct resolution via GET /api/internships/mine
+    try {
+      final mine = await remote.getMyInternship(bearer);
+      if (mine != null && mine.id.isNotEmpty) {
+        await idStore.write(mine.id);
+        return mine.id;
+      }
+    } on ApiException catch (e) {
+      if (e.kind == ApiErrorKind.network) rethrow;
+      // 404 or auth error -> fall through to conversation discovery
+    }
+    // Step 3: Fallback discovery via PRIVATE conversation carrying internshipId
     try {
       final conversations = await remote.listConversations(bearer);
       for (final c in conversations) {

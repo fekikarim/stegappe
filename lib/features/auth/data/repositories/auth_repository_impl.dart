@@ -53,11 +53,30 @@ class AuthRepositoryImpl implements AuthRepository {
       newPassword: newPassword,
       accessToken: access,
     );
-    await tokens.saveTokens(
-      accessToken: access,
-      refreshToken: (await tokens.readRefreshToken()) ?? '',
-      mustChangePassword: false,
-    );
+    // Refresh session to obtain fresh tokens where mustChangePassword is false.
+    // Without this, the access token still holds the JWT claim mustChangePassword=true,
+    // causing the backend security filter to reject subsequent API calls with 403.
+    final refreshed = await refreshSession();
+    if (!refreshed) {
+      final email = _userFromAccessToken(access, null, false).email;
+      if (email.isNotEmpty) {
+        try {
+          await login(email: email, password: newPassword);
+        } catch (_) {
+          await tokens.saveTokens(
+            accessToken: access,
+            refreshToken: (await tokens.readRefreshToken()) ?? '',
+            mustChangePassword: false,
+          );
+        }
+      } else {
+        await tokens.saveTokens(
+          accessToken: access,
+          refreshToken: (await tokens.readRefreshToken()) ?? '',
+          mustChangePassword: false,
+        );
+      }
+    }
   }
 
   @override

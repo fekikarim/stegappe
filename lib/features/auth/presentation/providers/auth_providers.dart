@@ -118,13 +118,19 @@ class AuthController extends StateNotifier<AuthState> {
         currentPassword: currentPassword,
         newPassword: newPassword,
       );
-      state = AuthAuthenticated(
-        AppUser(
-          id: current.user.id,
-          email: current.user.email,
-          roles: current.user.roles,
-        ),
-      );
+      final restored = await _repo.restoreSession();
+      if (restored != null) {
+        state = AuthAuthenticated(restored);
+      } else {
+        state = AuthAuthenticated(
+          AppUser(
+            id: current.user.id,
+            email: current.user.email,
+            roles: current.user.roles,
+            mustChangePassword: false,
+          ),
+        );
+      }
       return true;
     } on ApiException catch (e) {
       lastError = e;

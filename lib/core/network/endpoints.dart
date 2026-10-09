@@ -20,6 +20,7 @@ abstract final class Endpoints {
   // T13/B13: one-call student home snapshot (same sections as the lists).
   static String internshipSummary(String id) =>
       '/api/internships/$id/summary';
+  static const String internshipMine = '/api/internships/mine';
   // T12/B2: own-scope supervised list with server counts (D1b: own students
   // even for an ADMIN caller — never the global list).
   static const String supervisedInternships = '/api/internships/supervised';

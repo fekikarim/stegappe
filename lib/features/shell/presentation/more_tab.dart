@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../core/connectivity/connectivity_service.dart';
 import '../../../core/l10n/app_localizations.dart';
 import '../../../core/l10n/settings_providers.dart';
 import '../../../core/theme/steg_spacing.dart';
@@ -233,19 +234,47 @@ class MoreTab extends ConsumerWidget {
 
 /// Profile header: generated-initial avatar, email and localized role.
 /// Taps through to the read-only profile screen.
-class _ProfileHeaderCard extends StatelessWidget {
+/// Includes Discord-style connectivity status dot on the avatar.
+class _ProfileHeaderCard extends ConsumerWidget {
   const _ProfileHeaderCard({required this.user});
 
   final AppUser user;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context);
+    final isOnline = ref.watch(isOnlineProvider);
+    final borderColor = Theme.of(context).cardTheme.color ??
+        Theme.of(context).cardColor;
+
     return StegCard(
       title: l10n.profileTitle,
       child: ListTile(
         contentPadding: EdgeInsets.zero,
-        leading: UserAvatar(displayName: user.email),
+        leading: Stack(
+          clipBehavior: Clip.none,
+          children: [
+            UserAvatar(displayName: user.email),
+            PositionedDirectional(
+              end: 0,
+              bottom: 0,
+              child: Container(
+                width: 14,
+                height: 14,
+                decoration: BoxDecoration(
+                  color: isOnline
+                      ? const Color(0xFF23A55A)
+                      : const Color(0xFF80848E),
+                  shape: BoxShape.circle,
+                  border: Border.all(
+                    color: borderColor,
+                    width: 2.5,
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
         // T15/RTL: an email must stay an isolated LTR run inside Arabic.
         title: BidiText(user.email,
             maxLines: 1, overflow: TextOverflow.ellipsis),

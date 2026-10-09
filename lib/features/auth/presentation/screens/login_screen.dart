@@ -1,6 +1,7 @@
 import 'dart:ui';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/l10n/app_localizations.dart';
@@ -509,30 +510,59 @@ class _GlassField extends StatelessWidget {
                 ),
               ),
               Expanded(
-                child: TextField(
-                  controller: controller,
-                  focusNode: focusNode,
-                  obscureText: obscure,
-                  keyboardType: keyboardType,
-                  textInputAction: textInputAction,
-                  onSubmitted: onSubmitted,
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 15,
-                  ),
-                  decoration: InputDecoration(
-                    hintText: label,
-                    hintStyle: TextStyle(
-                      color: Colors.white.withValues(alpha: 0.40),
-                      fontSize: 15,
+                child: Actions(
+                  actions: <Type, Action<Intent>>{
+                    PasteTextIntent: CallbackAction<PasteTextIntent>(
+                      onInvoke: (PasteTextIntent intent) async {
+                        await _pasteIntoController(controller);
+                        return null;
+                      },
                     ),
-                    border: InputBorder.none,
-                    contentPadding: const EdgeInsets.symmetric(
-                      vertical: 16,
-                      horizontal: 0,
+                  },
+                  child: Shortcuts(
+                    shortcuts: <ShortcutActivator, Intent>{
+                      LogicalKeySet(
+                        LogicalKeyboardKey.meta,
+                        LogicalKeyboardKey.keyV,
+                      ): const PasteTextIntent(SelectionChangedCause.keyboard),
+                      LogicalKeySet(
+                        LogicalKeyboardKey.control,
+                        LogicalKeyboardKey.keyV,
+                      ): const PasteTextIntent(SelectionChangedCause.keyboard),
+                    },
+                    child: TextField(
+                      controller: controller,
+                      focusNode: focusNode,
+                      enableInteractiveSelection: true,
+                      contextMenuBuilder: (context, editableTextState) =>
+                          _buildAdaptiveContextMenu(
+                        context,
+                        editableTextState,
+                        controller,
+                      ),
+                      obscureText: obscure,
+                      keyboardType: keyboardType,
+                      textInputAction: textInputAction,
+                      onSubmitted: onSubmitted,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 15,
+                      ),
+                      decoration: InputDecoration(
+                        hintText: label,
+                        hintStyle: TextStyle(
+                          color: Colors.white.withValues(alpha: 0.40),
+                          fontSize: 15,
+                        ),
+                        border: InputBorder.none,
+                        contentPadding: const EdgeInsets.symmetric(
+                          vertical: 16,
+                          horizontal: 0,
+                        ),
+                      ),
+                      cursorColor: StegColors.primaryBright,
                     ),
                   ),
-                  cursorColor: StegColors.primaryBright,
                 ),
               ),
               ?suffix,
@@ -625,3 +655,57 @@ class _SubmitButton extends StatelessWidget {
     );
   }
 }
+
+Widget _buildAdaptiveContextMenu(
+  BuildContext context,
+  EditableTextState editableTextState,
+  TextEditingController controller,
+) {
+  final buttonItems = editableTextState.contextMenuButtonItems;
+  final hasPaste =
+      buttonItems.any((item) => item.type == ContextMenuButtonType.paste);
+  if (!hasPaste) {
+    buttonItems.insert(
+      0,
+      ContextMenuButtonItem(
+        type: ContextMenuButtonType.paste,
+        onPressed: () {
+          _pasteIntoController(controller);
+          editableTextState.hideToolbar();
+        },
+      ),
+    );
+  }
+  return AdaptiveTextSelectionToolbar.buttonItems(
+    anchors: editableTextState.contextMenuAnchors,
+    buttonItems: buttonItems,
+  );
+}
+
+Future<void> _pasteIntoController(TextEditingController controller) async {
+  try {
+    final data = await Clipboard.getData(Clipboard.kTextPlain);
+    final text = data?.text?.trim();
+    if (text != null && text.isNotEmpty) {
+      final selection = controller.selection;
+      if (selection.isValid &&
+          selection.start >= 0 &&
+          selection.end >= selection.start) {
+        final old = controller.text;
+        final newText = old.replaceRange(selection.start, selection.end, text);
+        controller.value = TextEditingValue(
+          text: newText,
+          selection:
+              TextSelection.collapsed(offset: selection.start + text.length),
+        );
+      } else {
+        controller.value = TextEditingValue(
+          text: text,
+          selection: TextSelection.collapsed(offset: text.length),
+        );
+      }
+    }
+  } catch (_) {}
+}
+
+

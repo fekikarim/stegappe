@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/l10n/app_localizations.dart';
 import '../../../core/l10n/settings_providers.dart';
 import '../../../core/offline/pending_writes.dart';
+import '../../../core/realtime/lifecycle_resyncer.dart';
 import '../../../core/widgets/steg_states.dart';
 import '../../auth/domain/entities/app_user.dart';
 import '../../auth/presentation/providers/auth_providers.dart';
@@ -24,7 +25,11 @@ class AuthGate extends ConsumerStatefulWidget {
   ConsumerState<AuthGate> createState() => _AuthGateState();
 }
 
-class _AuthGateState extends ConsumerState<AuthGate> {
+/// Mixes in [LifecycleResyncer] so every foreground-resume reconnects the
+/// WebSocket and refetches all REST-backed providers. This is the primary fix
+/// for data going stale after the app is backgrounded or the device sleeps.
+class _AuthGateState extends ConsumerState<AuthGate>
+    with WidgetsBindingObserver, LifecycleResyncer<AuthGate> {
   @override
   void initState() {
     super.initState();

@@ -24,6 +24,11 @@ class InternshipRemoteDataSource {
       _client.get(Endpoints.internship(id),
           bearer: bearer, decode: (j) => internshipFromJson(_map(j)));
 
+  Future<Internship?> getMyInternship(String? bearer) =>
+      _client.get(Endpoints.internshipMine,
+          bearer: bearer,
+          decode: (j) => j == null ? null : internshipFromJson(_map(j)));
+
   /// T13/B13: one-call student home snapshot (same sections as the lists).
   Future<InternshipSummary> internshipSummary(
           String internshipId, String? bearer) =>

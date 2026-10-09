@@ -1,10 +1,12 @@
 import 'dart:async';
 import 'dart:convert';
 
+import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/config/app_config.dart';
+import '../../../../core/connectivity/connectivity_service.dart';
 import '../../../../core/network/api_exception.dart';
 import '../../../../core/network/paged.dart';
 import '../../../../core/offline/pending_writes.dart';
@@ -777,8 +779,31 @@ final notificationsProvider =
 /// Subscribes once per login session: notification payloads + chat
 /// errors refresh the relevant providers. Called from AuthGate after
 /// authentication (idempotent per session via keepAlive guard).
+///
+/// Also watches [connectivityStreamProvider]: when the device transitions from
+/// **offline → online** the socket is reconnected and all providers are
+/// invalidated so every screen refetches — mirrors the STOMP reconnect path
+/// and closes the gap where the app shows stale data after network recovery.
 final foregroundSyncProvider = Provider<void>((ref) {
   final frames = ref.read(notificationFramesProvider);
+
+  // Connectivity-triggered resync: none → online means we just regained
+  // network access. Reconnect the socket and invalidate everything.
+  ref.listen<AsyncValue<List<ConnectivityResult>>>(connectivityStreamProvider,
+      (prev, next) {
+    final prevOnline = prev?.valueOrNull
+            ?.any((r) => r != ConnectivityResult.none) ??
+        true;
+    final nowOnline =
+        next.valueOrNull?.any((r) => r != ConnectivityResult.none) ?? true;
+    if (!prevOnline && nowOnline) {
+      // Came back online: reconnect socket and invalidate all stale providers.
+      ref.read(stompChatServiceProvider).ensureConnected().ignore();
+      ref.read(realtimeSyncProvider).invalidateAll();
+      ref.read(pendingWritesProvider.notifier).flushAll().ignore();
+    }
+  });
+
   // Fire-and-forget subscriptions; errors never break the session.
   Future<void> boot() async {
     final stomp = ref.read(stompChatServiceProvider);
