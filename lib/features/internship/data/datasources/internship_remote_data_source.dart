@@ -470,14 +470,19 @@ class InternshipRemoteDataSource {
     int size = 20,
     JournalStatus? status,
     DateTime? day,
+    DateTime? from,
+    DateTime? to,
   }) {
     final q = pageQuery(page: page, size: size);
     if (status != null) q['status'] = journalStatusToApi(status);
+    String iso(DateTime d) =>
+        '${d.year.toString().padLeft(4, '0')}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}';
     if (day != null) {
-      final d =
-          '${day.year.toString().padLeft(4, '0')}-${day.month.toString().padLeft(2, '0')}-${day.day.toString().padLeft(2, '0')}';
-      q['startDate'] = d;
-      q['endDate'] = d;
+      q['startDate'] = iso(day);
+      q['endDate'] = iso(day);
+    } else {
+      if (from != null) q['startDate'] = iso(from);
+      if (to != null) q['endDate'] = iso(to);
     }
     return _client.get(Endpoints.journalEntries(internshipId),
         bearer: bearer,

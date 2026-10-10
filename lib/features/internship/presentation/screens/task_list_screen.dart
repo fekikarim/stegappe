@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -52,6 +54,13 @@ class _TaskListScreenState extends ConsumerState<TaskListScreen>
   /// Board is the default surface; the flat list stays one tap away.
   bool _boardView = true;
 
+  /// Debounce for live search: filtering runs over the already-loaded page
+  /// (client-side), so a short delay keeps typing smooth without ever
+  /// hitting the network. Flushed on submit, on clear and on dispose so the
+  /// visible text and the applied query can never disagree.
+  Timer? _searchDebounce;
+  static const Duration _searchDelay = Duration(milliseconds: 250);
+
   @override
   void initState() {
     super.initState();
@@ -63,8 +72,30 @@ class _TaskListScreenState extends ConsumerState<TaskListScreen>
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
+    _searchDebounce?.cancel();
     _search.dispose();
     super.dispose();
+  }
+
+  /// Applies the query immediately (used by the debounce and by actions
+  /// that must land now: submit, clear).
+  void _applySearch(String value, {bool immediate = false}) {
+    if (!immediate) {
+      _searchDebounce?.cancel();
+      _searchDebounce = Timer(_searchDelay, () {
+        if (!mounted) return;
+        final current = ref.read(taskSearchProvider);
+        if (current != value) {
+          ref.read(taskSearchProvider.notifier).state = value;
+        }
+      });
+      return;
+    }
+    _searchDebounce?.cancel();
+    final current = ref.read(taskSearchProvider);
+    if (current != value) {
+      ref.read(taskSearchProvider.notifier).state = value;
+    }
   }
 
   /// Sockets die in background; resync the authoritative lists on resume
@@ -92,16 +123,20 @@ class _TaskListScreenState extends ConsumerState<TaskListScreen>
       ..invalidate(taskListProvider)
       ..invalidate(dashboardProvider)
       ..invalidate(classificationBoardProvider);
-    try {
-      await ref.read(taskListProvider.future);
-    } on Exception {
-      // Error UI renders from the AsyncValue.
+// Both lists refetch concurrently: waiting for them one after another
+    // doubled the time the board stayed stale for no reason.
+    Future<void> ignore(Future<Object?> f) async {
+      try {
+        await f;
+      } on Exception {
+        // Each list renders its own error state.
+      }
     }
-    try {
-      await ref.read(classificationBoardProvider.future);
-    } on Exception {
-      // Classification errors render from their own AsyncValue.
-    }
+
+    await Future.wait([
+      ignore(ref.read(taskListProvider.future)),
+      ignore(ref.read(classificationBoardProvider.future)),
+    ]);
   }
 
   @override
@@ -137,19 +172,20 @@ class _TaskListScreenState extends ConsumerState<TaskListScreen>
                       controller: _search,
                       label: l10n.taskSearchHint,
                       textInputAction: TextInputAction.search,
-                      onSubmitted: (value) => ref
-                          .read(taskSearchProvider.notifier)
-                          .state = value,
+                      // Live filtering: the board narrows as the student
+                      // types (no submit needed). The debounce keeps it
+                      // smooth on a long list.
+                      onChanged: _applySearch,
+                      onSubmitted: (value) => _applySearch(value,
+                          immediate: true),
                       suffix: query.isEmpty
                           ? null
                           : IconButton(
                               tooltip: l10n.taskSearchClear,
-                              icon: const Icon(Icons.clear),
+                              icon: const Icon(Icons.close),
                               onPressed: () {
                                 _search.clear();
-                                ref
-                                    .read(taskSearchProvider.notifier)
-                                    .state = '';
+                                _applySearch('', immediate: true);
                               },
                             ),
                     ),
@@ -181,6 +217,10 @@ class _TaskListScreenState extends ConsumerState<TaskListScreen>
               child: RefreshIndicator(
                 onRefresh: _refresh,
                 child: async.when(
+                  // A refresh (filter change, pull, resume) keeps the rows
+                  // on screen instead of flashing a full-page spinner — the
+                  // board stays interactive while the new page arrives.
+                  skipLoadingOnRefresh: true,
                   loading: () => (last != null && !isOnline)
                       ? _OfflineBody(
                           page: last,
@@ -195,14 +235,17 @@ class _TaskListScreenState extends ConsumerState<TaskListScreen>
                     if (e is StateError && e.message == 'no-internship') {
                       return _NoInternship();
                     }
-                    if (last != null && !isOnline) {
-                      return _OfflineBody(
+                    // Any cached page keeps the board usable: a failed refresh
+                    // labels the data stale instead of blanking the screen.
+                    if (last != null) {
+                      return _TaskBody(
                         page: last,
                         filter: filter,
                         query: query,
                         boardView: _boardView,
                         canProgress: canProgress,
                         userId: userId,
+                        showStale: true,
                       );
                     }
                     return StegErrorView(
@@ -554,50 +597,72 @@ class _TaskSurface extends ConsumerWidget {
       );
     }
 
-    return CustomScrollView(
-      physics: const AlwaysScrollableScrollPhysics(),
-      slivers: [
-        if (showStale)
-          const SliverToBoxAdapter(
-            child: Padding(
-              padding: EdgeInsetsDirectional.only(bottom: StegSpacing.sm),
-              child: StaleNotice(),
-            ),
-          ),
-        if (boardView)
-          SliverToBoxAdapter(
-            child: TaskBoardView(
-              sections: sections,
-              now: now,
-              editable: canProgress,
-              onOpen: (task) => showTaskDetailSheet(
-                context,
-                task,
-                canProgress: canProgress,
-                canEdit: studentOwnsTask(task, userId),
-              ),
-            ),
-          )
-        else
-          _FlatSliver(
-            tasks: matching,
-            now: now,
-            canProgress: canProgress,
-            userId: userId,
-          ),
-        if (page.totalElements > page.items.length)
-          SliverToBoxAdapter(
-            child: Padding(
-              padding: const EdgeInsets.all(StegSpacing.sm),
-              child: Center(
-                child: Text(
-                  l10n.moreItems(page.totalElements - page.items.length),
-                  style: Theme.of(context).textTheme.bodySmall,
+    void openTask(InternTask task) => showTaskDetailSheet(
+          context,
+          task,
+          canProgress: canProgress,
+          canEdit: studentOwnsTask(task, userId),
+        );
+
+    // One scroll view for every mode. The board renders its groups inline
+    // (a header per group, tasks under it) instead of a second row of group
+    // tabs: the status filter above already selects "To do / In progress /
+    // …", so a duplicated tab row only competed with it.
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final columns = constraints.maxWidth >=
+            TaskBoardView.columnsBreakpoint;
+        return CustomScrollView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          slivers: [
+            if (showStale)
+              const SliverToBoxAdapter(
+                child: Padding(
+                  padding:
+                      EdgeInsetsDirectional.only(bottom: StegSpacing.sm),
+                  child: StaleNotice(),
                 ),
               ),
-            ),
-          ),
-      ],
+            if (boardView && columns)
+              // Tablet: the groups side by side as columns.
+              SliverToBoxAdapter(
+                child: TaskBoardView(
+                  sections: sections,
+                  now: now,
+                  editable: canProgress,
+                  onOpen: openTask,
+                ),
+              )
+            else if (boardView)
+              // Phone: the groups stacked in one culled column.
+              ...buildTaskBoardSlivers(
+                sections: sections,
+                now: now,
+                editable: canProgress,
+                onOpen: openTask,
+              )
+            else
+              _FlatSliver(
+                tasks: matching,
+                now: now,
+                canProgress: canProgress,
+                userId: userId,
+              ),
+            if (page.totalElements > page.items.length)
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding: const EdgeInsets.all(StegSpacing.sm),
+                  child: Center(
+                    child: Text(
+                      l10n.moreItems(page.totalElements - page.items.length),
+                      style: Theme.of(context).textTheme.bodySmall,
+                    ),
+                  ),
+                ),
+              ),
+          ],
+        );
+      },
     );
   }
 }
@@ -623,16 +688,30 @@ class _FlatSliver extends StatelessWidget {
         itemCount: tasks.length,
         itemBuilder: (context, index) {
           final task = tasks[index];
-          return TaskRow(
-            key: ValueKey(task.id),
-            task: task,
-            now: now,
-            editable: canProgress,
-            onOpen: () => showTaskDetailSheet(
-              context,
-              task,
-              canProgress: canProgress,
-              canEdit: studentOwnsTask(task, userId),
+          // Same card language as the board so the two views never drift:
+          // status rail + rounded surface + the shared TaskRow inside.
+          return Padding(
+            padding: const EdgeInsetsDirectional.only(bottom: StegSpacing.sm),
+            child: Card(
+              elevation: 0,
+              clipBehavior: Clip.antiAlias,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(StegSpacing.radiusMd),
+                side: BorderSide(
+                    color: Theme.of(context).colorScheme.outlineVariant),
+              ),
+              child: TaskRow(
+                key: ValueKey(task.id),
+                task: task,
+                now: now,
+                editable: canProgress,
+                onOpen: () => showTaskDetailSheet(
+                  context,
+                  task,
+                  canProgress: canProgress,
+                  canEdit: studentOwnsTask(task, userId),
+                ),
+              ),
             ),
           );
         },

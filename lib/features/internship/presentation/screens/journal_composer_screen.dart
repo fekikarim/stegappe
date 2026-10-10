@@ -8,11 +8,13 @@ import '../../../../core/l10n/app_localizations.dart';
 import '../../../../core/connectivity/connectivity_service.dart';
 import '../../../../core/network/api_exception.dart';
 import '../../../../core/network/error_messages.dart';
+import '../../../../core/theme/steg_colors.dart';
 import '../../../../core/theme/steg_spacing.dart';
 import '../../../../core/widgets/steg_button.dart';
 import '../../../../core/widgets/steg_fields.dart';
 import '../../data/cache/composer_draft_store.dart';
 import '../../domain/entities/work_items.dart';
+import '../providers/journal_calendar_providers.dart';
 import '../providers/workspace_providers.dart';
 
 /// Journal composer: records what the intern ACTUALLY did on [day].
@@ -217,13 +219,6 @@ class _JournalComposerScreenState
     // write outside the D12 queue, so offline it disables with a reason
     // instead of failing after the tap.
     final isOnline = ref.watch(isOnlineProvider);
-    String dayTitle;
-    try {
-      dayTitle = DateFormat.yMMMMEEEEd(locale.languageCode)
-          .format(widget.day);
-    } on Exception {
-      dayTitle = DateFormat.yMMMMEEEEd().format(widget.day);
-    }
     String savedAt = '';
     if (_draftSavedAt != null) {
       try {
@@ -236,129 +231,335 @@ class _JournalComposerScreenState
     }
 
     return Scaffold(
-      appBar: AppBar(title: Text(l10n.journalNew)),
+      appBar: AppBar(
+        title: Text(l10n.journalNew),
+        flexibleSpace: Container(
+          decoration: const BoxDecoration(
+            gradient: LinearGradient(
+              colors: [Color(0xFF042843), Color(0xFF0B61A0)],
+              begin: AlignmentDirectional.centerStart,
+              end: AlignmentDirectional.centerEnd,
+            ),
+          ),
+        ),
+      ),
       body: !_loaded
           ? const Center(child: CircularProgressIndicator())
-          : ListView(
-              padding: StegSpacing.screenPadding,
+          : Column(
               children: [
-                Semantics(
-                  header: true,
-                  label: dayTitle,
-                  excludeSemantics: true,
-                  child: Column(
-                    crossAxisAlignment:
-                        CrossAxisAlignment.stretch,
+                Expanded(
+                  child: ListView(
+                    padding: StegSpacing.screenPadding,
                     children: [
-                      Text(dayTitle,
-                          style: Theme.of(context)
-                              .textTheme
-                              .titleLarge),
-                      const SizedBox(height: StegSpacing.xs),
-                      Text(l10n.journalWhatDid,
-                          style: Theme.of(context)
-                              .textTheme
-                              .bodyMedium),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: StegSpacing.md),
-                StegTextField(
-                  controller: _title,
-                  label: l10n.journalTitleLabel,
-                  hint: l10n.journalTitleHint,
-                  required: true,
-                  error: _titleError,
-                  textInputAction: TextInputAction.next,
-                ),
-                const SizedBox(height: StegSpacing.md),
-                Semantics(
-                  textField: true,
-                  label: l10n.journalDescLabel,
-                  child: Column(
-                    crossAxisAlignment:
-                        CrossAxisAlignment.stretch,
-                    children: [
-                      RichText(
-                        text: TextSpan(
-                          text: l10n.journalDescLabel,
-                          style: Theme.of(context)
-                              .textTheme
-                              .labelLarge,
-                          children: const [
-                            TextSpan(
-                                text: ' *',
-                                style: TextStyle(
-                                    fontWeight:
-                                        FontWeight.w700)),
+                      // ── Day hero: which day am I writing about? ──
+                      _DayHero(
+                        day: widget.day,
+                        accent: ref.watch(journalAccentProvider),
+                        savedAt: _draftSavedAt,
+                      ),
+                      const SizedBox(height: StegSpacing.md),
+                      StegTextField(
+                        controller: _title,
+                        label: l10n.journalTitleLabel,
+                        hint: l10n.journalTitlePlaceholder,
+                        required: true,
+                        error: _titleError,
+                        textInputAction: TextInputAction.next,
+                      ),
+                      const SizedBox(height: StegSpacing.md),
+                      Semantics(
+                        textField: true,
+                        label: l10n.journalDescLabel,
+                        child: Column(
+                          crossAxisAlignment:
+                              CrossAxisAlignment.stretch,
+                          children: [
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: RichText(
+                                    text: TextSpan(
+                                      text: l10n.journalDescLabel,
+                                      style: Theme.of(context)
+                                          .textTheme
+                                          .labelLarge,
+                                      children: const [
+                                        TextSpan(
+                                            text: ' *',
+                                            style: TextStyle(
+                                                fontWeight:
+                                                    FontWeight.w700)),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                                // Live counter: the server caps the title, the
+                                // day should never feel like a surprise.
+                                ValueListenableBuilder<TextEditingValue>(
+                                  valueListenable: _description,
+                                  builder: (context, value, _) => Text(
+                                    '${value.text.trim().length}',
+                                    style: Theme.of(context)
+                                        .textTheme
+                                        .labelSmall,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 6),
+                            TextField(
+                              controller: _description,
+                              maxLines: 10,
+                              minLines: 6,
+                              textInputAction:
+                                  TextInputAction.newline,
+                              decoration: InputDecoration(
+                                hintText: l10n.journalWritePlaceholder,
+                                errorText: _descError,
+                                alignLabelWithHint: true,
+                              ),
+                            ),
                           ],
                         ),
                       ),
-                      const SizedBox(height: 6),
-                      TextField(
-                        controller: _description,
-                        maxLines: 8,
-                        minLines: 5,
-                        textInputAction:
-                            TextInputAction.newline,
-                        decoration: InputDecoration(
-                          hintText: l10n.journalDescHint,
-                          errorText: _descError,
-                          alignLabelWithHint: true,
+                      if (_serverError != null) ...[
+                        const SizedBox(height: StegSpacing.sm),
+                        Semantics(
+                          liveRegion: true,
+                          label: _serverError,
+                          excludeSemantics: true,
+                          child: Text(_serverError!,
+                              style: TextStyle(
+                                  color: Theme.of(context)
+                                      .colorScheme
+                                      .error)),
                         ),
-                      ),
+                      ],
+                      if (!isOnline) ...[
+                        const SizedBox(height: StegSpacing.sm),
+                        Text(
+                          l10n.submitNeedsConnection,
+                          style: Theme.of(context)
+                              .textTheme
+                              .bodySmall
+                              ?.copyWith(
+                                  color: Theme.of(context)
+                                      .colorScheme
+                                      .error),
+                        ),
+                      ],
                     ],
                   ),
                 ),
-                if (savedAt.isNotEmpty) ...[
-                  const SizedBox(height: StegSpacing.xs),
-                  Text(savedAt,
-                      style:
-                          Theme.of(context).textTheme.bodySmall),
-                ],
-                if (_serverError != null) ...[
-                  const SizedBox(height: StegSpacing.sm),
-                  Semantics(
-                    liveRegion: true,
-                    label: _serverError,
-                    excludeSemantics: true,
-                    child: Text(_serverError!,
-                        style: TextStyle(
-                            color: Theme.of(context)
-                                .colorScheme
-                                .error)),
-                  ),
-                ],
-                const SizedBox(height: StegSpacing.lg),
-                StegButton(
-                  label: l10n.journalSubmitAction,
-                  icon: Icons.send_outlined,
-                  loading: _working,
-                  onPressed: (_working || !isOnline)
-                      ? null
-                      : () => _persist(submit: true),
+                // ── Sticky actions: always reachable, never scrolled away ──
+                _ActionBar(
+                  working: _working,
+                  online: isOnline,
+                  savedAt: savedAt,
+                  onSubmit: () => _persist(submit: true),
+                  onSaveDraft: () => _persist(submit: false),
                 ),
-                const SizedBox(height: StegSpacing.xs),
-                StegButton(
-                  label: l10n.journalSaveDraft,
-                  variant: StegButtonVariant.secondary,
-                  icon: Icons.save_outlined,
-                  onPressed: (_working || !isOnline)
-                      ? null
-                      : () => _persist(submit: false),
-                ),
-                if (!isOnline) ...[
-                  const SizedBox(height: StegSpacing.xs),
-                  Text(
-                    l10n.submitNeedsConnection,
-                    style: Theme.of(context)
-                        .textTheme
-                        .bodySmall
-                        ?.copyWith(color: Theme.of(context).colorScheme.error),
-                  ),
-                ],
               ],
             ),
+    );
+  }
+}
+
+/// Hero header of the composer: the day being written about, in the period
+/// colour, plus the local-draft receipt so the student always knows their
+/// words are safe.
+class _DayHero extends StatelessWidget {
+  const _DayHero({required this.day, required this.accent, this.savedAt});
+
+  final DateTime day;
+  final JournalAccent accent;
+  final DateTime? savedAt;
+
+  @override
+  Widget build(BuildContext context) {
+    final locale = Localizations.localeOf(context);
+    final dark = Theme.of(context).brightness == Brightness.dark;
+    final palette = JournalPalette.of(
+        accent, Theme.of(context).brightness);
+
+    String full, weekday;
+    try {
+      full = DateFormat.yMMMMEEEEd(locale.languageCode).format(day);
+      weekday = DateFormat.EEEE(locale.languageCode).format(day);
+    } on Exception {
+      full = DateFormat.yMMMMEEEEd().format(day);
+      weekday = DateFormat.EEEE().format(day);
+    }
+
+    return Semantics(
+      header: true,
+      label: full,
+      excludeSemantics: true,
+      child: Container(
+        padding: const EdgeInsets.all(StegSpacing.md),
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: dark
+                ? [
+                    palette.seed.withValues(alpha: 0.35),
+                    const Color(0xFF10293F)
+                  ]
+                : [palette.seed, palette.tint],
+            begin: AlignmentDirectional.topStart,
+            end: AlignmentDirectional.bottomEnd,
+          ),
+          borderRadius: BorderRadius.circular(StegSpacing.radiusLg),
+          boxShadow: [
+            BoxShadow(
+              color: palette.seed.withValues(alpha: dark ? 0.25 : 0.30),
+              blurRadius: 18,
+              offset: const Offset(0, 8),
+            ),
+          ],
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 54,
+              height: 54,
+              alignment: Alignment.center,
+              decoration: BoxDecoration(
+                color: Colors.white.withValues(alpha: 0.20),
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(
+                    color: Colors.white.withValues(alpha: 0.45), width: 1.5),
+              ),
+              child: Text(
+                '${day.day}',
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 24,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+            ),
+            const SizedBox(width: StegSpacing.md),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Text(
+                    weekday,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 15,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                  Text(
+                    full,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      color: Colors.white.withValues(alpha: 0.85),
+                      fontSize: 12.5,
+                      height: 1.35,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Sticky bottom action bar: submit + save draft, with the draft receipt.
+class _ActionBar extends StatelessWidget {
+  const _ActionBar({
+    required this.working,
+    required this.online,
+    required this.savedAt,
+    required this.onSubmit,
+    required this.onSaveDraft,
+  });
+
+  final bool working;
+  final bool online;
+  final String savedAt;
+  final VoidCallback onSubmit;
+  final VoidCallback onSaveDraft;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    final scheme = Theme.of(context).colorScheme;
+    return SafeArea(
+      top: false,
+      child: Container(
+        decoration: BoxDecoration(
+          color: scheme.surface,
+          border: Border(
+            top: BorderSide(
+              color: Theme.of(context).brightness == Brightness.dark
+                  ? StegColors.darkBorder
+                  : StegColors.lightBorder,
+            ),
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.05),
+              blurRadius: 12,
+              offset: const Offset(0, -4),
+            ),
+          ],
+        ),
+        padding: const EdgeInsets.fromLTRB(StegSpacing.md, StegSpacing.sm,
+            StegSpacing.md, StegSpacing.sm),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (savedAt.isNotEmpty) ...[
+              Row(
+                children: [
+                  Icon(Icons.check_circle_outline,
+                      size: 14, color: scheme.primary),
+                  const SizedBox(width: 6),
+                  Expanded(
+                    child: Text(
+                      savedAt,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: Theme.of(context).textTheme.bodySmall,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: StegSpacing.xs),
+            ],
+            Row(
+              children: [
+                Expanded(
+                  child: StegButton(
+                    label: l10n.journalSaveDraft,
+                    variant: StegButtonVariant.secondary,
+                    icon: Icons.save_outlined,
+                    onPressed: (working || !online) ? null : onSaveDraft,
+                  ),
+                ),
+                const SizedBox(width: StegSpacing.sm),
+                Expanded(
+                  child: StegButton(
+                    label: l10n.journalSubmitAction,
+                    icon: Icons.send_rounded,
+                    loading: working,
+                    onPressed: (working || !online) ? null : onSubmit,
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

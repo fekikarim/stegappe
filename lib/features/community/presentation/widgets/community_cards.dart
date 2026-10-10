@@ -56,8 +56,24 @@ class CommunityPostCard extends StatelessWidget {
     final locale = Localizations.localeOf(context);
     final scheme = Theme.of(context).colorScheme;
 
+    final dark = Theme.of(context).brightness == Brightness.dark;
+    // A real Material Card keeps ink splashes + the widget contract.
     return Card(
-      color: failed ? scheme.errorContainer : null,
+      color: failed
+          ? scheme.errorContainer
+          : (dark ? StegColors.darkSurface : Colors.white),
+      elevation: dark ? 0 : 2,
+      shadowColor: dark
+          ? Colors.black54
+          : StegColors.brandPrimary.withValues(alpha: 0.12),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(StegSpacing.radiusMd),
+        side: BorderSide(
+          color: dark
+              ? StegColors.darkBorder
+              : StegColors.lightBorder,
+        ),
+      ),
       child: InkWell(
         onTap: failed ? null : onOpen,
         borderRadius: BorderRadius.circular(StegSpacing.radiusMd),
@@ -68,16 +84,29 @@ class CommunityPostCard extends StatelessWidget {
             children: [
               Row(
                 children: [
-                  CircleAvatar(
-                    backgroundColor: StegColors.communityAccent
-                        .withValues(alpha: 0.15),
+                  Container(
+                    width: 44,
+                    height: 44,
+                    decoration: BoxDecoration(
+                      gradient: const LinearGradient(
+                        colors: [
+                          Color(0xFF0E7490),
+                          Color(0xFF3E9BDC)
+                        ],
+                        begin: AlignmentDirectional.topStart,
+                        end: AlignmentDirectional.bottomEnd,
+                      ),
+                      borderRadius: BorderRadius.circular(14),
+                    ),
+                    alignment: Alignment.center,
                     child: Text(
                       post.authorDisplayName.isEmpty
                           ? '?'
                           : post.authorDisplayName.characters.first,
-                      style: TextStyle(
-                          color: StegColors.communityAccent,
-                          fontWeight: FontWeight.w700),
+                      style: const TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.w800,
+                          fontSize: 17),
                     ),
                   ),
                   const SizedBox(width: StegSpacing.sm),
@@ -162,7 +191,11 @@ class CommunityPostCard extends StatelessWidget {
               const SizedBox(height: StegSpacing.xs),
               Semantics(
                 label: post.body,
-                child: Text(post.body),
+                child: Text(post.body,
+                    style: Theme.of(context)
+                        .textTheme
+                        .bodyMedium
+                        ?.copyWith(height: 1.5)),
               ),
               if (post.attachment != null) ...[
                 const SizedBox(height: StegSpacing.xs),

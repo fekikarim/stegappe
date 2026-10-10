@@ -1,19 +1,23 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:intl/intl.dart';
 
 import '../../../../core/connectivity/connectivity_service.dart';
 import '../../../../core/l10n/app_localizations.dart';
 import '../../../../core/network/error_messages.dart';
 import '../../../../core/network/paged.dart';
+import '../../../../core/theme/steg_colors.dart';
+import '../../../../core/theme/steg_motion.dart';
 import '../../../../core/theme/steg_spacing.dart';
+import '../../../../core/widgets/steg_dialog.dart';
 import '../../../../core/widgets/steg_states.dart';
 import '../../../../core/widgets/steg_status_chip.dart';
 import '../../../auth/domain/entities/app_user.dart';
 import '../../../auth/presentation/providers/auth_providers.dart';
 import '../../domain/entities/work_items.dart';
+import '../providers/journal_calendar_providers.dart';
 import '../providers/workspace_providers.dart';
 import '../widgets/dashboard_sections.dart';
+import '../widgets/journal_calendar_view.dart';
 import '../widgets/status_labels.dart';
 import 'journal_composer_screen.dart';
 import 'journal_detail_sheet.dart';
@@ -21,11 +25,31 @@ import 'journal_detail_sheet.dart';
 /// Journal tab: what the intern ACTUALLY did (never a substitute for
 /// planned tasks). Day navigation filters server-side; status chips
 /// refine; FAB opens the composer for the selected day.
-class JournalListScreen extends ConsumerWidget {
+class JournalListScreen extends ConsumerStatefulWidget {
   const JournalListScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<JournalListScreen> createState() => _JournalListScreenState();
+}
+
+class _JournalListScreenState extends ConsumerState<JournalListScreen> {
+  /// Month currently painted by the calendar (independent from the selected
+  /// day so the student can browse ahead without changing the list).
+  late DateTime _month;
+
+  /// The calendar is the screen's main surface; it can be folded away when a
+  /// student just wants to read the day.
+  bool _calendarOpen = true;
+
+  @override
+  void initState() {
+    super.initState();
+    final today = DateTime.now();
+    _month = DateTime(today.year, today.month);
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     final async = ref.watch(journalListProvider);
     final isOnline = ref.watch(isOnlineProvider);
@@ -35,12 +59,22 @@ class JournalListScreen extends ConsumerWidget {
         auth.user.mobileRole == UserRole.intern;
     final internshipId =
         ref.watch(myInternshipIdProvider).valueOrNull;
+    final selected = ref.watch(selectedDayProvider);
+    final accent = ref.watch(journalAccentProvider);
+    final internship = ref.watch(internshipDetailProvider).valueOrNull;
+    final monthEntries = ref.watch(journalMonthProvider(_month)).valueOrNull;
+
+    void selectDay(DateTime day) => ref
+        .read(selectedDayProvider.notifier)
+        .state = DateTime(day.year, day.month, day.day);
 
     return Stack(
       children: [
         RefreshIndicator(
           onRefresh: () async {
-            ref.invalidate(journalListProvider);
+            ref
+              ..invalidate(journalListProvider)
+              ..invalidate(journalMonthProvider(_month));
             try {
               await ref.read(journalListProvider.future);
             } on Exception {
@@ -50,11 +84,29 @@ class JournalListScreen extends ConsumerWidget {
           child: CustomScrollView(
             physics: const AlwaysScrollableScrollPhysics(),
             slivers: [
-              const SliverToBoxAdapter(child: _DayStrip()),
+              if (internship != null)
+                SliverToBoxAdapter(
+                  child: _JournalCalendarCard(
+                    month: _month,
+                    selected: selected,
+                    start: internship.startDate,
+                    end: internship.endDate,
+                    accent: accent,
+                    entries: monthEntries?.items ?? const [],
+                    onSelect: selectDay,
+                    onMonthChanged: (m) => setState(() => _month = m),
+                    onToggleCalendar: () =>
+                        setState(() => _calendarOpen = !_calendarOpen),
+                    open: _calendarOpen,
+                    onAccentChanged: (a) => ref
+                        .read(journalAccentProvider.notifier)
+                        .set(a),
+                  ),
+                ),
               const SliverToBoxAdapter(child: _StatusFilter()),
               SliverPadding(
                 padding: const EdgeInsets.fromLTRB(
-                    StegSpacing.md, 0, StegSpacing.md, StegSpacing.md),
+                    StegSpacing.md, StegSpacing.sm, StegSpacing.md, StegSpacing.md),
                 sliver: async.when(
                   loading: () => (last != null && !isOnline)
                       ? _JournalBody(page: last, showStale: true)
@@ -74,7 +126,7 @@ class JournalListScreen extends ConsumerWidget {
                         ),
                       );
                     }
-                    if (last != null && !isOnline) {
+                    if (last != null) {
                       return _JournalBody(page: last, showStale: true);
                     }
                     return SliverFillRemaining(
@@ -137,178 +189,237 @@ class JournalListScreen extends ConsumerWidget {
   }
 }
 
-/// Horizontal 7-day strip around the selected day + week arrows.
-/// All paddings directional so Arabic mirrors the strip.
-class _DayStrip extends ConsumerWidget {
-  const _DayStrip();
+/// Calendar surface: the month grid, the internship-period band and the
+/// personalisation entry point, in one card.
+class _JournalCalendarCard extends StatelessWidget {
+  const _JournalCalendarCard({
+    required this.month,
+    required this.selected,
+    required this.start,
+    required this.end,
+    required this.accent,
+    required this.entries,
+    required this.onSelect,
+    required this.onMonthChanged,
+    required this.onToggleCalendar,
+    required this.open,
+    required this.onAccentChanged,
+  });
+
+  final DateTime month;
+  final DateTime selected;
+  final DateTime start;
+  final DateTime end;
+  final JournalAccent accent;
+  final List<JournalEntry> entries;
+  final void Function(DateTime) onSelect;
+  final void Function(DateTime) onMonthChanged;
+  final VoidCallback onToggleCalendar;
+  final bool open;
+  final void Function(JournalAccent) onAccentChanged;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    final locale = Localizations.localeOf(context);
-    final selected = ref.watch(selectedDayProvider);
-    final weekStart =
-        selected.subtract(Duration(days: selected.weekday - 1));
-    final today = DateTime.now();
-    final todayDay = DateTime(today.year, today.month, today.day);
-    // Directional week navigation: "previous" points to the visual start.
-    final rtl =
-        StegLocales.isRtl(Localizations.localeOf(context));
+    final scheme = Theme.of(context).colorScheme;
+    final palette = JournalPalette.of(
+        accent, Theme.of(context).brightness);
 
-    String dayLabel(DateTime d) {
-      try {
-        return DateFormat.E(locale.languageCode).format(d);
-      } on Exception {
-        return DateFormat.E().format(d);
-      }
-    }
+    // Days that already carry work → the calendar shows accomplishment at a
+    // glance (one bounded month request, never one request per day).
+    final marked = <DateTime>{
+      for (final e in entries)
+        DateTime(e.entryDate.year, e.entryDate.month, e.entryDate.day),
+    };
 
-    return Semantics(
-      label: l10n.todayMark,
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(StegSpacing.md,
-            StegSpacing.md, StegSpacing.md, StegSpacing.xs),
+    final total = end.difference(start).inDays + 1;
+    final elapsed = DateTime.now().isBefore(start)
+        ? 0
+        : (DateTime.now().difference(start).inDays + 1).clamp(0, total);
+
+    return Padding(
+      // Horizontal padding is tight on purpose: 7 columns × 48 dp must fit a
+      // 400 dp phone without shaving the touch targets.
+      padding: const EdgeInsets.fromLTRB(
+          StegSpacing.sm, StegSpacing.md, StegSpacing.sm, StegSpacing.sm),
+      child: Container(
+        decoration: BoxDecoration(
+          color: scheme.surface,
+          borderRadius: BorderRadius.circular(StegSpacing.radiusLg),
+          border: Border.all(
+            color: dark2(scheme) ? StegColors.darkBorder : StegColors.lightBorder,
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: palette.seed.withValues(alpha: 0.12),
+              blurRadius: 20,
+              offset: const Offset(0, 8),
+            ),
+          ],
+        ),
+        padding: const EdgeInsets.symmetric(
+            horizontal: StegSpacing.sm, vertical: StegSpacing.sm),
         child: Column(
-          mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             Row(
               children: [
-            IconButton(
-              tooltip: l10n.prevWeek,
-                  icon: Icon(
-                      rtl ? Icons.chevron_right : Icons.chevron_left),
-                  onPressed: () => ref
-                      .read(selectedDayProvider.notifier)
-                      .state =
-                      selected.subtract(const Duration(days: 7)),
+                Container(
+                  width: 38,
+                  height: 38,
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(colors: palette.legendGradient),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: const Icon(Icons.calendar_month_rounded,
+                      color: Colors.white, size: 20),
                 ),
-                // T15: seven Expanded cells inside a 400 px phone gave each
-                // day a 39 px-wide target (measured) — below the 48 dp
-                // minimum. The strip scrolls horizontally instead, so every
-                // day keeps a full-size target.
+                const SizedBox(width: StegSpacing.sm),
                 Expanded(
-                  child: SingleChildScrollView(
-                    scrollDirection: Axis.horizontal,
-                    child: Row(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      for (var i = 0; i < 7; i++)
-                        _DayCell(
-                          date: weekStart.add(Duration(days: i)),
-                          selected: _sameDay(
-                              weekStart.add(Duration(days: i)),
-                              selected),
-                          isToday: _sameDay(
-                              weekStart.add(Duration(days: i)),
-                              todayDay),
-                          weekday: dayLabel(
-                              weekStart.add(Duration(days: i))),
-                          onTap: () => ref
-                              .read(selectedDayProvider.notifier)
-                              .state =
-                              weekStart.add(Duration(days: i)),
-                        ),
+                      Text(l10n.journalCalendar,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: Theme.of(context)
+                              .textTheme
+                              .titleMedium),
+                      Text(
+                        l10n.journalPeriodOverview(
+                          '$elapsed', '$total'),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: Theme.of(context).textTheme.bodySmall,
+                      ),
                     ],
+                  ),
+                ),
+                Semantics(
+                  button: true,
+                  label: l10n.journalAccent,
+                  child: IconButton(
+                    tooltip: l10n.journalAccent,
+                    onPressed: () => _showAccentSheet(context),
+                    icon: Container(
+                      width: 20,
+                      height: 20,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        gradient:
+                            LinearGradient(colors: palette.legendGradient),
+                      ),
                     ),
                   ),
                 ),
-            IconButton(
-              tooltip: l10n.nextWeek,
-                  icon: Icon(
-                      rtl ? Icons.chevron_left : Icons.chevron_right),
-                  onPressed: () => ref
-                      .read(selectedDayProvider.notifier)
-                      .state = selected.add(const Duration(days: 7)),
+                IconButton(
+                  tooltip: open
+                      ? l10n.journalCalendarHide
+                      : l10n.journalCalendarShow,
+                  onPressed: onToggleCalendar,
+                  icon: Icon(open
+                      ? Icons.expand_less_rounded
+                      : Icons.expand_more_rounded),
                 ),
               ],
             ),
-            if (!_sameDay(selected, todayDay))
-              Align(
-                alignment: AlignmentDirectional.center,
-                child: TextButton.icon(
-                  icon: const Icon(Icons.today_outlined, size: 18),
-                  label: Text(l10n.backToToday),
-                  onPressed: () => ref
-                      .read(selectedDayProvider.notifier)
-                      .state = todayDay,
-                ),
-              ),
+            AnimatedSize(
+              duration: StegMotion.fast,
+              curve: StegMotion.standard,
+              alignment: AlignmentDirectional.topCenter,
+              child: open
+                  ? Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        const SizedBox(height: StegSpacing.sm),
+                        JournalMonthCalendar(
+                          month: month,
+                          selected: selected,
+                          start: start,
+                          end: end,
+                          accent: accent,
+                          markedDays: marked,
+                          onSelect: onSelect,
+                          onMonthChanged: onMonthChanged,
+                        ),
+                      ],
+                    )
+                  : const SizedBox.shrink(),
+            ),
           ],
         ),
       ),
     );
   }
 
-  bool _sameDay(DateTime a, DateTime b) =>
-      a.year == b.year && a.month == b.month && a.day == b.day;
-}
+  static bool dark2(ColorScheme scheme) =>
+      scheme.brightness == Brightness.dark;
 
-class _DayCell extends StatelessWidget {
-  const _DayCell({
-    required this.date,
-    required this.selected,
-    required this.isToday,
-    required this.weekday,
-    required this.onTap,
-  });
-
-  final DateTime date;
-  final bool selected;
-  final bool isToday;
-  final String weekday;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
-    return SizedBox(
-      width: StegSpacing.minTouchTarget,
-      child: Semantics(
-        button: true,
-        selected: selected,
-        label: '${date.day} $weekday',
-        excludeSemantics: true,
-        child: InkWell(
-          onTap: onTap,
-          borderRadius:
-              BorderRadius.circular(StegSpacing.radiusSm),
-          child: Container(
-            margin: const EdgeInsets.symmetric(
-                horizontal: 2, vertical: 4),
-            padding: const EdgeInsets.symmetric(vertical: 6),
-            decoration: BoxDecoration(
-              color: selected ? scheme.primaryContainer : null,
-              borderRadius:
-                  BorderRadius.circular(StegSpacing.radiusSm),
-              border: isToday && !selected
-                  ? Border.all(color: scheme.primary)
-                  : null,
-            ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  weekday,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: Theme.of(context).textTheme.bodySmall,
+  /// Personalisation sheet: the period colour is a stored preference, kept
+  /// out of the card so the calendar stays compact and the day list keeps its
+  /// room.
+  void _showAccentSheet(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    showStegSheet<void>(
+      context,
+      title: l10n.journalAccent,
+      builder: (ctx) => Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Text(l10n.journalAccentHint,
+              style: Theme.of(ctx).textTheme.bodyMedium),
+          const SizedBox(height: StegSpacing.md),
+          for (final a in JournalAccent.values)
+            Padding(
+              padding: const EdgeInsets.only(bottom: StegSpacing.sm),
+              child: Semantics(
+                button: true,
+                selected: a == accent,
+                label: l10n.journalAccent,
+                excludeSemantics: true,
+                child: InkWell(
+                  onTap: () {
+                    Navigator.of(ctx).pop();
+                    onAccentChanged(a);
+                  },
+                  borderRadius:
+                      BorderRadius.circular(StegSpacing.radiusMd),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(
+                        vertical: StegSpacing.sm),
+                    child: Row(
+                      children: [
+                        Container(
+                          width: 34,
+                          height: 34,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            gradient:
+                                LinearGradient(colors: [a.seed, a.tint]),
+                          ),
+                        ),
+                        const SizedBox(width: StegSpacing.sm),
+                        Expanded(
+                          child: Text(a.name,
+                              style: Theme.of(ctx).textTheme.bodyLarge),
+                        ),
+                        if (a == accent)
+                          Icon(Icons.check_circle,
+                              color: Theme.of(ctx).colorScheme.primary),
+                      ],
+                    ),
+                  ),
                 ),
-                Text(
-                  '${date.day}',
-                  style: Theme.of(context)
-                      .textTheme
-                      .bodyLarge
-                      ?.copyWith(fontWeight: FontWeight.w700),
-                ),
-              ],
+              ),
             ),
-          ),
-        ),
+        ],
       ),
     );
   }
 }
 
+/// Status refinement on top of the day selection (server-side `?status=`).
 class _StatusFilter extends ConsumerWidget {
   const _StatusFilter();
 

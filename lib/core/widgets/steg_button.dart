@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
 
+import '../theme/steg_colors.dart';
 import '../theme/steg_spacing.dart';
 
 /// Primary/secondary/destructive buttons with enforced 48px touch target,
 /// loading state, and semantic labels (UI_UX.md §9.1 + §7).
+///
+/// Modern finish: gradient primary with soft glow, 14 px radius.
 enum StegButtonVariant { primary, secondary, destructive, text }
 
 class StegButton extends StatelessWidget {
@@ -26,6 +29,7 @@ class StegButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final dark = Theme.of(context).brightness == Brightness.dark;
     final child = loading
         ? const SizedBox(
             width: 20,
@@ -34,37 +38,74 @@ class StegButton extends StatelessWidget {
           )
         : Row(
             mainAxisSize: MainAxisSize.min,
+            mainAxisAlignment: MainAxisAlignment.center,
             children: [
               if (icon != null) ...[
                 Icon(icon, size: 18),
                 const SizedBox(width: StegSpacing.xs),
               ],
-              Flexible(child: Text(label)),
+              Flexible(
+                child: Text(label,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(fontWeight: FontWeight.w700)),
+              ),
             ],
           );
 
-    final button = switch (variant) {
-      StegButtonVariant.primary => ElevatedButton(
+    Widget button;
+    switch (variant) {
+      case StegButtonVariant.primary:
+        final enabled = onPressed != null && !loading;
+        button = DecoratedBox(
+          decoration: BoxDecoration(
+            gradient: enabled
+                ? LinearGradient(
+                    colors: dark
+                        ? const [Color(0xFF3E9BDC), Color(0xFF6FBDEE)]
+                        : const [Color(0xFF0B61A0), Color(0xFF1478C8)],
+                    begin: AlignmentDirectional.centerStart,
+                    end: AlignmentDirectional.centerEnd,
+                  )
+                : null,
+            color: enabled ? null : Theme.of(context).disabledColor,
+            borderRadius: BorderRadius.circular(StegSpacing.radiusMd),
+            boxShadow: enabled ? StegColors.buttonShadow : null,
+          ),
+          child: ElevatedButton(
+            onPressed: loading ? null : onPressed,
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.transparent,
+              shadowColor: Colors.transparent,
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(StegSpacing.radiusMd),
+              ),
+            ),
+            child: child,
+          ),
+        );
+      case StegButtonVariant.secondary:
+        button = OutlinedButton(
           onPressed: loading ? null : onPressed,
           child: child,
-        ),
-      StegButtonVariant.secondary => OutlinedButton(
-          onPressed: loading ? null : onPressed,
-          child: child,
-        ),
-      StegButtonVariant.destructive => ElevatedButton(
+        );
+      case StegButtonVariant.destructive:
+        button = ElevatedButton(
           style: ElevatedButton.styleFrom(
             backgroundColor: Theme.of(context).colorScheme.error,
             foregroundColor: Colors.white,
+            shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(StegSpacing.radiusMd)),
           ),
           onPressed: loading ? null : onPressed,
           child: child,
-        ),
-      StegButtonVariant.text => TextButton(
+        );
+      case StegButtonVariant.text:
+        button = TextButton(
           onPressed: loading ? null : onPressed,
           child: child,
-        ),
-    };
+        );
+    }
 
     final sized = ConstrainedBox(
       constraints: const BoxConstraints(
@@ -73,12 +114,6 @@ class StegButton extends StatelessWidget {
       ),
       child: button,
     );
-    // T15: the Material button already publishes its role and derives its
-    // label from the child text. The extra wrapper was only needed when the
-    // visible child is a spinner (loading) or when a different label must be
-    // announced. Left in place unconditionally it produced an *unlabelled*
-    // actionable node — the wrapper carried the label while the button
-    // carried the tap (measured on the task board and the logbook).
     if (!loading && semanticsLabel == null) return sized;
     return Semantics(
       button: true,

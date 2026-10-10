@@ -331,6 +331,11 @@ void main() {
     testWidgets('today entries render with status chips; stale when offline',
         (tester) async {
       await pumpJournal(tester, const JournalListScreen(), online: false);
+      // The month calendar is the screen's main surface, so the day's entries
+      // sit below it — scroll to them (that IS the shipped layout).
+      await tester.scrollUntilVisible(find.text('Draft entry'), 240,
+          scrollable: find.byType(Scrollable).first);
+      await tester.pumpAndSettle();
       // Fixture: draft entry dated today renders even offline (stale cache).
       expect(find.text('Draft entry'), findsOneWidget);
       expect(find.byType(SnackBar), findsNothing);
@@ -340,6 +345,9 @@ void main() {
         (tester) async {
       final h = await pumpJournal(tester, const JournalListScreen());
       final l10n = await loadL10n('fr');
+      await tester.scrollUntilVisible(find.text('Draft entry'), 240,
+          scrollable: find.byType(Scrollable).first);
+      await tester.pumpAndSettle();
       await tester.tap(find.text('Draft entry'));
       await tester.pumpAndSettle();
       expect(find.text(l10n.journalSubmitAction), findsOneWidget);

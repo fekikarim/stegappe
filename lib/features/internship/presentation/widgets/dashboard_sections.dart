@@ -6,12 +6,16 @@ import '../../../../core/theme/steg_spacing.dart';
 import '../../../../core/widgets/steg_card.dart';
 
 /// Offline stale-data notice: honest labeling, never silent.
+///
+/// Modern finish: tinted rounded strip with icon medallion.
 class StaleNotice extends StatelessWidget {
   const StaleNotice({super.key});
 
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
+    final dark = Theme.of(context).brightness == Brightness.dark;
+    final fg = dark ? StegColors.warningDark : StegColors.warning;
     return Semantics(
       liveRegion: true,
       excludeSemantics: true,
@@ -19,24 +23,32 @@ class StaleNotice extends StatelessWidget {
       child: Container(
         width: double.infinity,
         padding: const EdgeInsets.symmetric(
-            horizontal: StegSpacing.md, vertical: StegSpacing.xs),
+            horizontal: StegSpacing.md, vertical: StegSpacing.sm),
         decoration: BoxDecoration(
-          color: StegColors.warning.withValues(alpha: 0.14),
-          borderRadius: BorderRadius.circular(StegSpacing.radiusSm),
-          border: Border.all(
-              color: StegColors.warning.withValues(alpha: 0.5)),
+          color: fg.withValues(alpha: dark ? 0.16 : 0.1),
+          borderRadius: BorderRadius.circular(StegSpacing.radiusMd),
+          border: Border.all(color: fg.withValues(alpha: 0.4)),
         ),
         child: Row(
           children: [
-            const Icon(Icons.cloud_off_outlined,
-                size: 16, color: StegColors.warning),
-            const SizedBox(width: StegSpacing.xs),
+            Container(
+              padding: const EdgeInsets.all(6),
+              decoration: BoxDecoration(
+                color: fg.withValues(alpha: 0.18),
+                shape: BoxShape.circle,
+              ),
+              child:
+                  Icon(Icons.cloud_off_outlined, size: 16, color: fg),
+            ),
+            const SizedBox(width: StegSpacing.sm),
             Expanded(
               child: Text(l10n.staleData,
                   style: Theme.of(context)
                       .textTheme
                       .bodySmall
-                      ?.copyWith(fontWeight: FontWeight.w600)),
+                      ?.copyWith(
+                          fontWeight: FontWeight.w700,
+                          color: fg)),
             ),
           ],
         ),
@@ -117,10 +129,11 @@ class LabeledProgress extends StatelessWidget {
           ),
           const SizedBox(height: StegSpacing.xs),
           ClipRRect(
-            borderRadius: BorderRadius.circular(StegSpacing.radiusFull),
+            borderRadius:
+                BorderRadius.circular(StegSpacing.radiusFull),
             child: LinearProgressIndicator(
               value: fraction.clamp(0.0, 1.0),
-              minHeight: 8,
+              minHeight: 10,
             ),
           ),
         ],

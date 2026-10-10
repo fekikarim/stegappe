@@ -41,11 +41,17 @@ abstract class InternshipRepository {
       TaskStatus? status,
       DateTime? visibleFrom});
 
+  /// [day] narrows to one calendar day. [from]/[to] request an inclusive
+  /// range (used by the journal month calendar to mark the days that already
+  /// carry an entry without paging day by day). Both are date-only bounds —
+  /// no timezone conversion, matching the backend `LocalDate` contract.
   Future<Paged<JournalEntry>> listJournal(String internshipId,
       {int page = 0,
       int size = 20,
       JournalStatus? status,
-      DateTime? day});
+      DateTime? day,
+      DateTime? from,
+      DateTime? to});
   Future<JournalEntry> createJournal(String internshipId,
       {required String title,
       required String description,

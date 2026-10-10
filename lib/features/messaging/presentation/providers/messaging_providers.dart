@@ -337,6 +337,15 @@ final totalUnreadMessagesProvider = FutureProvider<int>((ref) async {
   return total;
 });
 
+/// Single conversation detail (authoritative title, internship link, read
+/// watermarks). Powers friendly 1-to-1 titles and Messenger-style Seen
+/// receipts without depending on a possibly stale list snapshot.
+final conversationDetailProvider =
+    FutureProvider.family<Conversation, String>((ref, conversationId) async {
+  final repo = ref.watch(messagingRepositoryProvider);
+  return repo.getConversation(conversationId);
+});
+
 /// Chat state per conversation: merged history (ascending), pending
 /// outgoing, failed outgoing, oldest-sequence cursor, end-of-history.
 class ChatState {
@@ -709,6 +718,110 @@ class ChatController extends StateNotifier<ChatState> {
                 f.content != failed.content ||
                 f.at != failed.at)
             .toList());
+  }
+
+  /// Explicit "mark as read" (Messenger-style): advances the read watermark
+  /// to the newest known message. Opening/resync already ack implicitly;
+  /// this is the user-visible action + list-badge reconciler.
+  Future<void> markAsReadNow() async {
+    _ackUpTo(state.maxSequence);
+  }
+
+  /// Edit my own message (1-to-1 threads; the server enforces sender-only).
+  /// Optimistic with rollback: the new text shows immediately and reverts
+  /// with a rethrow if the server rejects it.
+  Future<void> editMessage(String messageId, String raw) async {
+    final content = raw.trim();
+    if (content.isEmpty) return;
+    if (content.length > ChatMessageRules.maxLength) {
+      throw const ApiException(
+          kind: ApiErrorKind.validation,
+          message: 'client pre-check: message exceeds 4000 characters',
+          code: ChatMessageRules.tooLongCode);
+    }
+    final index =
+        state.messages.indexWhere((m) => m.id == messageId);
+    if (index < 0) return;
+    final previous = state.messages[index];
+    if (!previous.mine || previous.isDeleted) return;
+    final optimistic = ChatMessage(
+      id: previous.id,
+      conversationId: previous.conversationId,
+      senderId: previous.senderId,
+      content: content,
+      status: MessageStatus.edited,
+      sequenceNumber: previous.sequenceNumber,
+      sentAt: previous.sentAt,
+      attachments: previous.attachments,
+      mine: true,
+    );
+    state = state.copyWith(
+      messages: [
+        ...state.messages.sublist(0, index),
+        optimistic,
+        ...state.messages.sublist(index + 1),
+      ],
+    );
+    try {
+      final updated =
+          await _repo.editMessage(messageId, content);
+      if (_disposed) return;
+      state = state.copyWith(
+        messages: [
+          for (final m in state.messages)
+            if (m.id == messageId) updated else m,
+        ],
+      );
+    } on Exception {
+      if (_disposed) rethrow;
+      state = state.copyWith(
+        messages: [
+          for (final m in state.messages)
+            if (m.id == messageId) previous else m,
+        ],
+      );
+      rethrow;
+    }
+  }
+
+  /// Soft-delete my own message (content redacted, history slot kept).
+  /// Optimistic with rollback, mirroring [editMessage].
+  Future<void> deleteMessage(String messageId) async {
+    final index =
+        state.messages.indexWhere((m) => m.id == messageId);
+    if (index < 0) return;
+    final previous = state.messages[index];
+    if (!previous.mine || previous.isDeleted) return;
+    final optimistic = ChatMessage(
+      id: previous.id,
+      conversationId: previous.conversationId,
+      senderId: previous.senderId,
+      content: previous.content,
+      status: MessageStatus.deleted,
+      sequenceNumber: previous.sequenceNumber,
+      sentAt: previous.sentAt,
+      attachments: previous.attachments,
+      mine: true,
+    );
+    state = state.copyWith(
+      messages: [
+        ...state.messages.sublist(0, index),
+        optimistic,
+        ...state.messages.sublist(index + 1),
+      ],
+    );
+    try {
+      await _repo.deleteMessage(messageId);
+    } on Exception {
+      if (_disposed) rethrow;
+      state = state.copyWith(
+        messages: [
+          for (final m in state.messages)
+            if (m.id == messageId) previous else m,
+        ],
+      );
+      rethrow;
+    }
   }
 
   @override

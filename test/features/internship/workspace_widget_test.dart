@@ -172,6 +172,93 @@ void main() {
       expect(find.text('Today task'), findsOneWidget);
     });
 
+    testWidgets('live search narrows the board while typing (no submit)',
+        (tester) async {
+      await pumpWorkspace(
+        tester,
+        const TaskListScreen(),
+        surfaceSize: const Size(800, 1200),
+      );
+      expect(find.text('Today task'), findsOneWidget);
+      expect(find.text('Week task'), findsOneWidget);
+
+      // Typing filters immediately (debounced): the search key is never used.
+      await tester.enterText(find.byType(TextField).first, 'Week');
+      await tester.pump(const Duration(milliseconds: 400));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Week task'), findsOneWidget);
+      expect(find.text('Today task'), findsNothing);
+    });
+
+    testWidgets('clearing the search restores every task', (tester) async {
+      await pumpWorkspace(
+        tester,
+        const TaskListScreen(),
+        surfaceSize: const Size(800, 1200),
+      );
+      await tester.enterText(find.byType(TextField).first, 'Week');
+      await tester.pump(const Duration(milliseconds: 400));
+      await tester.pumpAndSettle();
+      expect(find.text('Today task'), findsNothing);
+
+      await tester.tap(find.byTooltip('Effacer la recherche'));
+      await tester.pump(const Duration(milliseconds: 400));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Today task'), findsOneWidget);
+      expect(find.text('Week task'), findsOneWidget);
+    });
+
+    testWidgets('a refresh keeps the rows on screen instead of a full spinner',
+        (tester) async {
+      final fake = FakeInternshipRepository();
+      await pumpWorkspace(
+        tester,
+        const TaskListScreen(),
+        fake: fake,
+        surfaceSize: const Size(800, 1200),
+      );
+      expect(find.text('Today task'), findsOneWidget);
+
+      // Pull-to-refresh: the board must stay rendered while refetching.
+      await tester.fling(
+        find.text('Today task'),
+        const Offset(0, 300),
+        1000,
+      );
+      await tester.pump();
+      expect(find.text('Today task'), findsOneWidget);
+      await tester.pumpAndSettle();
+      expect(find.text('Today task'), findsOneWidget);
+    });
+
+    testWidgets('the phone board settles and stacks its groups (no duplicate tabs)',
+        (tester) async {
+      // Regression 1: the paged board was a Column with Expanded inside a
+      // CustomScrollView sliver — unbounded height threw on every frame and the
+      // screen never settled.
+      // Regression 2: it also rendered a second row of group tabs
+      // ("To do / In progress / …") that duplicated the status filter above.
+      await pumpWorkspace(
+        tester,
+        const TaskListScreen(),
+        surfaceSize: const Size(400, 800),
+      );
+      // pumpAndSettle inside pumpWorkspace is the assertion: it would time
+      // out on the unbounded-flex loop.
+      expect(tester.takeException(), isNull);
+
+      // The groups are stacked inline, each with its own header…
+      expect(find.text('Week task'), findsOneWidget);
+      expect(find.text('Today task'), findsOneWidget);
+
+      // … and there is no second tab row: the status filter chips are the
+      // only "To do / In progress" row.
+      expect(find.byType(ChoiceChip), findsWidgets);
+      expect(find.widgetWithText(ChoiceChip, 'À faire'), findsOneWidget);
+    });
+
     testWidgets('filter chip queries the backend with status', (tester) async {
       final fake = FakeInternshipRepository();
       // Board uses _columns mode at tablet width — no nested-scroll conflict in

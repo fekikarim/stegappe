@@ -124,6 +124,38 @@ class MessagingRepositoryImpl implements MessagingRepository {
   }
 
   @override
+  Future<Conversation> getConversation(String conversationId) async {
+    final bearer = await _bearer();
+    final convo =
+        await remote.getConversation(conversationId, bearer);
+    final counts =
+        await unreadCounts().catchError((_) => <String, int>{});
+    return Conversation(
+      id: convo.id,
+      type: convo.type,
+      title: convo.title,
+      internshipId: convo.internshipId,
+      members: convo.members,
+      lastSequenceNumber: convo.lastSequenceNumber,
+      unreadCount: counts[convo.id] ?? convo.unreadCount,
+    );
+  }
+
+  @override
+  Future<ChatMessage> editMessage(
+      String messageId, String content) async {
+    final bearer = await _bearer();
+    final self = await _selfId();
+    return remote.editMessage(messageId, bearer, content.trim(),
+        selfUserId: self);
+  }
+
+  @override
+  Future<void> deleteMessage(String messageId) async {
+    await remote.deleteMessage(messageId, await _bearer());
+  }
+
+  @override
   Future<ChatMessage> sendWithAttachment(
     String conversationId, {
     required String content,

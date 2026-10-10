@@ -44,6 +44,57 @@ abstract final class StegColors {
 
   static const Color primaryBright = Color(0xFF3E9BDC);
 
+  // ── Modern gradient + surface tokens (2026 refresh) ──
+  // Brand gradient used for heroes, primary buttons and avatars.
+  static const List<Color> brandGradient = <Color>[
+    Color(0xFF042843), // navy
+    Color(0xFF0B61A0), // primary
+    Color(0xFF3E9BDC), // bright
+  ];
+
+  static const List<Color> aiGradient = <Color>[
+    Color(0xFF7C3AED),
+    Color(0xFF3E9BDC),
+  ];
+
+  static const List<Color> successGradient = <Color>[
+    Color(0xFF1B7A3D),
+    Color(0xFF4CC46E),
+  ];
+
+  /// Soft shadow colors — widgets reference these instead of raw black.
+  static const Color shadowLight = Color(0x1A0F2437);
+  static const Color shadowDark = Color(0x40000000);
+
+  static List<BoxShadow> cardShadow(bool dark) => dark
+      ? const [
+          BoxShadow(
+            color: shadowDark,
+            blurRadius: 16,
+            offset: Offset(0, 6),
+          ),
+        ]
+      : const [
+          BoxShadow(
+            color: Color(0x140F2437),
+            blurRadius: 20,
+            offset: Offset(0, 8),
+          ),
+          BoxShadow(
+            color: Color(0x080B61A0),
+            blurRadius: 40,
+            offset: Offset(0, 16),
+          ),
+        ];
+
+  static List<BoxShadow> buttonShadow = const [
+    BoxShadow(
+      color: Color(0x400B61A0),
+      blurRadius: 16,
+      offset: Offset(0, 6),
+    ),
+  ];
+
   // ── New tokens required by T00 (calendar / scheduling / AI / community) ──
 
   /// "Scheduled task" (visible only from a future date, D8). Indigo, kept

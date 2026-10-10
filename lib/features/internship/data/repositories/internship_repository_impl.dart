@@ -145,9 +145,16 @@ class InternshipRepositoryImpl implements InternshipRepository {
           {int page = 0,
           int size = 20,
           JournalStatus? status,
-          DateTime? day}) async =>
+          DateTime? day,
+          DateTime? from,
+          DateTime? to}) async =>
       remote.listJournal(internshipId, await tokens.readAccessToken(),
-          page: page, size: size, status: status, day: day);
+          page: page,
+          size: size,
+          status: status,
+          day: day,
+          from: from,
+          to: to);
 
   @override
   Future<JournalEntry> createJournal(String internshipId,

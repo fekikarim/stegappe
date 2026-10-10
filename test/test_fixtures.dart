@@ -288,7 +288,9 @@ class FakeInternshipRepository implements InternshipRepository {
       {int page = 0,
       int size = 20,
       JournalStatus? status,
-      DateTime? day}) async {
+      DateTime? day,
+      DateTime? from,
+      DateTime? to}) async {
     _count('journal');
     var all = fixtureJournal(now);
     if (status != null) {
@@ -301,6 +303,17 @@ class FakeInternshipRepository implements InternshipRepository {
               j.entryDate.month == day.month &&
               j.entryDate.day == day.day)
           .toList();
+    } else if (from != null || to != null) {
+      all = all.where((j) {
+        final d = j.entryDate;
+        final after = from == null ||
+            (d.year * 10000 + d.month * 100 + d.day) >=
+                (from.year * 10000 + from.month * 100 + from.day);
+        final before = to == null ||
+            (d.year * 10000 + d.month * 100 + d.day) <=
+                (to.year * 10000 + to.month * 100 + to.day);
+        return after && before;
+      }).toList();
     }
     return pageOf(all, total: all.length);
   }

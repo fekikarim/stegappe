@@ -695,6 +695,77 @@ class AppLocalizations {
     'journalSaveDraft': {'fr': 'Enregistrer le brouillon', 'en': 'Save draft', 'ar': 'حفظ المسودة'},
     'journalSubmitAction': {'fr': 'Soumettre pour validation', 'en': 'Submit for validation', 'ar': 'إرسال للمصادقة'},
     'journalDraftSavedAt': {'fr': 'Brouillon enregistré à {t}', 'en': 'Draft saved at {t}', 'ar': 'حُفظت المسودة في {t}'},
+    // --- STEG-JRN: month calendar + period highlight ---
+    'journalCalendar': {
+      'fr': 'Calendrier du journal',
+      'en': 'Journal calendar',
+      'ar': 'تقويم اليوميات',
+    },
+    'journalPrevMonth': {
+      'fr': 'Mois précédent',
+      'en': 'Previous month',
+      'ar': 'الشهر السابق',
+    },
+    'journalNextMonth': {
+      'fr': 'Mois suivant',
+      'en': 'Next month',
+      'ar': 'الشهر التالي',
+    },
+    'journalCalendarShow': {
+      'fr': 'Afficher le calendrier',
+      'en': 'Show calendar',
+      'ar': 'إظهار التقويم',
+    },
+    'journalCalendarHide': {
+      'fr': 'Masquer le calendrier',
+      'en': 'Hide calendar',
+      'ar': 'إخفاء التقويم',
+    },
+    'journalInPeriod': {
+      'fr': 'Période de stage',
+      'en': 'Internship period',
+      'ar': 'فترة التربص',
+    },
+    'journalHasEntry': {
+      'fr': 'Entrée enregistrée',
+      'en': 'Entry recorded',
+      'ar': 'مُدوَّن',
+    },
+    'journalAccent': {
+      'fr': 'Couleur du stage',
+      'en': 'Stage colour',
+      'ar': 'لون التربص',
+    },
+    'journalAccentHint': {
+      'fr': 'Personnalisez la couleur qui marque vos jours de stage.',
+      'en': 'Personalise the colour that marks your stage days.',
+      'ar': 'خصّص اللون الذي يميّز أيام التربص.',
+    },
+    'journalPeriodOverview': {
+      'fr': 'Jour {d} sur {total}',
+      'en': 'Day {d} of {total}',
+      'ar': 'اليوم {d} من {total}',
+    },
+    'journalNoEntriesThisDay': {
+      'fr': 'Rien d’enregistré ce jour-là',
+      'en': 'Nothing recorded on this day',
+      'ar': 'لا شيء مسجّل في هذا اليوم',
+    },
+    'journalAddForDay': {
+      'fr': 'Ajouter une entrée',
+      'en': 'Add an entry',
+      'ar': 'إضافة مدخلة',
+    },
+    'journalWritePlaceholder': {
+      'fr': 'Qu’avez-vous fait aujourd’hui ? Racontez votre journée : tâches réalisées, difficultés rencontrées, Apprentissages…',
+      'en': 'What did you do today? Describe your day: work done, difficulties met, what you learned…',
+      'ar': 'ماذا فعلت اليوم؟ احكِ عن يومك: الأعمال المنجزة، الصعوبات، ما تعلّمته…',
+    },
+    'journalTitlePlaceholder': {
+      'fr': 'Titre court et factuel',
+      'en': 'A short, factual title',
+      'ar': 'عنوان قصير وم factual',
+    },
     'journalDraftKept': {'fr': 'Brouillon local conservé.', 'en': 'Local draft kept.', 'ar': 'تم الاحتفاظ بالمسودة المحلية.'},
     'journalCreated': {'fr': 'Entrée enregistrée comme brouillon.', 'en': 'Entry saved as draft.', 'ar': 'تم حفظ الإدخال كمسودة.'},
     'journalSubmittedOk': {'fr': 'Entrée soumise pour validation.', 'en': 'Entry submitted for validation.', 'ar': 'تم إرسال الإدخال للمصادقة.'},
@@ -888,6 +959,18 @@ class AppLocalizations {
     // --- T07: day separators (relative when recent) ---
     'msgToday': {'fr': 'Aujourd’hui', 'en': 'Today', 'ar': 'اليوم'},
     'msgYesterday': {'fr': 'Hier', 'en': 'Yesterday', 'ar': 'أمس'},
+    // --- 1-to-1 message actions (edit / delete / seen) ---
+    'msgEdit': {'fr': 'Modifier', 'en': 'Edit', 'ar': 'تعديل'},
+    'msgEditTitle': {'fr': 'Modifier le message', 'en': 'Edit message', 'ar': 'تعديل الرسالة'},
+    'msgDeleteTitle': {'fr': 'Supprimer le message ?', 'en': 'Delete message?', 'ar': 'حذف الرسالة؟'},
+    'msgDeleteConfirm': {'fr': 'Le contenu sera masqué pour les deux participants, mais l’historique est conservé.', 'en': 'The content will be hidden for both participants, but history is kept.', 'ar': 'سيُخفى المحتوى عن الطرفين، مع الاحتفاظ بالسجل.'},
+    'msgSave': {'fr': 'Enregistrer', 'en': 'Save', 'ar': 'حفظ'},
+    'msgSeen': {'fr': 'Vu', 'en': 'Seen', 'ar': 'تمت المشاهدة'},
+    'msgMarkRead': {'fr': 'Marquer comme lu', 'en': 'Mark as read', 'ar': 'تعليم كمقروء'},
+    'msgPickFailed': {'fr': 'Sélection du fichier impossible. Réessayez.', 'en': 'Could not pick the file. Try again.', 'ar': 'تعذّر اختيار الملف. أعد المحاولة.'},
+    'msgActionFailed': {'fr': 'Action impossible. Réessayez.', 'en': 'Action failed. Try again.', 'ar': 'تعذّر تنفيذ الإجراء. أعد المحاولة.'},
+    'msgOnline': {'fr': 'En ligne', 'en': 'Online', 'ar': 'متصل'},
+    'msgOfflineShort': {'fr': 'Hors ligne', 'en': 'Offline', 'ar': 'غير متصل'},
     // --- T08 student community (ST-COM-01/02, D7) ---
     'communityTitle': {'fr': 'Communauté', 'en': 'Community', 'ar': 'المجتمع'},
     'communityEmpty': {'fr': 'Aucune publication pour le moment.', 'en': 'No posts yet.', 'ar': 'لا منشورات بعد.'},
@@ -1478,6 +1561,22 @@ class AppLocalizations {
   String get journalSubmitAction => _get('journalSubmitAction');
   String journalDraftSavedAt(String t) =>
       _get('journalDraftSavedAt').replaceAll('{t}', t);
+  String get journalCalendar => _get('journalCalendar');
+  String get journalPrevMonth => _get('journalPrevMonth');
+  String get journalNextMonth => _get('journalNextMonth');
+  String get journalCalendarShow => _get('journalCalendarShow');
+  String get journalCalendarHide => _get('journalCalendarHide');
+  String get journalInPeriod => _get('journalInPeriod');
+  String get journalHasEntry => _get('journalHasEntry');
+  String get journalAccent => _get('journalAccent');
+  String get journalAccentHint => _get('journalAccentHint');
+  String get journalNoEntriesThisDay => _get('journalNoEntriesThisDay');
+  String get journalAddForDay => _get('journalAddForDay');
+  String get journalWritePlaceholder => _get('journalWritePlaceholder');
+  String get journalTitlePlaceholder => _get('journalTitlePlaceholder');
+  String journalPeriodOverview(String d, String total) => _get('journalPeriodOverview')
+      .replaceAll('{d}', d)
+      .replaceAll('{total}', total);
   String get journalDraftKept => _get('journalDraftKept');
   String get journalCreated => _get('journalCreated');
   String get journalSubmittedOk => _get('journalSubmittedOk');
@@ -1712,6 +1811,17 @@ class AppLocalizations {
   String get msgDocLoadFailed => _get('msgDocLoadFailed');
   String get msgToday => _get('msgToday');
   String get msgYesterday => _get('msgYesterday');
+  String get msgEdit => _get('msgEdit');
+  String get msgEditTitle => _get('msgEditTitle');
+  String get msgDeleteTitle => _get('msgDeleteTitle');
+  String get msgDeleteConfirm => _get('msgDeleteConfirm');
+  String get msgSave => _get('msgSave');
+  String get msgSeen => _get('msgSeen');
+  String get msgMarkRead => _get('msgMarkRead');
+  String get msgPickFailed => _get('msgPickFailed');
+  String get msgActionFailed => _get('msgActionFailed');
+  String get msgOnline => _get('msgOnline');
+  String get msgOfflineShort => _get('msgOfflineShort');
   // --- T08 student community getters ---
   String get communityTitle => _get('communityTitle');
   String get communityEmpty => _get('communityEmpty');

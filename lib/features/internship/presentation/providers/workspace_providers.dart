@@ -144,6 +144,23 @@ final journalListProvider =
 final lastJournalProvider =
     StateProvider<Paged<JournalEntry>?>((ref) => null);
 
+/// Every journal entry inside a calendar month, used by the month calendar to
+/// mark the days that already carry work (dot + count). One bounded request
+/// per displayed month — never one per day. Failures degrade to "no marks":
+/// the calendar still renders the period and the day selection.
+final journalMonthProvider =
+    FutureProvider.family<Paged<JournalEntry>, DateTime>((ref, month) async {
+  final repo = ref.watch(internshipRepositoryProvider);
+  final id = await ref.watch(myInternshipIdProvider.future);
+  if (id == null) throw StateError('no-internship');
+  return repo.listJournal(
+    id,
+    size: 100,
+    from: DateTime(month.year, month.month, 1),
+    to: DateTime(month.year, month.month + 1, 0),
+  );
+});
+
 /// Feedback comments for one journal entry (supervisor notes live here).
 final journalCommentsProvider =
     FutureProvider.family<List<JournalComment>, String>(

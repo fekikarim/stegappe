@@ -104,40 +104,61 @@ class _AttachmentSheetState
 
   Future<void> _pick() async {
     final l10n = AppLocalizations.of(context);
-    final file = await openFile(
-      acceptedTypeGroups: const [
-        XTypeGroup(
-          label: 'PDF / JPEG / PNG',
-          extensions: ['pdf', 'jpg', 'jpeg', 'png'],
-          mimeTypes: [
-            'application/pdf',
-            'image/jpeg',
-            'image/png'
-          ],
-        ),
-      ],
-    );
-    if (file == null) return; // user cancelled
-    final bytes = await file.readAsBytes();
-    final name = file.name;
-    final problem =
-        ChatAttachmentRules.check(name, bytes.length);
-    setState(() {
-      if (problem == null) {
-        _bytes = bytes;
-        _fileName = name;
-        _fileError = null;
-        // A fresh device file is not linked to any internship document.
-        _stagedDeliverableId = null;
-      } else {
-        _bytes = null;
-        _fileName = null;
-        _fileError = problem == 'size'
-            ? l10n.msgAttachTooLarge
-            : l10n.msgAttachWrongType;
+    if (_uploading) return;
+    try {
+      final file = await openFile(
+        acceptedTypeGroups: const [
+          XTypeGroup(
+            label: 'PDF / JPEG / PNG',
+            extensions: ['pdf', 'jpg', 'jpeg', 'png'],
+            mimeTypes: [
+              'application/pdf',
+              'image/jpeg',
+              'image/png'
+            ],
+          ),
+        ],
+      );
+      if (file == null) return; // user cancelled
+      Uint8List bytes;
+      try {
+        bytes = await file.readAsBytes();
+      } on Exception {
+        if (!mounted) return;
+        setState(() {
+          _bytes = null;
+          _fileName = null;
+          _fileError = l10n.msgPickFailed;
+          _serverError = null;
+        });
+        return;
       }
-      _serverError = null;
-    });
+      final name = file.name;
+      final problem =
+          ChatAttachmentRules.check(name, bytes.length);
+      if (!mounted) return;
+      setState(() {
+        if (problem == null) {
+          _bytes = bytes;
+          _fileName = name;
+          _fileError = null;
+          // A fresh device file is not linked to any internship document.
+          _stagedDeliverableId = null;
+        } else {
+          _bytes = null;
+          _fileName = null;
+          _fileError = problem == 'size'
+              ? l10n.msgAttachTooLarge
+              : problem == 'empty'
+                  ? l10n.msgPickFailed
+                  : l10n.msgAttachWrongType;
+        }
+        _serverError = null;
+      });
+    } on Exception {
+      if (!mounted) return;
+      setState(() => _fileError = l10n.msgPickFailed);
+    }
   }
 
   Future<void> _send() async {
@@ -163,18 +184,31 @@ class _AttachmentSheetState
     });
     try {
       final ext = name.split('.').last.toLowerCase();
-      await ref.read(messagingRepositoryProvider).sendWithAttachment(
-          widget.conversationId,
-          content: _caption.text.trim(),
-          fileName: name,
-          contentType: ChatAttachmentRules.mimeForExtension[ext] ??
-              'application/octet-stream',
-          bytes: bytes,
-          deliverableId: _stagedDeliverableId,
-          onProgress: (s, t) =>
-              setState(() => _progress = t == 0 ? 0 : s / t));
+      final sent = await ref
+          .read(messagingRepositoryProvider)
+          .sendWithAttachment(
+              widget.conversationId,
+              content: _caption.text.trim(),
+              fileName: name,
+              contentType:
+                  ChatAttachmentRules.mimeForExtension[ext] ??
+                      'application/octet-stream',
+              bytes: bytes,
+              deliverableId: _stagedDeliverableId,
+              onProgress: (s, t) {
+                if (mounted) {
+                  setState(
+                      () => _progress = t == 0 ? 0 : s / t);
+                }
+              });
       if (!mounted) return;
-      Navigator.of(context).pop();
+      // REST send has no broadcast echo: ask the open thread (if any) to
+      // refetch so the new attachment bubble appears immediately. A plain
+      // invalidate is a safe no-op when no thread watches this conversation.
+      ref.invalidate(
+          chatControllerProvider(widget.conversationId));
+      if (!mounted) return;
+      Navigator.of(context).pop(sent);
     } on ApiException catch (e) {
       if (!mounted) return;
       setState(() {
@@ -361,9 +395,9 @@ class _AttachmentSheetState
   }
 }
 
-Future<void> showAttachmentSheet(BuildContext context,
+Future<ChatMessage?> showAttachmentSheet(BuildContext context,
     {required String conversationId, String? internshipId}) {
-  return showStegSheet(
+  return showStegSheet<ChatMessage>(
     context,
     title: AppLocalizations.of(context).msgAttach,
     builder: (_) => AttachmentSheet(

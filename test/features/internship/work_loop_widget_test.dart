@@ -14,6 +14,7 @@ import 'package:stegappe/features/auth/presentation/providers/auth_providers.dar
 import 'package:stegappe/features/internship/data/cache/composer_draft_store.dart';
 import 'package:stegappe/features/internship/presentation/providers/workspace_providers.dart';
 import 'package:stegappe/features/internship/presentation/screens/journal_composer_screen.dart';
+import 'package:stegappe/features/internship/presentation/widgets/journal_calendar_view.dart';
 import 'package:stegappe/features/internship/presentation/screens/journal_list_screen.dart';
 import 'package:stegappe/features/internship/presentation/screens/supervisor_validations_screen.dart';
 import 'package:stegappe/features/internship/presentation/screens/task_editor_sheet.dart';
@@ -194,9 +195,8 @@ void main() {
       expect(await drafts.load('internship-1', day), isNull);
     });
 
-    testWidgets('day strip filters server-side; empty day is honest', (
-      tester,
-    ) async {
+    testWidgets('calendar day selection filters server-side; empty day is honest',
+        (tester) async {
       final fake = FakeInternshipRepository(now: DateTime(2026, 9, 15));
       await pumpLoop(
         tester,
@@ -205,11 +205,25 @@ void main() {
         selectedDay: DateTime(2026, 9, 15),
       );
       // Only entries recorded on the selected day are shown.
+      await tester.scrollUntilVisible(find.text('Draft entry'), 240,
+          scrollable: find.byType(Scrollable).first);
+      await tester.pumpAndSettle();
       expect(find.text('Draft entry'), findsOneWidget);
       expect(find.text('Submitted entry'), findsNothing);
 
-      // Jump a week back: no fixture entries there.
-      await tester.tap(find.byTooltip('Semaine précédente'));
+      // Pick a day with no entry on the month calendar: the day list
+      // re-queries the server and says so honestly.
+      await tester.scrollUntilVisible(find.byType(JournalMonthCalendar), -240,
+          scrollable: find.byType(Scrollable).first);
+      await tester.pumpAndSettle();
+      await tester.tap(find.descendant(
+        of: find.byType(JournalMonthCalendar),
+        matching: find.text('21'),
+      ));
+      await tester.pumpAndSettle();
+      await tester.scrollUntilVisible(
+          find.text('Aucune entrée pour le moment.'), 240,
+          scrollable: find.byType(Scrollable).first);
       await tester.pumpAndSettle();
       expect(find.text('Aucune entrée pour le moment.'), findsOneWidget);
     });

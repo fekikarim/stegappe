@@ -118,6 +118,8 @@ abstract final class Endpoints {
   static String conversation(String id) => '/api/conversations/$id';
   static String conversationMessages(String id) =>
       '/api/conversations/$id/messages';
+  static String conversationMessage(String messageId) =>
+      '/api/conversations/messages/$messageId';
   static String conversationMessagesWithAttachment(String id) =>
       '/api/conversations/$id/messages/with-attachment';
   static String conversationRead(String id) => '/api/conversations/$id/read';

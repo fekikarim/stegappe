@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
 
+import '../theme/steg_colors.dart';
 import '../theme/steg_spacing.dart';
 
 /// Grouping card with title, optional action, consistent padding.
+///
+/// Modern finish: 16 px radius, hairline border, soft shadow.
 /// Never fixed height — grows with content + text scaling (UI_UX.md §9.5).
 class StegCard extends StatelessWidget {
   const StegCard({
@@ -11,6 +14,7 @@ class StegCard extends StatelessWidget {
     this.action,
     required this.child,
     this.semanticsLabel,
+    this.accent = false,
   });
 
   final String? title;
@@ -18,11 +22,36 @@ class StegCard extends StatelessWidget {
   final Widget child;
   final String? semanticsLabel;
 
+  /// Renders a subtle brand-tinted surface for hero/featured cards.
+  final bool accent;
+
   @override
   Widget build(BuildContext context) {
+    final dark = Theme.of(context).brightness == Brightness.dark;
+    final scheme = Theme.of(context).colorScheme;
+    final bg = accent
+        ? Color.alphaBlend(
+            scheme.primary.withValues(alpha: dark ? 0.16 : 0.07),
+            dark ? StegColors.darkSurface : StegColors.lightSurface,
+          )
+        : (dark ? StegColors.darkSurface : StegColors.lightSurface);
+
+    // A real Material Card (not a decorated box) so ListTile ink splashes
+    // render and the widget contract stays stable for callers and tests.
     final card = Card(
+      color: bg,
+      elevation: dark ? 0 : 2,
+      shadowColor: dark
+          ? Colors.black54
+          : StegColors.brandPrimary.withValues(alpha: 0.16),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(StegSpacing.radiusMd),
+        side: BorderSide(
+          color: dark ? StegColors.darkBorder : StegColors.lightBorder,
+        ),
+      ),
       child: Padding(
-        padding: StegSpacing.cardPadding,
+        padding: const EdgeInsets.all(StegSpacing.md),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           mainAxisSize: MainAxisSize.min,
@@ -39,7 +68,10 @@ class StegCard extends StatelessWidget {
                       child: Text(t,
                           maxLines: 2,
                           overflow: TextOverflow.ellipsis,
-                          style: Theme.of(context).textTheme.titleMedium),
+                          style: Theme.of(context)
+                              .textTheme
+                              .titleMedium
+                              ?.copyWith(letterSpacing: -0.1)),
                     ),
                     if (action case final Widget a)
                       ConstrainedBox(
@@ -49,7 +81,8 @@ class StegCard extends StatelessWidget {
                         // real touch target. Loose, it reported 28 px (e.g.
                         // the supervisor home "see all" button — measured).
                         child: SizedBox(
-                            height: StegSpacing.minTouchTarget, child: a),
+                            height: StegSpacing.minTouchTarget,
+                            child: a),
                       ),
                   ],
                 ),

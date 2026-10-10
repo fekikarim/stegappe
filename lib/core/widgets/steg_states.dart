@@ -1,11 +1,14 @@
 import 'package:flutter/material.dart';
 
 import '../l10n/app_localizations.dart';
+import '../theme/steg_colors.dart';
 import '../theme/steg_spacing.dart';
 import 'steg_button.dart';
 
 /// Reusable async-state widgets: loading / error / empty.
-/// Every async feature must use these — never a blank screen (UI_UX.md §6.3).
+///
+/// Modern finish: gradient icon medallions, generous whitespace, friendly
+/// typography. Every async feature must use these — never a blank screen.
 class StegLoading extends StatelessWidget {
   const StegLoading({super.key, this.message});
 
@@ -21,9 +24,31 @@ class StegLoading extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const CircularProgressIndicator(),
-            const SizedBox(height: StegSpacing.sm),
-            Text(message ?? AppLocalizations.of(context).loading),
+            Container(
+              width: 64,
+              height: 64,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                gradient: LinearGradient(
+                  colors: StegColors.brandGradient,
+                  begin: AlignmentDirectional.topStart,
+                  end: AlignmentDirectional.bottomEnd,
+                ),
+                boxShadow: StegColors.buttonShadow,
+              ),
+              child: const Padding(
+                padding: EdgeInsets.all(18),
+                child: CircularProgressIndicator(
+                  strokeWidth: 3,
+                  color: Colors.white,
+                ),
+              ),
+            ),
+            const SizedBox(height: StegSpacing.md),
+            Text(
+              message ?? AppLocalizations.of(context).loading,
+              style: Theme.of(context).textTheme.bodyMedium,
+            ),
           ],
         ),
       ),
@@ -46,6 +71,7 @@ class StegErrorView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
+    final error = Theme.of(context).colorScheme.error;
     return Semantics(
       liveRegion: true,
       excludeSemantics: true,
@@ -56,13 +82,26 @@ class StegErrorView extends StatelessWidget {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(Icons.error_outline,
-                  size: 40, color: Theme.of(context).colorScheme.error),
-              const SizedBox(height: StegSpacing.sm),
-              Text(message, textAlign: TextAlign.center),
+              Container(
+                width: 72,
+                height: 72,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: error.withValues(alpha: 0.12),
+                  border:
+                      Border.all(color: error.withValues(alpha: 0.3)),
+                ),
+                child: Icon(Icons.error_outline_rounded,
+                    size: 34, color: error),
+              ),
+              const SizedBox(height: StegSpacing.md),
+              Text(
+                message,
+                textAlign: TextAlign.center,
+                style: Theme.of(context).textTheme.titleMedium,
+              ),
               if (traceId != null) ...[
                 const SizedBox(height: StegSpacing.xs),
-                // LTR-forced: trace IDs are technical values (UI_UX.md §8.2).
                 Directionality(
                   textDirection: TextDirection.ltr,
                   child: SelectableText('trace: $traceId',
@@ -70,8 +109,11 @@ class StegErrorView extends StatelessWidget {
                 ),
               ],
               if (onRetry != null) ...[
-                const SizedBox(height: StegSpacing.md),
-                StegButton(label: l10n.retry, onPressed: onRetry),
+                const SizedBox(height: StegSpacing.lg),
+                StegButton(
+                    label: l10n.retry,
+                    icon: Icons.refresh_rounded,
+                    onPressed: onRetry),
               ],
             ],
           ),
@@ -100,6 +142,8 @@ class StegEmptyView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
+    final scheme = Theme.of(context).colorScheme;
+    final dark = Theme.of(context).brightness == Brightness.dark;
     return Semantics(
       excludeSemantics: true,
       label: title ?? l10n.emptyTitle,
@@ -109,11 +153,35 @@ class StegEmptyView extends StatelessWidget {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(icon,
-                  size: 44,
-                  color:
-                      Theme.of(context).colorScheme.onSurfaceVariant),
-              const SizedBox(height: StegSpacing.sm),
+              Container(
+                width: 84,
+                height: 84,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  gradient: LinearGradient(
+                    colors: dark
+                        ? [
+                            StegColors.primaryBright
+                                .withValues(alpha: 0.35),
+                            StegColors.aiAccentDark
+                                .withValues(alpha: 0.35)
+                          ]
+                        : [
+                            StegColors.brandPrimary
+                                .withValues(alpha: 0.14),
+                            StegColors.aiAccent
+                                .withValues(alpha: 0.14)
+                          ],
+                    begin: AlignmentDirectional.topStart,
+                    end: AlignmentDirectional.bottomEnd,
+                  ),
+                  border: Border.all(
+                    color: scheme.primary.withValues(alpha: 0.25),
+                  ),
+                ),
+                child: Icon(icon, size: 36, color: scheme.primary),
+              ),
+              const SizedBox(height: StegSpacing.md),
               Text(title ?? l10n.emptyTitle,
                   style: Theme.of(context).textTheme.titleMedium,
                   textAlign: TextAlign.center),
@@ -124,8 +192,11 @@ class StegEmptyView extends StatelessWidget {
                     textAlign: TextAlign.center),
               ],
               if (actionLabel != null) ...[
-                const SizedBox(height: StegSpacing.md),
-                StegButton(label: actionLabel!, onPressed: onAction),
+                const SizedBox(height: StegSpacing.lg),
+                StegButton(
+                    label: actionLabel!,
+                    icon: Icons.add_rounded,
+                    onPressed: onAction),
               ],
             ],
           ),

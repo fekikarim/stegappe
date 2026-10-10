@@ -255,6 +255,30 @@ class FakeMessagingRepo implements MessagingRepository {
   }
 
   @override
+  Future<Conversation> getConversation(String conversationId) async {
+    return convos.firstWhere((c) => c.id == conversationId,
+        orElse: () => convos.first);
+  }
+
+  @override
+  Future<ChatMessage> editMessage(
+      String messageId, String content) async {
+    return ChatMessage(
+      id: messageId,
+      conversationId: 'c1',
+      senderId: 'me',
+      content: content,
+      status: MessageStatus.edited,
+      sequenceNumber: 3,
+      sentAt: DateTime(2026, 9, 15, 10, 3),
+      mine: true,
+    );
+  }
+
+  @override
+  Future<void> deleteMessage(String messageId) async {}
+
+  @override
   Future<void> markRead(String conversationId, int upToSequence) async {
     readMarks.add(upToSequence);
     final stompRef = stomp;
@@ -483,7 +507,9 @@ void main() {
       expect(find.byTooltip('Supprimer'), findsOneWidget);
     });
 
-    testWidgets('socket strip appears when real-time drops', (tester) async {
+    testWidgets(
+        'no real-time banner when the socket drops (silent presence)',
+        (tester) async {
       final s = FakeStomp();
       await pumpMsg(
         tester,
@@ -493,12 +519,15 @@ void main() {
       // pumpMsg connects; drop afterwards.
       s.setState(ChatConnectionState.disconnected);
       await tester.pumpAndSettle();
+      // The old full-width strip is gone: no banner text anywhere …
       expect(
         find.text(
           'Temps réel indisponible — les messages s’envoient par relais.',
         ),
-        findsOneWidget,
+        findsNothing,
       );
+      // … and the connection surfaces only as a caption under the title.
+      expect(find.text('Hors ligne'), findsOneWidget);
     });
   });
 

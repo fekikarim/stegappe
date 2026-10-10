@@ -46,6 +46,18 @@ abstract class MessagingRepository {
   Future<ChatMessage> sendRest(String conversationId, String content,
       {String? idempotencyKey});
 
+  /// Fetch one conversation (authoritative title, internship link, read
+  /// watermarks). Used to resolve display names and the document picker
+  /// without depending on a possibly stale list snapshot.
+  Future<Conversation> getConversation(String conversationId);
+
+  /// Edit my own message (1-to-1 threads; backend enforces sender-only).
+  /// Returns the updated message (status EDITED).
+  Future<ChatMessage> editMessage(String messageId, String content);
+
+  /// Soft-delete my own message (content redacted, history slot kept).
+  Future<void> deleteMessage(String messageId);
+
   Future<ChatMessage> sendWithAttachment(
     String conversationId, {
     required String content,

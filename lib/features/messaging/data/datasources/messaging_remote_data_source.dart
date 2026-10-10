@@ -67,6 +67,22 @@ class MessagingRemoteDataSource {
           decode: (j) =>
               messageFromJson(_map(j), selfUserId: selfUserId));
 
+  Future<ChatMessage> editMessage(
+    String messageId,
+    String? bearer,
+    String content, {
+    String? selfUserId,
+  }) =>
+      _client.patch(Endpoints.conversationMessage(messageId),
+          bearer: bearer,
+          body: {'content': content},
+          decode: (j) =>
+              messageFromJson(_map(j), selfUserId: selfUserId));
+
+  Future<void> deleteMessage(String messageId, String? bearer) =>
+      _client.delete(Endpoints.conversationMessage(messageId),
+          bearer: bearer, decode: (_) {});
+
   /// Attachment send: `content` is a REQUIRED query param per contract,
   /// the file is the multipart part (PDF/JPEG/PNG, 10 MB, Tika-checked).
   /// `deliverableId` (T10/SU-VAL-01) links the attachment to the internship

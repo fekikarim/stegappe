@@ -43,6 +43,15 @@ class RoleScaffold extends ConsumerWidget {
     return Scaffold(
       appBar: AppBar(
         title: Text(current.label),
+        flexibleSpace: Container(
+          decoration: const BoxDecoration(
+            gradient: LinearGradient(
+              colors: [Color(0xFF042843), Color(0xFF0B61A0)],
+              begin: AlignmentDirectional.centerStart,
+              end: AlignmentDirectional.centerEnd,
+            ),
+          ),
+        ),
         actions: [
           _NotificationBell(onOpenTab: (tab) {
             // The center already popped itself; just switch tabs.
@@ -82,9 +91,14 @@ class RoleScaffold extends ConsumerWidget {
         child: NavigationBar(
           selectedIndex: index,
           onDestinationSelected: onIndexChanged,
+          labelBehavior: NavigationDestinationLabelBehavior.onlyShowSelected,
           destinations: [
             for (final d in destinations)
-              NavigationDestination(icon: Icon(d.icon), label: d.label),
+              NavigationDestination(
+                icon: Icon(d.icon),
+                selectedIcon: Icon(d.selectedIcon ?? d.icon),
+                label: d.label,
+              ),
           ],
         ),
       ),
@@ -96,11 +110,13 @@ class RoleDestination {
   const RoleDestination({
     required this.label,
     required this.icon,
+    this.selectedIcon,
     required this.page,
   });
 
   final String label;
   final IconData icon;
+  final IconData? selectedIcon;
   final Widget page;
 }
 
@@ -136,14 +152,23 @@ class _NotificationBell extends ConsumerWidget {
           ),
           if (unread > 0)
             PositionedDirectional(
-              top: 8,
-              end: 8,
+              top: 6,
+              end: 6,
               child: Container(
                 padding: const EdgeInsets.symmetric(
-                    horizontal: 5, vertical: 1),
+                    horizontal: 6, vertical: 2),
                 decoration: BoxDecoration(
-                  color: Theme.of(context).colorScheme.error,
+                  gradient: const LinearGradient(
+                    colors: [Color(0xFFD32325), Color(0xFFFF6B6B)],
+                  ),
                   borderRadius: BorderRadius.circular(10),
+                  border: Border.all(color: Colors.white, width: 1.5),
+                  boxShadow: const [
+                    BoxShadow(
+                        color: Colors.black26,
+                        blurRadius: 4,
+                        offset: Offset(0, 1)),
+                  ],
                 ),
                 child: Text(
                   unread > 99 ? '99+' : '$unread',
@@ -187,6 +212,7 @@ class _InternShellState extends State<InternShell> {
         RoleDestination(
           label: l10n.navHome,
           icon: Icons.home_outlined,
+          selectedIcon: Icons.home_rounded,
           page: InternHomeScreen(
             user: widget.user,
             onOpenTab: (i) => setState(() => _index = i),
@@ -195,21 +221,25 @@ class _InternShellState extends State<InternShell> {
         RoleDestination(
           label: l10n.navTasks,
           icon: Icons.checklist_outlined,
+          selectedIcon: Icons.checklist_rounded,
           page: const TaskListScreen(),
         ),
         RoleDestination(
           label: l10n.navJournal,
           icon: Icons.book_outlined,
+          selectedIcon: Icons.book_rounded,
           page: const JournalListScreen(),
         ),
         RoleDestination(
           label: l10n.navMessages,
           icon: Icons.chat_bubble_outline,
+          selectedIcon: Icons.chat_bubble_rounded,
           page: const ConversationsScreen(),
         ),
         RoleDestination(
           label: l10n.navMore,
           icon: Icons.more_horiz,
+          selectedIcon: Icons.more_horiz_rounded,
           page: const MoreTab(),
         ),
       ],
@@ -242,6 +272,7 @@ class _SupervisorShellState extends State<SupervisorShell> {
         RoleDestination(
           label: l10n.navHome,
           icon: Icons.dashboard_outlined,
+          selectedIcon: Icons.dashboard_rounded,
           page: SupervisorHomeScreen(
             user: widget.user,
             onOpenTab: (i) => setState(() => _index = i),
@@ -250,18 +281,22 @@ class _SupervisorShellState extends State<SupervisorShell> {
         RoleDestination(
             label: l10n.navInterns,
             icon: Icons.people_outline,
+            selectedIcon: Icons.people_rounded,
             page: const SupervisedInternsScreen()),
         RoleDestination(
             label: l10n.navValidations,
             icon: Icons.fact_check_outlined,
+            selectedIcon: Icons.fact_check_rounded,
             page: const SupervisorValidationsScreen()),
         RoleDestination(
             label: l10n.navMessages,
             icon: Icons.chat_bubble_outline,
+            selectedIcon: Icons.chat_bubble_rounded,
             page: const ConversationsScreen()),
         RoleDestination(
             label: l10n.navMore,
             icon: Icons.more_horiz,
+            selectedIcon: Icons.more_horiz_rounded,
             page: const MoreTab()),
       ],
     );
